@@ -1,0 +1,34 @@
+* DONE implement the initial representations
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2017-02-20 Mon 14:48]
+:END:
+** DONE variables
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2017-02-20 Mon 14:48]
+:END:
+** DONE symbols
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2017-02-20 Mon 14:48]
+:END:
+** DONE applications
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2017-02-20 Mon 14:48]
+:END:
+** DONE Rewrite Rules
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2017-02-20 Mon 14:48]
+:END:
+** DONE Term Rewriting Systems
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2017-02-20 Mon 14:48]
+:END:
+* TODO implement the initial algorithms
+** TODO unification
+** TODO term rewriting
+:LOGBOOK:
+- Note taken on [2017-02-20 Mon 14:49] \\
+  Given a term $t$ and a TRS $T$, can you find any rules in $\rightarrow_T$ whose LHS unifies with $t$, and then apply the substitution to $t$?
+:END:
+* TODO make everything easier
+** TODO write a parser?
+** TODO write a REPL?
