@@ -46,6 +46,16 @@ I can't do any sort of computation without first having data structures over whi
 - State "DONE"       from "TODO"       [2017-04-07 Fri 11:44]
 :END:
 * TODO add variable & constant terms
+** DONE lex variables and constant terms
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2017-04-07 Fri 13:12] \\
+  This was simple to do. Variables and constants are just symbols. All I needed to add were a few brackets in case cosntant terms were treated as operators applied to nothing.
+:END:
+** DONE parse variables and constant terms
+:LOGBOOK:
+- State "DONE"       from "TODO"       [2017-04-07 Fri 13:13] \\
+  The entire parse has to be done in stages. That is, we can determine the rough role of each line (e.g. add to the signature, add a rewrite rule, give a term to evaluate), but we can't determine its precise role until considering the rest of the program space. That is, we have to to build up the program incrementally. ~load_source~ should probably do that work rather than the parser iself.
+:END:
 * TODO add application terms
 * TODO add rewrite rules
 * TODO write a REPL?

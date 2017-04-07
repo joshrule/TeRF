@@ -1,11 +1,29 @@
 import ply.lex as lex
 
-tokens = ['SYMBOL', 'ARITY', 'ARITY_KW']
+tokens = ['SYMBOL',
+          'ARITY',
+          'ARITY_KW',
+          'COMMA',
+          'LBRACE',
+          'RBRACE',
+          'LBRACKET',
+          'RBRACKET',
+          'LPAREN',
+          'RPAREN']
 
 reserved = {
     'signature': 'SIGNATURE_KW'
 }
 tokens += reserved.values()
+
+t_COMMA = r','
+t_LBRACE = r'\{'
+t_RBRACE = r'\}'
+t_LBRACKET = r'\['
+t_RBRACKET = r'\]'
+t_LPAREN = r'\('
+t_RPAREN = r'\)'
+
 
 t_ignore = ' \t'
 t_ignore_COMMENT = r'\#.*'
