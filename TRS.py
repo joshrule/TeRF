@@ -5,57 +5,63 @@ Written by: Joshua Rule <joshua.s.rule@gmail.com>
 """
 
 
-class Atom(object):
-    def __init__(self, index, alias=None):
-        self.index = index
-        self.alias = alias
+class TRSError(Exception):
+    pass
 
 
-class Term(object):
-    def __init__(self, signature):
-        self.signature = signature
-
-    def vars(self):
-        raise NotImplementedError
-
-    def symbols(self):
-        raise NotImplementedError
+class Term():
+    pass
 
 
-class Symbol(Atom):
-    def __init__(self, index, alias=None, arity=0):
-        Atom.__init__(self, index=index, alias=alias)
-        self.arity = arity  # can ARS/TRS have Symbols without fixed arity?
+class Operator(object):
+    """a lone operator"""
+
+    def __init__(self, name, arity):
+        self.name = name
+        self.arity = arity  # can ARS/TRS have Operators without fixed arity?
 
     def __str__(self):
-        return self.alias if self.alias else "S{:d}".format(self.index)
+        return "{}/{:d}".format(self.name, self.arity)
 
     def __repr__(self):
-        return ('Symbol(index={:d}, '
-                'alias=\'{}\', '
-                'arity={:d})').format(self.index,
-                                      self.alias,
-                                      self.arity)
+        return ('Operator(name={}, '
+                'arity={:d})').format(self.name, self.arity)
 
 
-class Variable(Atom, Term):
-    """a lone variable"""
-    def __init__(self, signature, index, alias=None):
-        Atom.__init__(self, index=index, alias=alias)
-        Term.__init__(self, signature)
+class Signature(object):
+    """a set of operators"""
+    def __init__(self, items):
+        self.sig = {}
+        for item in items:
+            self.add(item)
+
+    def add(self, operator):
+        try:
+            name = '{}/{}'.format(operator.name, operator.arity)
+        except AttributeError:
+            raise TRSError('Tried to add a non-operator to a signature')
+        else:
+            self.sig[name] = operator
+
+    def get(self, key):
+        return self.sig[key]
+
+    def remove(self, key):
+        del self.sig[key]
+
+    def update(self, other):
+        try:
+            self.sig.update(other.sig)
+        except AttributeError:
+            raise TRSError('Tried to update a Signature with a non-Signature')
 
     def __str__(self):
-        return self.alias if self.alias else "V{:d}".format(self.index)
+        return str(self.sig)
 
     def __repr__(self):
-        return "Variable(index={:d}, alias=\'{}\')".format(self.index,
-                                                           self.alias)
+        return 'Signature(' + str(self.sig.values()) + ')'
 
-    def vars(self):
-        return set([self])
 
-    def symbols(self):
-        return set([])
 
 
 class Application(Term):
@@ -147,38 +153,33 @@ class TRS(object):
             '\n\n' + '\n'.join([str(r) for r in self.rules])
 
 
-class TRSError(Exception):
-    pass
 
 
-class SignatureViolationError(TRSError):
-    pass
 
 
 if __name__ == "__main__":
 
     # make SK-logic
 
-    s = Symbol(1, 'S', 0)
-    k = Symbol(2, 'K', 0)
-    app = Symbol(3, '.', 2)
-    sig = set([s, k, app])
+    sk = TRS().add_operator(0).add_operator(0).add_operator(2)
 
-    a = Variable(sig, 1, 'a')
-    b = Variable(sig, 2, 'b')
-    c = Variable(sig, 3, 'c')
+    s = sk.signature[0]
+    k = sk.signature[1]
+    a = sk.signature[2]
+
+    x = sk.new_var()
+    y = sk.new_var()
+    z = sk.new_var()
 
     def make(x, y):
-        return Application(sig, app, [x, y])
+        return Application(sk.signature, a, [x, y])
 
-    t1 = make(make(make(Application(sig, s, []), a), b), c)
-    t2 = make(make(a, c), make(b, c))
-    r1 = RewriteRule(sig, t1, t2)
+    t1 = make(make(make(Application(sk.signature, s, []), x), y), z)
+    t2 = make(make(x, z), make(y, z))
+    
+    t3 = make(make(Application(sk.signature, k, []), x), y)
+    t4 = x
 
-    t3 = make(make(Application(sig, k, []), a), b)
-    t4 = a
-    r2 = RewriteRule(sig, t3, t4)
-
-    sk = TRS(sig, set([r1, r2]))
-
+    sk = sk.add_rule(t1, t2)
+    sk = sk.add_rule(t2, t4)
     print sk

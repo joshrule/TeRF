@@ -1,34 +1,51 @@
-* DONE implement the initial representations
+The goal of this library is to provide a way to describe and compute with Term Rewriting Systems (TRS).
+
+I'll build up to a full TRS iteratively as follows:
+- add signatures
+- add variable terms
+- add application terms
+- add rewrite rules
+
+I can't do any sort of computation without first having data structures over which to compute. So, each iteration will first extend the parser and will then extend the evaluator.
+
+* DONE handle whitespace & comments
 :LOGBOOK:
-- State "DONE"       from "TODO"       [2017-02-20 Mon 14:48]
+- State "DONE"       from "DOING"      [2017-04-06 Thu 14:04] \\
+  I'm getting my feet wet and figuring out how to do this sort of work in Python, so this was a good place to start.
+- State "DOING"      from "TODO"       [2017-04-06 Thu 13:30] \\
+  I'll just do this first to get the basic structure set
 :END:
-** DONE variables
+* DONE add signatures
 :LOGBOOK:
-- State "DONE"       from "TODO"       [2017-02-20 Mon 14:48]
+- State "DONE"       from "DOING"      [2017-04-07 Fri 11:44]
+- State "DOING"      from "TODO"       [2017-04-07 Fri 09:37]
 :END:
-** DONE symbols
+** DONE lex the tokens for signatures: "signature" and symbols
 :LOGBOOK:
-- State "DONE"       from "TODO"       [2017-02-20 Mon 14:48]
+- State "DONE"       from "TODO"       [2017-04-07 Fri 09:39] \\
+  This was simple to achieve, and something I did yesterday.
 :END:
-** DONE applications
+** DONE perform a dumb-parse of the signature
 :LOGBOOK:
-- State "DONE"       from "TODO"       [2017-02-20 Mon 14:48]
+- Note taken on [2017-04-07 Fri 09:52] \\
+  Also, I just realized that while long-term, I'd like to be able to pick apart operators and variables syntactically, we can't do that yet because we can't represent terms. But, we can also get rid of the "signature" keyword. We can instead focus on just picking out individual symbols and adding them to the signature. This will require, however, that I figure out how to separate operators from variables syntactically. I can do that in one of two ways. I can introduce a keyword like "signature", which I would prefer not to do, as it requires the clunky idiom of declaring a symbol before using it. This may be premature optimization, though, so let's stick with the simple thing of just declaring operators explicitly.
+- State "DONE"       from "TODO"       [2017-04-07 Fri 09:39] \\
+  This was also simple to achieve. I'm now able to collect something that looks like the following:
+  
+  [('signature', ['<sym1>', '<sym2>',..., '<symN>'])]
+  
+  This is nice; it allows me to create the signature across multiple lines. That is, I could create something like the following:
+  
+  [('signature', ['<sym1>', '<sym2>',..., '<symM>']),
+   ('signature', ['<symM+1>', '<symM+2>',..., '<symM+N>'])]
+  
+  What I ultimately want to produce, however, isn't a list of multiple signatures, but a single TRS. So, I need to find a way to insert take the knowledge, as I collect it, and transform it into a TRS. Right now, my TRS should only have the signature. So, the goal here is to produce a single signature as the result.
 :END:
-** DONE Rewrite Rules
+** DONE improve the dumb-parse to create a Signature object
 :LOGBOOK:
-- State "DONE"       from "TODO"       [2017-02-20 Mon 14:48]
+- State "DONE"       from "TODO"       [2017-04-07 Fri 11:44]
 :END:
-** DONE Term Rewriting Systems
-:LOGBOOK:
-- State "DONE"       from "TODO"       [2017-02-20 Mon 14:48]
-:END:
-* TODO implement the initial algorithms
-** TODO unification
-** TODO term rewriting
-:LOGBOOK:
-- Note taken on [2017-02-20 Mon 14:49] \\
-  Given a term $t$ and a TRS $T$, can you find any rules in $\rightarrow_T$ whose LHS unifies with $t$, and then apply the substitution to $t$?
-:END:
-* TODO make everything easier
-** TODO write a parser?
-** TODO write a REPL?
+* TODO add variable & constant terms
+* TODO add application terms
+* TODO add rewrite rules
+* TODO write a REPL?
