@@ -1,20 +1,38 @@
-
-
-
-# A first comment
-
-(signature S/0 K/0)
-(signature ./2)
+# example: SK combinatory logic
+.[.[.[S x_] y_] z_] -> .[.[x_ z_] .[y_ z_]]
+.[.[K x_] y_] -> x_
 
 S
 
-K()
+K[]
 
-x
+.[_ y_]
 
+.[.[K K] S]
+
+.[.[.[S .[.[K K] S]] K] S]
+
+# example: Peano arithmetic
+# +[0 y_] -> y_
+# +[s[x_] y_] -> s[+[x_ y_]]
+#
+# +[0 0]
+# +[s[s[s[0]]] s[s[0]]]
+# +[ +[s[0] s[s[0]]] s[s[0]]]
+
+# example: duplicating lists and computing their lengths
+# .[len nil] -> 0
+# .[len .[.[cons x_] y_]] -> s[.[f1 y_]]
+# 
+# .[dup nil] -> nil
+# .[dup .[.[cons x_] y_]] -> .[.[cons x_] .[.[cons x_] .[dup y_]]]
+# 
+# .[dup .[.[cons 1] .[.[cons 2] nil]]]
+# .[len .[.[cons 1] .[.[cons 2] nil]]]
+# .[len .[dup .[.[cons 1] .[.[cons 2] nil]]]]
+
+# some arbitrary terms
+ 
+x_
 ABC
 
-# A second comment
-
-
-# Okay, the final comment.
