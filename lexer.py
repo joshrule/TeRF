@@ -4,39 +4,39 @@ import ply.lex as lex
 # - Terms
 #   - Variables "x_"
 #   - Applications of Operators to Terms x[x_, ABC]
-# - Rewrite Rules "lhs -> rhs"
+# - Rewrite Rules "lhs = rhs"
 # - Comments "# comment"
 
 tokens = ['VARIABLE',
           'OPERATOR',
           'RULE_KW',
-          'COMMA',
           'LPAREN',
           'RPAREN',
           'LBRACKET',
-          'RBRACKET']
+          'RBRACKET',
+          'SEMICOLON']
 
 """the syntax for variables
 
-Variables are strings ending in _. They may not have whitespace, commas,
-brackets, #, nor the -> combination.
+Variables are strings ending in _. They may not have whitespace,
+brackets, parentheses, #, ;, nor =.
 """
-t_VARIABLE = r'([^\s,#\[\]\(\)\-]|\-[^\s,#\[\]\(\)\>])*_(?=[\s,#\[\]\(\)])'
+t_VARIABLE = r'([^\s#\[\]\(\)=;])*_(?=[\s#\[\]\(\);])'
 
 """the syntax for operators
 
 Operators are strings *not* ending in _. They may not have whitespace, commas,
 #, brackets, nor the -> combination.
 """
-t_OPERATOR = r'([^\s,#\[\]\(\)\-]|\-[^\s,#\[\]\(\)\>])*' + \
-             r'[^_\s,#\[\]\(\)](?=[\s,#\[\]\(\)])'
+t_OPERATOR = r'([^\s#\[\]\(\)=;])*' + \
+             r'[^_\s#\[\]\(\)=;](?=[\s#\[\]\(\);])'
 
-t_RULE_KW = r'->'
-t_COMMA = r','
+t_RULE_KW = r'='
 t_LPAREN = r'\('
 t_RPAREN = r'\)'
 t_LBRACKET = r'\['
 t_RBRACKET = r'\]'
+t_SEMICOLON = r';'
 
 t_ignore = ' \t'
 t_ignore_COMMENT = r'\#.*'

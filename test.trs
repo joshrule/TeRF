@@ -1,22 +1,24 @@
 # example: SK combinatory logic
 
-.[.[.[S x_] y_] z_] -> .[.[x_ z_] .[y_ z_]]
+S x_ y_ z_ = x_ z_ (y_ z_);
 
-.[.[K x_] y_] -> x_
+(K x_ y_) = x_;
 
 # Test Terms
-S
+S;
 
-K[]
+K[];
 
-.[_ y_]
+.[_ y_];
 
-.[.[K K] S]
+.[.[K K] S];
 
-.[.[.[S .[.[K K] S]] K] S]
+S (K K S) K S;
 
-x_
+x_;
 
-ABC
+ABC;
 
-(DEF)
+(DEF);
+
+(D E F);
