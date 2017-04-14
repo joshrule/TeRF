@@ -11,6 +11,8 @@ tokens = ['VARIABLE',
           'OPERATOR',
           'RULE_KW',
           'COMMA',
+          'LPAREN',
+          'RPAREN',
           'LBRACKET',
           'RBRACKET']
 
@@ -19,18 +21,20 @@ tokens = ['VARIABLE',
 Variables are strings ending in _. They may not have whitespace, commas,
 brackets, #, nor the -> combination.
 """
-t_VARIABLE = r'([^\s,#\[\]\-]|\-[^\s,#\[\]\>])*_(?=[\s,#\[\]])'
+t_VARIABLE = r'([^\s,#\[\]\(\)\-]|\-[^\s,#\[\]\(\)\>])*_(?=[\s,#\[\]\(\)])'
 
 """the syntax for operators
 
 Operators are strings *not* ending in _. They may not have whitespace, commas,
 #, brackets, nor the -> combination.
 """
-t_OPERATOR = \
-    r'([^\s,#\[\]\-]|\-[^\s,#\[\]\>])*[^_\s,#\[\]](?=[\s,#\[\]])'
+t_OPERATOR = r'([^\s,#\[\]\(\)\-]|\-[^\s,#\[\]\(\)\>])*' + \
+             r'[^_\s,#\[\]\(\)](?=[\s,#\[\]\(\)])'
 
 t_RULE_KW = r'->'
 t_COMMA = r','
+t_LPAREN = r'\('
+t_RPAREN = r'\)'
 t_LBRACKET = r'\['
 t_RBRACKET = r'\]'
 
