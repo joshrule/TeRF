@@ -52,7 +52,7 @@ class Term(object):
     def list_operators(self):
         raise NotImplementedError
 
-    def pretty_print(self, verbose):
+    def pretty_print(self, verbose=0):
         raise NotImplementedError
 
 
@@ -70,7 +70,7 @@ class Variable(Term):
     def list_operators(self):
         return set()
 
-    def pretty_print(self, verbose):
+    def pretty_print(self, verbose=0):
         return str(self)
 
     def __str__(self):

@@ -1,0 +1,97 @@
+#!/usr/local/bin/python
+"""TeRF: a Term Rewriting Framework
+
+Usage:
+    terf [--batch=<filename>] [--print=<level>] [--steps=<N>]
+
+Options:
+    --batch=<filename>  Process <filename> in batch mode.
+    --print=<int>       how to print terms [default: 0].
+    --steps=<int>         maximum number of execution steps for each term. [default: 1000]
+"""
+
+from parser import parser, load_source, make_rule, make_term
+from TRS import TRS
+
+import re
+
+
+def batch_process(filename, verbosity, count):
+    trs, terms = load_source(filename)
+    print 'Rules:'
+    for rule in trs.rules:
+        print '\n    {}'.format(rule)
+    print '\nEvaluations:'
+    for term in terms:
+        if verbosity >= 0:
+            print '\n    {} -*-> {}'.format(term.pretty_print(2*verbosity),
+                trs.eval(term, steps=count).pretty_print(2*verbosity))
+        else:
+            print '\n    {} -*-> {}'.format(term,
+                                            trs.eval(term, steps=count))
+
+
+def repl(verbosity, count):
+    try:
+        input = raw_input
+    except NameError:
+        pass
+    done = False
+    trs = TRS()
+    empty = re.compile(';+')
+    delete = re.compile('del\s+(?P<rule_no>\d+)\s*;+')
+    save = re.compile('save\s+(?P<filename>\S+)\s*;+')
+    load = re.compile('load\s+(?P<filename>\S+)\s*;+')
+    while not done:
+        try:
+            statement = input('>> ') + ';'
+            if empty.match(statement):
+                pass
+            elif statement == 'show;':
+                for i, rule in enumerate(trs.rules):
+                    print '{:d}: {}'.format(i, rule)
+            elif statement == 'quit;':
+                done = True
+            elif delete.match(statement):
+                trs.del_rule(int(delete.match(statement).group('rule_no')))
+            elif save.match(statement):
+                filename = save.match(statement).group('filename')
+                with open(filename, 'w') as f:
+                    f.write('\n'.join([str(rule) for rule in trs.rules])+'\n')
+            else:
+                if load.match(statement):
+                    filename = load.match(statement).group('filename')
+                    statements = []
+                    with open(filename, 'r') as f:
+                        for line in f:
+                            statements += [line]
+                else:
+                    statements = [statement]
+                for statement in statements:
+                    s = parser.parse(statement)[0]
+                    if s[0] == 'rule':
+                        rule = make_rule(s[1], s[2], {})
+                        for op in rule.operators:
+                            trs.add_operator(op)
+                        trs.add_rule(rule)
+                    elif s[0] == 'term':
+                        term, env = make_term(s[1], {})
+                        evaled = trs.eval(term, steps=count)
+                        print evaled.pretty_print(2*verbosity) if verbosity >= 0 else evaled
+                    else:
+                        print 'Oops! ' + str(s)
+        except EOFError:
+            done = True
+
+
+if __name__ == "__main__":
+    from docopt import docopt
+    arguments = docopt(__doc__, version="terf 0.0.1")
+    if arguments['--batch']:
+        batch_process(arguments['--batch'],
+                      int(arguments['--print']),
+                      int(arguments['--steps']))
+    else:
+        repl(int(arguments['--print']),
+             int(arguments['--steps']))
+
