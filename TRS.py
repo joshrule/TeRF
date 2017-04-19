@@ -52,6 +52,9 @@ class Term(object):
     def list_operators(self):
         raise NotImplementedError
 
+    def pretty_print(self, verbose):
+        raise NotImplementedError
+
 
 class Variable(Term):
     """an arbitrary term"""
@@ -67,8 +70,11 @@ class Variable(Term):
     def list_operators(self):
         return set()
 
+    def pretty_print(self, verbose):
+        return str(self)
+
     def __str__(self):
-        return self.name
+        return self.name + '_'
 
     def __repr__(self):
         return 'Variable({}, {})'.format(self.name, self.identity)
@@ -107,10 +113,27 @@ class Application(Term):
         return {self.head} | \
                {operator for part in self.body for operator in part.operators}
 
+    def pretty_print(self, verbose=0):
+        if self.head == Operator('.', 2):
+            if verbose == 0:
+                return self.body[0].pretty_print(0) + \
+                    ' ' + self.body[1].pretty_print(1)
+            elif verbose == 1:
+                return '(' + self.body[0].pretty_print(0) + \
+                    ' ' + self.body[1].pretty_print(1) + ')'
+            else:
+                return '(' + self.body[0].pretty_print(2) + \
+                    ' ' + self.body[1].pretty_print(2) + ')'
+        elif self.body:
+            return str(self.head) + '[' + \
+                ' '.join([b.pretty_print(1) for b in self.body]) + ']'
+        else:
+            return str(self.head)
+
     def __str__(self):
         if self.body:
             return '{}[{}]'.format(self.head,
-                                   ', '.join([str(arg) for arg in self.body]))
+                                   ' '.join([str(arg) for arg in self.body]))
         else:
             return str(self.head)
 
@@ -132,7 +155,7 @@ class RewriteRule(object):
             raise TRSError('t1 cannot be a variable')
 
     def __str__(self):
-        return str(self.lhs) + ' -> ' + str(self.rhs)
+        return self.lhs.pretty_print() + ' = ' + self.rhs.pretty_print()
 
     def __repr__(self):
         return 'RewriteRule({}, {})'.format(self.lhs, self.rhs)
@@ -161,10 +184,11 @@ class TRS(object):
         del self.signature[name]
 
     def add_rule(self, rule):
-        self.rules += [rule]
+        newRule = RewriteRule(self.eval(rule.lhs), self.eval(rule.rhs))
+        self.rules += [newRule]
 
     def del_rule(self, idx):
-        self.rules[idx] = None
+        del self.rules[idx]
 
     def __str__(self):
         return '[' + str(self.signature.keys()) + ',\n [' + \
