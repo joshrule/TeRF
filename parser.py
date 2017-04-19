@@ -1,6 +1,7 @@
 import ply.yacc as yacc
 
 from lexer import tokens
+from TRS import Operator, Variable, Application, RewriteRule, TRS
 
 
 def p_program(p):
@@ -75,7 +76,7 @@ def builder(terms):
     if len(terms) == 1:
         return terms[0]
     else:
-        return ('term', '.', [builder(terms[:-1]), terms[-1]])
+        return ('term', ('application', '.', [builder(terms[:-1]), terms[-1]]))
 
 
 def p_error(p):
@@ -87,6 +88,49 @@ def p_error(p):
 
 
 parser = yacc.yacc()
+
+
+def make_trs(ss):
+    trs = TRS()
+    rules = [make_rule(s[1], s[2], {}) for s in ss if s[0] == 'rule']
+    operators = {op for rule in rules for op in rule.operators}
+    for operator in operators:
+        trs.add_operator(operator)
+    for rule in rules:
+        trs.add_rule(rule)
+    return trs
+
+
+def make_rule(t1, t2, env):
+    lhs, env = make_term(t1[1], env)
+    rhs, env = make_term(t2[1], env)
+    return RewriteRule(lhs, rhs)
+
+
+def make_term(t, env):
+    if t[0] == 'variable':
+        if t[1][:-1] in env:
+            oldvar = env[t[1][:-1]]
+            var = Variable(oldvar.name, oldvar.identity)
+            return var, env
+        else:
+            var = Variable(t[1][:-1])
+            env[var.name] = var
+            return var, env
+    elif t[0] == 'application':
+        body = []
+        for part in t[2]:
+            term, env = make_term(part[1], env)
+            body.append(term)
+        return Application(Operator(t[1], len(t[2])),
+                           body), env
+
+
+def load_source(filename):
+    with open(filename) as file:
+        ss = parser.parse(file.read())
+    terms = [make_term(s[1], {})[0] for s in ss if s[0] == 'term']
+    return make_trs(ss), terms
 
 
 if __name__ == '__main__':
