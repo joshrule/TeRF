@@ -4,6 +4,8 @@ TRS.py - representations for Term Rewriting Systems
 Written by: Joshua Rule <joshua.s.rule@gmail.com>
 """
 
+from itertools import chain, imap
+
 counter = 0
 
 
@@ -17,7 +19,11 @@ class TRSError(Exception):
     pass
 
 
-class Operator(object):
+class Atom(object):
+    pass
+
+
+class Operator(Atom):
     """a lone operator of fixed arity"""
 
     def __init__(self, name, arity):
@@ -46,6 +52,10 @@ class Operator(object):
 
 class Term(object):
     """Terms are trees built of variables or operators applied to terms"""
+    def __init__(self, **kwargs):
+        self.variables = self.list_variables()
+        self.operators = self.list_operators()
+    
     def list_variables(self):
         raise NotImplementedError
 
@@ -56,13 +66,13 @@ class Term(object):
         raise NotImplementedError
 
 
-class Variable(Term):
+class Variable(Atom, Term):
     """an arbitrary term"""
-    def __init__(self, name, identity=None):
-        self.name = name
-        self.identity = identity if identity else gensym()
-        self.variables = self.list_variables()
-        self.operators = self.list_operators()
+    def __init__(self, name=None, identity=None, **kwargs):
+        self.name = name if name else gensym()
+        self.identity = (identity if identity else
+                         (gensym() if name else self.name))
+        super(Variable, self).__init__(**kwargs)
 
     def list_variables(self):
         return {self}
@@ -93,18 +103,23 @@ class Variable(Term):
     def __hash__(self):
         return hash(self.name + self.identity)
 
+    def __len__(self):
+        return
+
+    def __iter__(self):
+        yield self
+
 
 class Application(Term):
     """a term applying an operator to arguments"""
-    def __init__(self, head, body):
+    def __init__(self, head, body, **kwargs):
         try:
             if head.arity == len(body):
                 self.head = head
                 self.body = body
-                self.variables = self.list_variables()
-                self.operators = self.list_operators()
         except AttributeError:
             raise TRSError('head of term is a variable')
+        super(Application, self).__init__(**kwargs)
 
     def list_variables(self):
         return {variable for part in self.body for variable in part.variables}
@@ -140,6 +155,14 @@ class Application(Term):
     def __repr__(self):
         return 'Application({},{})'.format(self.head, self.body)
 
+    def __len__(self):
+        return 1 + sum([len(st) for st in self.body])
+
+    def __iter__(self):
+        yield self
+        for operand in chain(*imap(iter, self.body)):
+            yield operand
+
 
 class RewriteRule(object):
     def __init__(self, t1, t2):
@@ -154,135 +177,75 @@ class RewriteRule(object):
         else:
             raise TRSError('t1 cannot be a variable')
 
-    def __str__(self):
-        return self.lhs.pretty_print() + ' = ' + self.rhs.pretty_print()
-
-    def __repr__(self):
-        return 'RewriteRule({}, {})'.format(self.lhs, self.rhs)
-
     def list_variables(self):
         return self.lhs.list_variables() | self.rhs.list_variables()
 
     def list_operators(self):
         return self.lhs.list_operators() | self.rhs.list_operators()
 
+    def __str__(self):
+        return self.lhs.pretty_print() + ' = ' + self.rhs.pretty_print()
+
+    def __repr__(self):
+        return 'RewriteRule({}, {})'.format(self.lhs, self.rhs)
+
+    def __len__(self):
+        return len(self.lhs) + len(self.rhs)
+
 
 class TRS(object):
     def __init__(self):
-        self.signature = {}
+        self.signature = set()
         self.rules = []
 
     def add_operator(self, operator):
-        try:
-            name = '{}/{}'.format(operator.name, operator.arity)
-        except AttributeError:
-            raise TRSError('Tried to add a non-operator to a signature')
+        if isinstance(operator, Operator):
+            self.signature.add(operator)
         else:
-            self.signature[name] = operator
+            raise TRSError('Tried to add a non-operator to a signature')
 
-    def del_operator(self, name):
-        del self.signature[name]
+    def del_operator(self, name, arity):
+        try:
+            op = Operator(name, arity)
+            self.signature.remove(op)
+            self.rules = [r for r in self.rules if op not in r.operators]
+        except:
+            pass
 
     def add_rule(self, rule):
-        newRule = RewriteRule(self.eval(rule.lhs), self.eval(rule.rhs))
-        self.rules += [newRule]
+        self.rules.append(rule)
 
-    def del_rule(self, idx):
-        del self.rules[idx]
+    def del_rule(self, item):
+        try:  # treat as a rule
+            self.rules.remove(item)
+        except ValueError:  # could be an index
+            try:
+                del self.rules[item]
+            except TypeError:  # not an index
+                pass
+            except IndexError:  # index is too high
+                pass
+
+    def add_variable(self, name=None):
+        self.signature.add(Variable(name=name))
+
+    def del_variable(self, item):
+        try:  # to delete the variable itself and any rules using it
+            self.signature.remove(item)
+            self.rules = [r for r in self.rules if item not in r.variables]
+        except:
+            pass
 
     def __str__(self):
         return '[' + str(self.signature.keys()) + ',\n [' + \
             ',\n  '.join([str(rule) for rule in self.rules]) + ']]'
 
-    # eval:
-    # for n steps
-    #  # perform a pre-order traversal of the term
-    #  # at each node, attempt to evaluate
-    #  # if successful, return to the top
-    def eval(self, term, steps=1):
-        count = 0
-        while count < steps:
-            term, changed = self.single_step(term)
-            if changed:
-                count += 1
-            else:
-                break
-        return term
-
-    def single_step(self, term, changed=False):
-        if isinstance(term, Term):
-            if not changed:
-                for rule in [rule for rule in self.rules if rule is not None]:
-                    sub = unify(rule.lhs, term, type='match')
-                    if sub is not None:
-                        return rewrite(rule.rhs, sub), True
-                try:
-                    for idx in range(len(term.body)):
-                        term.body[idx], changed = \
-                            self.single_step(term.body[idx], changed)
-                        if changed:
-                            break
-                except AttributeError:
-                    pass
-            return term, changed
-        else:
-            raise TRSError('single_step: Can only evaluate terms')
+    def __len__(self):
+        return (len(self.signature) +
+                len(self.rules) +
+                sum([len(r) for r in self.rules]))
 
 
-def rewrite(term, sub):
-    if isinstance(term, Variable):
-        if term in sub:
-            return sub[term]
-        else:
-            raise TRSError('rewrite: Variable has no definition!')
-    elif isinstance(term, Application):
-        return Application(term.head,
-                           [rewrite(part, sub) for part in term.body])
-
-
-def unify(t1, t2, env=-1, type='simple'):
-    """unify two terms to produce a substitution
-
-    t1, t2: Terms
-    env: the substitution
-    type: 'simple' is for unification, while 'match' is for rewriting
-    """
-    if env == -1:
-        env = {}
-
-    if isinstance(t1, Variable) and env is not None:
-        return unify_var(t1, t2, env, type)
-
-    elif isinstance(t2, Variable) and env is not None and type == 'simple':
-        return unify_var(t2, t1, env, type)
-
-    elif (isinstance(t1, Application) and
-          isinstance(t2, Application) and
-          t1.head == t2.head and
-          env is not None):
-        # unify each subterm
-        for (st1, st2) in zip(t1.body, t2.body):
-            env = unify(st1, st2, env, type)
-        return env
-
-    else:
-        return None
-
-
-def unify_var(t1, t2, env, type='simple'):
-    if env is not None:
-        if isinstance(t1, Variable):
-            if t1 in env:
-                unify(env[t1], t2, env, type)
-            elif t2 in env:
-                unify(t1, env[t2], env, type)
-            else:
-                if t1 == t2:
-                    return env
-                else:
-                    env[t1] = t2
-                    return env
-        else:
-            raise TRSError('unify-var: first arg must be a variable')
-    else:
-        return env
+App = Application
+Var = Variable
+Op = Operator

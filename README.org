@@ -268,3 +268,14 @@ Formally, what's going on here? I am suggesting a subclass of TRSs. I'm saying t
 ** TODO add this example somewhere in the README
 I like the example of ~map~ given in the answer.
 http://stackoverflow.com/questions/24330902/
+** TODO evaluate rules as they are added to the TRS
+:LOGBOOK:
+- Note taken on [2017-04-27 Thu 12:59] \\
+  Add something like the following when adding a rule:
+  
+  ~newRule = RewriteRule(self.eval(rule.lhs), self.eval(rule.rhs))~
+:END:
+** TODO proposer ideas
+- move rule proposer, move a rule to a new position in the rule set
+- add variable
+- remove variable
