@@ -1,0 +1,3 @@
+A B = A C
+B B B = A A
+signature A/0 B/0 C/0 ./2 x_ y_ z_;
