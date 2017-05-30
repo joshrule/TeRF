@@ -1,7 +1,7 @@
 import ply.yacc as yacc
 
-from lexer import tokens
-from TRS import Operator, Variable, Application, RewriteRule, TRS
+from TeRF.lexer import tokens
+from TeRF.TRS import Operator, Variable, Application, RewriteRule, TRS
 
 
 def p_program(p):
@@ -16,8 +16,9 @@ def p_program(p):
 
 def p_statement(p):
     """ statement : rule SEMICOLON
+                  | signature SEMICOLON
                   | termlisttop SEMICOLON"""
-    if p[1][0] != 'rule':
+    if p[1][0] != 'rule' and p[1][0] != 'signature':
         p[0] = builder(p[1])
     else:
         p[0] = p[1]
@@ -57,6 +58,29 @@ def p_termlist(p):
         p[0].append(p[2])
 
 
+def p_signature(p):
+    """ signature : SIGNATURE_KW atomlist"""
+    p[0] = ('signature', p[2])
+
+
+def p_atomlist(p):
+    """ atomlist : atom
+                 | atomlist atom"""
+    if len(p) == 2:
+        p[0] = [p[1]]
+    elif len(p) == 3:
+        p[0] = p[1] + [p[2]]
+
+
+def p_atom(p):
+    """ atom : variable
+             | OPERATOR ARITY"""
+    if len(p) == 2:
+        p[0] = p[1]
+    else:
+        p[0] = ('operator', p[1], p[2][1:])
+
+
 def p_application(p):
     """ application : OPERATOR
                     | OPERATOR LBRACKET RBRACKET
@@ -92,38 +116,53 @@ parser = yacc.yacc()
 
 def make_trs(ss):
     trs = TRS()
-    rules = [make_rule(s[1], s[2], {}) for s in ss if s[0] == 'rule']
-    operators = {op for rule in rules for op in rule.operators}
-    for operator in operators:
-        trs.add_operator(operator)
-    for rule in rules:
-        trs.add_rule(rule)
+    for s in ss:
+        if s[0] == 'rule':
+            trs = add_rule(trs, s[1], s[2])
+        elif s[0] == 'signature':
+            trs = add_signature(trs, s[1])
     return trs
 
 
-def make_rule(t1, t2, env):
-    lhs, env = make_term(t1[1], env)
-    rhs, env = make_term(t2[1], env)
-    return RewriteRule(lhs, rhs)
-
-
-def make_term(t, env):
-    if t[0] == 'variable':
-        if t[1][:-1] in env:
-            oldvar = env[t[1][:-1]]
-            var = Variable(oldvar.name, oldvar.identity)
-            return var, env
+def add_signature(trs, s):
+    for t in s:
+        if t[0] == 'operator':
+            trs.operators.add(Operator(t[1], int(t[2])))
         else:
-            var = Variable(t[1][:-1])
-            env[var.name] = var
-            return var, env
+            name = t[1][:-1]
+            if name not in [v.name for v in trs.variables]:
+                trs.variables.add(Variable(name))
+    return trs
+
+
+def add_rule(trs, t1, t2):
+    lhs, trs = make_term(t1[1], trs=trs)
+    rhs, trs = make_term(t2[1], trs=trs)
+    return trs.add_rule(RewriteRule(lhs, rhs))
+
+
+def make_term(t, trs=None):
+    if t[0] == 'variable':
+        name = t[1][:-1]
+        if trs is not None:
+            for v in trs.variables:
+                if v.name == name:
+                    return v, trs
+            var = Variable(name)
+            return var, trs.add_var(var)
+        return Variable(name)
+    
     elif t[0] == 'application':
-        body = []
-        for part in t[2]:
-            term, env = make_term(part[1], env)
-            body.append(term)
-        return Application(Operator(t[1], len(t[2])),
-                           body), env
+        head = Operator(t[1], len(t[2]))
+        if trs is not None:
+            trs.operators.add(head)
+            body = []
+            for part in t[2]:
+                term, trs = make_term(part[1], trs=trs)
+                body.append(term)
+            term = Application(head, body)
+            return term, trs
+        return Application(head, [make_term(part[1]) for part in t[2]])
 
 
 def load_source(filename):
@@ -135,5 +174,6 @@ def load_source(filename):
 
 if __name__ == '__main__':
     with open('test.trs') as file:
-        for statement in parser.parse(file.read()):
+        ss = [s for s in parser.parse(file.read())]
+        for statement in ss:
             print statement

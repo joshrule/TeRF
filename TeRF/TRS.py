@@ -1,13 +1,6 @@
-"""
-TRS.py - representations for Term Rewriting Systems
-
-Written by: Joshua Rule <joshua.s.rule@gmail.com>
-"""
-
 from itertools import chain, imap
 
 counter = 0
-
 
 def gensym():
     global counter
@@ -34,32 +27,31 @@ class Operator(Atom):
         return self.name
 
     def __repr__(self):
-        return ('Operator(name={}, '
+        return ('Operator(name=\'{}\', '
                 'arity={:d})').format(self.name, self.arity)
 
     def fullname(self):
         return "{}/{:d}".format(self.name, self.arity)
 
     def __eq__(self, other):
-        return self.name == other.name and self.arity == other.arity
+        try:
+            return (self.arity is other.arity and self.name is other.name)
+        except AttributeError:
+            return False
 
     def __ne__(self, other):
         return not self == other
 
     def __hash__(self):
-        return hash(self.name + '/' + str(self.arity))
+        return hash((self.name, self.arity))
 
 
 class Term(object):
     """Terms are trees built of variables or operators applied to terms"""
-    def __init__(self, **kwargs):
-        self.variables = self.list_variables()
-        self.operators = self.list_operators()
-    
-    def list_variables(self):
+    def variables(self):
         raise NotImplementedError
 
-    def list_operators(self):
+    def operators(self):
         raise NotImplementedError
 
     def pretty_print(self, verbose=0):
@@ -72,39 +64,38 @@ class Variable(Atom, Term):
         self.name = name if name else gensym()
         self.identity = (identity if identity else
                          (gensym() if name else self.name))
+        self.str = self.name + '_'
         super(Variable, self).__init__(**kwargs)
 
-    def list_variables(self):
+    def variables(self):
         return {self}
 
-    def list_operators(self):
+    def operators(self):
         return set()
 
     def pretty_print(self, verbose=0):
-        return str(self)
+        return self.str
 
     def __str__(self):
-        return self.name + '_'
+        return self.str
 
     def __repr__(self):
-        return 'Variable({}, {})'.format(self.name, self.identity)
+        return 'Variable(\'{}\', \'{}\')'.format(self.name, self.identity)
 
     def __eq__(self, other):
         try:
-            equal = self.name == other.name and self.identity == other.identity
+            return (self.identity is other.identity)
         except AttributeError:
             return False
-        else:
-            return equal
 
     def __ne__(self, other):
         return not self == other
 
     def __hash__(self):
-        return hash(self.name + self.identity)
+        return hash(self.identity)
 
     def __len__(self):
-        return
+        return 1
 
     def __iter__(self):
         yield self
@@ -117,16 +108,23 @@ class Application(Term):
             if head.arity == len(body):
                 self.head = head
                 self.body = body
+                self.str = '{}[{}]'.format(
+                    self.head,
+                    ', '.join(str(x) for x in self.body))
+            else:
+                raise ValueError('Application: arity != head length')
         except AttributeError:
-            raise TRSError('head of term is a variable')
+            raise TRSError('Application: head of term must be an operator')
         super(Application, self).__init__(**kwargs)
 
-    def list_variables(self):
-        return {variable for part in self.body for variable in part.variables}
+    def variables(self):
+        return {variable for part in self.body
+                for variable in part.variables()}
 
-    def list_operators(self):
+    def operators(self):
         return {self.head} | \
-               {operator for part in self.body for operator in part.operators}
+               {operator for part in self.body
+                for operator in part.operators()}
 
     def pretty_print(self, verbose=0):
         if self.head == Operator('.', 2):
@@ -146,12 +144,8 @@ class Application(Term):
             return str(self.head)
 
     def __str__(self):
-        if self.body:
-            return '{}[{}]'.format(self.head,
-                                   ' '.join([str(arg) for arg in self.body]))
-        else:
-            return str(self.head)
-
+        return self.str
+        
     def __repr__(self):
         return 'Application({},{})'.format(self.head, self.body)
 
@@ -163,25 +157,35 @@ class Application(Term):
         for operand in chain(*imap(iter, self.body)):
             yield operand
 
+    def __eq__(self, other):
+        try:
+            return self.head == other.head and self.body == other.body
+        except AttributeError:
+            return False
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __hash__(self):
+        return hash((self.head,) + tuple(self.body))
+
 
 class RewriteRule(object):
     def __init__(self, t1, t2):
-        if t1.operators:
-            if t1.variables >= t2.variables:
+        if t1.operators():
+            if t1.variables() >= t2.variables():
                 self.lhs = t1
                 self.rhs = t2
-                self.variables = self.list_variables()
-                self.operators = self.list_operators()
             else:
                 raise TRSError('Rule rhs invents variables')
         else:
             raise TRSError('t1 cannot be a variable')
 
-    def list_variables(self):
-        return self.lhs.list_variables() | self.rhs.list_variables()
+    def variables(self):
+        return self.lhs.variables() | self.rhs.variables()
 
-    def list_operators(self):
-        return self.lhs.list_operators() | self.rhs.list_operators()
+    def operators(self):
+        return self.lhs.operators() | self.rhs.operators()
 
     def __str__(self):
         return self.lhs.pretty_print() + ' = ' + self.rhs.pretty_print()
@@ -192,28 +196,39 @@ class RewriteRule(object):
     def __len__(self):
         return len(self.lhs) + len(self.rhs)
 
+    def __neq__(self, other):
+        return not self.__eq__(other)
+
+    def __eq__(self, other):
+        return self.lhs == other.lhs and self.rhs == other.rhs
+
+    def __hash__(self):
+        return hash((self.lhs, self.rhs))
+
 
 class TRS(object):
     def __init__(self):
-        self.signature = set()
+        self.operators = set()
+        self.variables = set()
         self.rules = []
 
-    def add_operator(self, operator):
-        if isinstance(operator, Operator):
-            self.signature.add(operator)
-        else:
-            raise TRSError('Tried to add a non-operator to a signature')
+    def add_op(self, operator):
+        self.operators.add(operator)
+        return self
 
-    def del_operator(self, name, arity):
+    def del_op(self, operator):
         try:
-            op = Operator(name, arity)
-            self.signature.remove(op)
-            self.rules = [r for r in self.rules if op not in r.operators]
+            self.operators.remove(operator)
+            self.rules = [r for r in self.rules
+                          if operator not in r.operators()]
         except:
             pass
+        return self
 
-    def add_rule(self, rule):
-        self.rules.append(rule)
+    def add_rule(self, rule, index=1000000):
+        # hack to use 1e6...
+        self.rules.insert(index, rule)
+        return self
 
     def del_rule(self, item):
         try:  # treat as a rule
@@ -225,27 +240,53 @@ class TRS(object):
                 pass
             except IndexError:  # index is too high
                 pass
+        return self
 
-    def add_variable(self, name=None):
-        self.signature.add(Variable(name=name))
+    def add_var(self, variable):
+        self.variables.add(variable)
+        return self
 
-    def del_variable(self, item):
+    def del_var(self, item):
         try:  # to delete the variable itself and any rules using it
-            self.signature.remove(item)
-            self.rules = [r for r in self.rules if item not in r.variables]
+            self.variables.remove(item)
+            self.rules = [r for r in self.rules if item not in r.variables()]
         except:
             pass
+        return self
 
     def __str__(self):
-        return '[' + str(self.signature.keys()) + ',\n [' + \
-            ',\n  '.join([str(rule) for rule in self.rules]) + ']]'
+        #     return '[' + str(self.operators) + ',\n ' + \
+        #         str(self.variables) + ',\n [' + \
+        #         ',\n  '.join([str(rule) for rule in self.rules]) + ']]'
+        return '[\n  Operators: ' + \
+            ', '.join(o.name + '/' + str(o.arity)
+                      for o in self.operators) + \
+            '\n  Variables: ' + \
+            ', '.join(v.name for v in self.variables) + \
+            '\n  Rules:\n    ' + \
+            ',\n    '.join(str(rule) for rule in self.rules) + '\n]'
 
     def __len__(self):
-        return (len(self.signature) +
+        return (len(self.operators) +
+                len(self.variables) +
                 len(self.rules) +
                 sum([len(r) for r in self.rules]))
+
+    def __eq__(self, other):
+        return self.rules == other.rules and \
+            self.variables == other.variables and \
+            self.operators == other.operators
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __hash__(self):
+        return hash((tuple(self.rules),
+                     frozenset(self.variables),
+                     frozenset(self.operators)))
 
 
 App = Application
 Var = Variable
 Op = Operator
+RR = RewriteRule
