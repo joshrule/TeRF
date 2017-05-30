@@ -4,6 +4,12 @@ TRSs are a simple formalism from theoretical computer science used to model the 
 
 A TRS is defined in two parts. The first is a set, $S$, of symbols. $S$ is called the signature and together with a disjoint set of variables, defines the set of all possible trees, or terms, which the system can consider. The second is a set, $R$, of rewrite rules. A rewrite rule is an equation, $s = t$, and is interpreted as follows: any term matching the pattern described by $s$ can be rewritten according to the pattern described by $t$. Together $S$ and $R$ define a TRS that describes a system of computation, a sort of programming language. TeRF provides a way to describe arbitrary TRSs.
 
+* Requirements
+In addition to Python 2.7+, TeRF requires the following:
+- LOTlib
+- Numpy
+- Scipy
+- zss
 * Further Reading
 
 - Baader & Nipkow (1999). [[http://www.cambridge.org/us/academic/subjects/computer-science/programming-languages-and-applied-logic/term-rewriting-and-all?format=PB&isbn=9780521779203][Term rewriting and all that]]. Cambridge University Press.
