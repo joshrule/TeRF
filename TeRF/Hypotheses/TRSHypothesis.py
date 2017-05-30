@@ -46,7 +46,7 @@ def test(n, filename):
             rhs = rewrite(trs, lhs, steps=10)
             if lhs != rhs:
                 data.add(RR(lhs, rhs))
-        while len(data) < 100:
+        while len(data) < 20:
             lhs = sample_term(trs.operators)
             rhs = rewrite(trs, lhs, steps=10)
             data.add(RR(lhs, rhs))

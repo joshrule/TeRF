@@ -10,7 +10,6 @@ def propose_value_maker(gensym, p_arity):
     def propose_value(old_value, **kwargs):
         op = Op(name=gensym(),
                 arity=geom.rvs(p=p_arity)-1)
-        print 'proposing to add ', op
         return deepcopy(old_value).add_op(op)
     return propose_value
 

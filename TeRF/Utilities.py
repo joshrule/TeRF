@@ -399,8 +399,8 @@ def unify(t1, t2, env=None, type='simple'):
         return False, None
 
 
-    def unify_var(t1, t2, env, type='simple'):
-        if hasattr(t1, 'identity'):
+def unify_var(t1, t2, env, type='simple'):
+    if hasattr(t1, 'identity'):
         if env is None:
             env = {}
 

@@ -5,7 +5,7 @@ from numpy import log
 from numpy.random import choice
 
 from TeRF.TRS import RewriteRule, TRSError
-from TeRF.Miscellaneous import find_inserton
+from TeRF.Miscellaneous import find_insertion
 from TeRF.Utilities import sample_term, log_p, alpha_eq
 
 
