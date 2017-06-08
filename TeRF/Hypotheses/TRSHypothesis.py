@@ -67,5 +67,5 @@ def test(n, filename):
                              p_r=0.3)
 
     return standard_sample(make_hypothesis, make_data,
-                           save_top=None, show_skip=0, trace=False, N=10,
+                           save_top=None, show_skip=99, trace=False, N=10,
                            steps=n)

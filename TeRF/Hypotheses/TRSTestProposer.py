@@ -10,6 +10,7 @@ import TeRF.Hypotheses.AddVariableRuleProposer as avrp
 import TeRF.Hypotheses.DeleteVariableProposer as dvp
 
 import TeRF.Hypotheses.RegenerateRuleProposer as rrp
+import TeRF.Hypotheses.PromoteSubruleProposer as psp
 
 
 class TRSTestProposer(MixtureProposer):
@@ -29,7 +30,9 @@ class TRSTestProposer(MixtureProposer):
             (drp.propose_value,
              drp.give_proposal_log_p),
             (rrp.propose_value_maker(p_r),
-             rrp.give_proposal_log_p_maker(p_r))
+             rrp.give_proposal_log_p_maker(p_r)),
+            (psp.propose_value,
+             psp.give_proposal_log_p)
         ]
 
         weights = [1.0/len(proposal_fns)]*len(proposal_fns)
