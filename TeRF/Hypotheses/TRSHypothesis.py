@@ -4,15 +4,16 @@ from LOTlib.Inference.Samplers.StandardSample import standard_sample
 
 from TeRF.Hypotheses.TRSGenerativePrior import TRSGenerativePrior
 from TeRF.Hypotheses.TRSLikelihood import TRSLikelihood
-from TeRF.Hypotheses.TRSLowLevelProposer import TRSLowLevelProposer
+from TeRF.Hypotheses.TRSTestProposer import TRSTestProposer
 from TeRF.parser import load_source
 from TeRF.TRS import RR, gensym
 from TeRF.Utilities import sample_term, rewrite
 
 
-class TRSHypothesis(TRSGenerativePrior, TRSLikelihood, TRSLowLevelProposer,
+class TRSHypothesis(TRSGenerativePrior, TRSLikelihood, TRSTestProposer,
                     Hypothesis):
-    """A Hypothesis in the space of Term Rewriting Systems (TRS)
+    """
+    A Hypothesis in the space of Term Rewriting Systems (TRS)
 
     The args below are TRSHypothesis specific. The Hypothesis baseclass also
     has: value, prior_temperature, likelihood_temperature, & display.
@@ -27,7 +28,6 @@ class TRSHypothesis(TRSGenerativePrior, TRSLikelihood, TRSLowLevelProposer,
       p_r: probability of regenerating any given subtree
       proposers: the components of the mixture
       weights: the weights of the mixture components
-
     """
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
@@ -56,6 +56,7 @@ def test(n, filename):
         hyp_trs = deepcopy(trs)
         hyp_trs.rules = []
         return TRSHypothesis(value=hyp_trs,
+                             privileged_ops=hyp_trs.operators,
                              gensym=gensym,
                              p_observe=0.1,
                              p_similar=0.99,
