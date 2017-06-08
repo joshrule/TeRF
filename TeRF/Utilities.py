@@ -6,7 +6,7 @@ from scipy.misc import logsumexp
 from zss import distance
 
 from TeRF.TRS import Variable, Application, TRSError
-from TeRF.TRS import App, Var, Op
+from TeRF.TRS import App, Var, Op, RR
 from TeRF.Miscellaneous import gift, list_possible_gifts
 
 
@@ -427,6 +427,35 @@ def local_differences(t1, t2):
             return []
     else:
         return [(t1, t2)]
+
+
+def sample_rule(atom, operators, variables):
+    atoms = set()
+    side = 'lhs' if hasattr(atom, 'identity') else choice(['lhs', 'rhs'])
+    while atom not in atoms:
+        lhs_signature = operators | variables
+        if side == 'lhs':
+            lhs = sample_term_c(lhs_signature, {atom})
+        else:
+            lhs = sample_term(lhs_signature)
+
+        rhs_signature = operators | lhs.variables()
+        if side == 'rhs':
+            rhs = sample_term_c(rhs_signature, {atom})
+        else:
+            rhs = sample_term(rhs_signature)
+
+        try:
+            rule = RR(lhs, rhs)
+            atoms = rule.operators() | rule.variables()
+        except TRSError:
+            atoms = set()
+
+    return rule
+
+
+def sample_rules(n, atom, operators, variables):
+    return [sample_rule(atom, operators, variables) for _ in xrange(n)]
 
 
 if __name__ == '__main__':
