@@ -88,7 +88,7 @@ def log_p_t(new, signature, old, p_r):
       p_r: a float giving the node-wise probability of regeneration
     Returns:
       a float representing log(p(new | signature, old))
-"""
+    """
     if hasattr(old, 'identity') and old == new and old in signature:
         return logsumexp([log(1-p_r), log(p_r) - log(len(signature))])
     elif (hasattr(old, 'head') and hasattr(new, 'head') and
@@ -425,13 +425,14 @@ def local_differences(t1, t2):
     except AttributeError:
         if t1 == t2:  # only way to be same is if same variables
             return []
-    else:
-        return [(t1, t2)]
+    return [(t1, t2)]
 
 
 def sample_rule(atom, operators, variables):
     atoms = set()
     side = 'lhs' if hasattr(atom, 'identity') else choice(['lhs', 'rhs'])
+    if atom not in operators | variables:
+        raise ValueError('sample_rule: atom must be in signature')
     while atom not in atoms:
         lhs_signature = operators | variables
         if side == 'lhs':

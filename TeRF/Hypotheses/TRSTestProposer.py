@@ -6,7 +6,7 @@ import TeRF.Hypotheses.DeleteRuleProposer as drp
 import TeRF.Hypotheses.AddOperatorRuleProposer as aorp
 import TeRF.Hypotheses.DeleteOperatorProposer as dop
 
-import TeRF.Hypotheses.AddVariableProposer as avp
+import TeRF.Hypotheses.AddVariableRuleProposer as avrp
 import TeRF.Hypotheses.DeleteVariableProposer as dvp
 
 
@@ -16,8 +16,8 @@ class TRSTestProposer(MixtureProposer):
         proposal_fns = [
             (aorp.propose_value_maker(gensym, p_arity, p_rules),
              aorp.give_proposal_log_p_maker(p_arity, p_rules)),
-            (avp.propose_value_maker(gensym),
-             avp.give_proposal_log_p),
+            (avrp.propose_value_maker(gensym, p_rules),
+             avrp.give_proposal_log_p_maker(p_rules)),
             (arp.propose_value,
              arp.give_proposal_log_p),
             (dop.propose_value_maker(privileged_ops),
