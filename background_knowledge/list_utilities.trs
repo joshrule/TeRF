@@ -1,0 +1,10 @@
+# example: duplicating lists and computing their lengths
+len nil = 0;
+len (cons x_ y_) = s[(len y_)];
+
+dup nil = nil;
+dup (cons x_ y_) = cons x_ (cons x_ (dup y_));
+
+dup (cons 1 (cons 2 nil));
+len (cons 1 (cons 2 nil));
+len (dup (cons 1 (cons 2 nil)));
