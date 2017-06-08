@@ -110,9 +110,9 @@ def filter_heads(signature, constraints):
         return list(signature)
     if len(constraints) == 1:
         return [s for s in signature
-                if s in constraints or (hasattr(s, 'head') and s.arity > 0)]
+                if s in constraints or (hasattr(s, 'arity') and s.arity > 0)]
     else:  # 2+ constraints
-        return [s for s in signature if hasattr(s, 'head') and s.arity > 1]
+        return [s for s in signature if hasattr(s, 'arity') and s.arity > 1]
 
 
 def sample_term_c(signature, constraints):

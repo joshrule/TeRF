@@ -4,13 +4,13 @@ from LOTlib.Inference.Samplers.StandardSample import standard_sample
 
 from TeRF.Hypotheses.TRSGenerativePrior import TRSGenerativePrior
 from TeRF.Hypotheses.TRSLikelihood import TRSLikelihood
-from TeRF.Hypotheses.TRSUnrestrictedProposer import TRSUnrestrictedProposer
+from TeRF.Hypotheses.TRSLowLevelProposer import TRSLowLevelProposer
 from TeRF.parser import load_source
 from TeRF.TRS import RR, gensym
 from TeRF.Utilities import sample_term, rewrite
 
 
-class TRSHypothesis(TRSGenerativePrior, TRSLikelihood, TRSUnrestrictedProposer,
+class TRSHypothesis(TRSGenerativePrior, TRSLikelihood, TRSLowLevelProposer,
                     Hypothesis):
     """A Hypothesis in the space of Term Rewriting Systems (TRS)
 
@@ -55,7 +55,6 @@ def test(n, filename):
     def make_hypothesis(data):
         hyp_trs = deepcopy(trs)
         hyp_trs.rules = []
-        # hyp_trs.rules = list(data)
         return TRSHypothesis(value=hyp_trs,
                              gensym=gensym,
                              p_observe=0.1,
@@ -64,8 +63,8 @@ def test(n, filename):
                              p_arity=0.9,
                              p_variables=0.5,
                              p_rules=0.5,
-                             p_r=0.1)
+                             p_r=0.3)
 
     return standard_sample(make_hypothesis, make_data,
-                           save_top=None, show_skip=999, trace=False, N=10,
+                           save_top=None, show_skip=0, trace=False, N=10,
                            steps=n)

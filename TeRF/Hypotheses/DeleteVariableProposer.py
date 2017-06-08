@@ -7,7 +7,8 @@ from numpy.random import choice
 
 def propose_value(old_value, **kwargs):
     try:
-        return deepcopy(old_value).del_var(choice(list(old_value.variables)))
+        chosen_var = choice(list(old_value.variables))
+        return deepcopy(old_value).del_var(chosen_var)
     except ValueError:
         raise ProposalFailedException('DeleteVariableProposer: ' +
                                       'No Variables to Delete')
@@ -26,10 +27,10 @@ def give_proposal_log_p(old_value, new_value, **kwargs):
 
 class DeleteVariableProposer(Proposer):
     """
-        Proposer for removing a variable from a TRS (NON-ERGODIC FOR TRSs)
+    Proposer for removing a variable from a TRS (NON-ERGODIC FOR TRSs)
 
     Given a TRS (S U {x}, R), where x is a variable, give a new TRS (S, R).
-        """
+    """
     def __init__(self, **kwargs):
         """Create a DeleteVariableProposer"""
         self.propose_value = propose_value

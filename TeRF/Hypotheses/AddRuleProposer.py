@@ -13,8 +13,7 @@ def propose_value(value, **kwargs):
     new_value = deepcopy(value)
     terminals = {x for x in value.operators if x.arity == 0} | value.variables
     if len(terminals) == 0:
-        raise ProposalFailedException('AddRuleProposer: ' +
-                                      'no terminals')
+        raise ProposalFailedException('AddRuleProposer: no terminals')
     try:
         curr_lhss = [r.lhs for r in value.rules]
         lhs = None

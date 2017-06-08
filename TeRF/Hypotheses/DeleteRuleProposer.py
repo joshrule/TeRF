@@ -10,9 +10,8 @@ def propose_value(old_value, **kwargs):
         raise ProposalFailedException('DeleteRuleProposer: ' +
                                       'No rules to Delete')
     else:
-        # chosen_rule = choice(old_value.rules)
-        # print 'proposing to delete', chosen_rule
-        return deepcopy(old_value).del_rule(choice(old_value.rules))
+        chosen_rule = choice(old_value.rules)
+        return deepcopy(old_value).del_rule(chosen_rule)
 
 
 def give_proposal_log_p(old_value, new_value, **kwargs):
