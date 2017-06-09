@@ -44,9 +44,9 @@ def test(n, filename):
         while len(data) < 10:
             lhs = sample_term(trs.operators)
             rhs = rewrite(trs, lhs, steps=10)
-            if lhs != rhs:
+            if lhs != rhs and RR(lhs, rhs) not in trs.rules:
                 data.add(RR(lhs, rhs))
-        while len(data) < 20:
+        while len(data) < 30:
             lhs = sample_term(trs.operators)
             rhs = rewrite(trs, lhs, steps=10)
             data.add(RR(lhs, rhs))
@@ -54,7 +54,7 @@ def test(n, filename):
 
     def make_hypothesis(data):
         hyp_trs = deepcopy(trs)
-        hyp_trs.rules = []
+        hyp_trs.rules = list(data)
         return TRSHypothesis(value=hyp_trs,
                              privileged_ops=hyp_trs.operators,
                              gensym=gensym,
@@ -67,5 +67,5 @@ def test(n, filename):
                              p_r=0.3)
 
     return standard_sample(make_hypothesis, make_data,
-                           save_top=None, show_skip=0, trace=True, N=10,
+                           save_top=None, show_skip=99, trace=False, N=10,
                            steps=n)
