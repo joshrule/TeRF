@@ -14,6 +14,11 @@ class GenerationError(Exception):
     pass
 
 
+def terminals(signature):
+    return [atom for atom in signature
+            if not hasattr(atom, 'arity') or atom.arity == 0]
+
+
 def sample_term(signature):
     """
     sample a TRS term given a TRS signature
@@ -25,6 +30,8 @@ def sample_term(signature):
     Raises:
       GenerationError: raised when the signature is invalid
     """
+    if terminals(signature) == []:
+        raise ValueError('sample_term: term cannot terminate')
     head = choice(list(signature))
     try:
         body = [sample_term(signature) for _ in repeat(None, head.arity)]
