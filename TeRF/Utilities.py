@@ -427,8 +427,9 @@ def unify_var(t1, t2, env, type='simple'):
 def local_differences(t1, t2):
     try:
         if t1.head == t2.head:
-            return list(chain(local_differences(st1, st2)
-                              for st1, st2 in izip(t1.body, t2.body)))
+            result = list(chain(*[local_differences(st1, st2)
+                                  for st1, st2 in izip(t1.body, t2.body)]))
+            return result
     except AttributeError:
         if t1 == t2:  # only way to be same is if same variables
             return []

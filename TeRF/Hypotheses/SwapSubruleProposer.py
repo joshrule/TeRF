@@ -42,6 +42,7 @@ def propose_value(value, **kwargs):
         new_rule = RR(new_lhs, new_rhs)
     except TRSError:
         raise ProposalFailedException('SwapSubruleProposer: bad rule')
+    # print 'ssp: changing', rule, 'to', new_rule
     new_value.del_rule(rule)
     return new_value.add_rule(new_rule)
 
@@ -82,16 +83,6 @@ def give_proposal_log_p(old, new, **kwargs):
             p_both_rule = -log(len(both_rules)) if both_rules != [] else log(0)
             p_both = p_method + p_both_rule + p_swap_lhs + p_swap_rhs
 
-            print 'p_method:', p_method
-            print 'p_swap_lhs:', p_swap_lhs
-            print 'p_swap_rhs:', p_swap_rhs
-            print 'p_lhs_rule:', p_lhs_rule
-            print 'p_lhs:', p_lhs
-            print 'p_rhs_rule:', p_rhs_rule
-            print 'p_rhs:', p_rhs
-            print 'p_both_rule:', p_both_rule
-            print 'p_both:', p_both
-            print 'returning:', logsumexp([p_lhs, p_rhs, p_both])
             return logsumexp([p_lhs, p_rhs, p_both])
         except AttributeError:
             pass

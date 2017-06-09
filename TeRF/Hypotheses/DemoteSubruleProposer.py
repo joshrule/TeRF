@@ -50,7 +50,7 @@ def propose_value(value, **kwargs):
     except TRSError:
         raise ProposalFailedException('PromoteSubruleProposer: bad rule')
 
-    print 'dsp: changing', rule, 'to', new_rule
+    # print 'dsp: changing', rule, 'to', new_rule
     new_value.del_rule(rule)
     return new_value.add_rule(new_rule)
 
@@ -93,14 +93,6 @@ def give_proposal_log_p(old, new, **kwargs):
 
             p_both = p_method + p_rule + p_demote_lhs + p_demote_rhs
 
-            print 'p_method:', p_method
-            print 'p_rule:', p_rule
-            print 'p_demote_lhs:', p_demote_lhs
-            print 'p_demote_rhs:', p_demote_rhs
-            print 'p_lhs:', p_lhs
-            print 'p_rhs:', p_rhs
-            print 'p_both:', p_both
-            print 'returning:', logsumexp([p_lhs, p_rhs, p_both])
             return logsumexp([p_lhs, p_rhs, p_both])
         except AttributeError:
             pass
