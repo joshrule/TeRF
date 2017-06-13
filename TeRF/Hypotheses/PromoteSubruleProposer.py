@@ -1,12 +1,12 @@
 from copy import deepcopy
 from LOTlib.Hypotheses.Proposers.Proposer import (Proposer,
                                                   ProposalFailedException)
-from numpy import log, inf
+from numpy import inf
 from numpy.random import choice
 from scipy.misc import logsumexp
 
 from TeRF.TRS import RewriteRule, TRSError
-from TeRF.Miscellaneous import find_difference, log1of
+from TeRF.Miscellaneous import find_difference, log1of, log0
 
 
 def can_be_promoted(rule, promotion):
@@ -46,25 +46,25 @@ def log_p_is_promotion(old, new):
             return log1of(old.body)
     except AttributeError:
         pass
-    return log(0)
+    return log0(0)
 
 
 def give_proposal_log_p(old, new, **kwargs):
     if old.variables == new.variables and old.operators == new.operators:
         old_rule, new_rule = find_difference(old.rules, new.rules)
         try:
-            p_method = -log(3)
+            p_method = -log0(3)
 
             p_promote_lhs = log_p_is_promotion(old_rule.lhs, new_rule.lhs)
             p_promote_rhs = log_p_is_promotion(old_rule.rhs, new_rule.rhs)
 
-            p_lhs = log(0)
+            p_lhs = log0(0)
             if p_promote_rhs == -inf:
                 rules = [r for r in old.rules if len(r.lhs.body) > 0]
                 p_rule = log1of(rules)
                 p_lhs = p_method + p_promote_lhs + p_rule
 
-            p_rhs = log(0)
+            p_rhs = log0(0)
             if p_promote_lhs == -inf:
                 rules = [r for r in old.rules if hasattr(r.rhs, 'body') and
                          len(r.rhs.body) > 0]
@@ -79,7 +79,7 @@ def give_proposal_log_p(old, new, **kwargs):
             return logsumexp([p_lhs, p_rhs, p_both])
         except AttributeError:
             pass
-    return log(0)
+    return log0(0)
 
 
 class PromoteSubruleProposer(Proposer):

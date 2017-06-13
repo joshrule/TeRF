@@ -1,9 +1,9 @@
 from copy import deepcopy
 from LOTlib.Hypotheses.Proposers.Proposer import (Proposer,
                                                   ProposalFailedException)
-from numpy import log
 from numpy.random import choice
 
+from TeRF.Miscellaneous import log0
 
 def propose_value_maker(privileged_ops):
     def propose_value(old_value, **kwargs):
@@ -25,8 +25,8 @@ def give_proposal_log_p(old_value, new_value, **kwargs):
         unchanged_rules = [r for r in old_value.rules
                            if operator not in r.operators()]
         if new_value.rules == unchanged_rules:
-            return -log(len(old_value.operators))
-    return log(0)
+            return -log0(len(old_value.operators))
+    return log0(0)
 
 
 class DeleteOperatorProposer(Proposer):

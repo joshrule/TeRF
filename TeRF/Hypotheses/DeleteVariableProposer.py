@@ -1,10 +1,9 @@
 from copy import deepcopy
 from LOTlib.Hypotheses.Proposers.Proposer import (Proposer,
                                                   ProposalFailedException)
-from numpy import log
 from numpy.random import choice
 
-from TeRF.Miscellaneous import log1of
+from TeRF.Miscellaneous import log1of, log0
 
 
 def propose_value(old_value, **kwargs):
@@ -25,7 +24,7 @@ def give_proposal_log_p(old_value, new_value, **kwargs):
                            if variable not in r.variables()]
         if new_value.rules == unchanged_rules:
             return log1of(old_value.variables)
-    return log(0)
+    return log0(0)
 
 
 class DeleteVariableProposer(Proposer):

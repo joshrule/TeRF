@@ -1,9 +1,9 @@
 from copy import deepcopy
 from LOTlib.Hypotheses.Proposers.Proposer import Proposer
-from numpy import log
 from numpy.random import choice
 from scipy.stats import geom
 
+from TeRF.Miscellaneous import log0
 from TeRF.TRS import Op
 from TeRF.Utilities import log_p, sample_rules
 
@@ -37,13 +37,12 @@ def give_proposal_log_p_maker(p_arity, p_rules):
                 p_lhs = log_p(rule.lhs, lhs_signature)
                 rhs_signature = new_value.operators | rule.lhs.variables()
                 p_rhs = log_p(rule.rhs, rhs_signature)
-                p_slot = -log(len(old_value.rules)+i) \
-                    if len(old_value.rules)+i > 0 else log(0)
+                p_slot = -log0(len(old_value.rules)+i) \
+                    if len(old_value.rules)+i > 0 else log0(0)
                 p_the_rules += (p_lhs + p_rhs + p_slot)
             return p_op + p_the_rules + geom.logpmf(k=len(rule_difference)+1,
                                                     p=p_rules)
-        else:
-            return log(0)
+        return log0(0)
     return give_proposal_log_p
 
 

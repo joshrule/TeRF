@@ -1,12 +1,12 @@
 from copy import deepcopy
 from LOTlib.Hypotheses.Proposers.Proposer import (Proposer,
                                                   ProposalFailedException)
-from numpy import log, inf
+from numpy import inf
 from numpy.random import choice
 from scipy.misc import logsumexp
 
 from TeRF.TRS import RewriteRule, TRSError
-from TeRF.Miscellaneous import find_difference, log1of
+from TeRF.Miscellaneous import find_difference, log1of, log0
 from TeRF.Utilities import sample_term_t, log_p_t
 
 
@@ -47,7 +47,7 @@ def give_proposal_log_p_maker(p_r):
         if old.variables == new.variables and old.operators == new.operators:
             old_rule, new_rule = find_difference(old.rules, new.rules)
             try:
-                p_method = -log(3)
+                p_method = -log0(3)
                 p_rule = log1of(new.rules)
                 lhs_signature = new.operators | new.variables
                 p_regen_lhs = log_p_t(new_rule.lhs, lhs_signature,
@@ -56,11 +56,11 @@ def give_proposal_log_p_maker(p_r):
                 p_regen_rhs = log_p_t(new_rule.rhs, rhs_signature,
                                       old_rule.rhs, p_r)
 
-                p_lhs = log(0)
+                p_lhs = log0(0)
                 if p_regen_rhs == -inf:
                     p_lhs = p_method + p_rule + p_regen_lhs
 
-                p_rhs = log(0)
+                p_rhs = log0(0)
                 if p_regen_lhs == -inf:
                     p_rhs = p_method + p_rule + p_regen_rhs
 
@@ -69,7 +69,7 @@ def give_proposal_log_p_maker(p_r):
                 return logsumexp([p_lhs, p_rhs, p_both])
             except AttributeError:
                 pass
-        return log(0)
+        return log0(0)
     return give_proposal_log_p
 
 

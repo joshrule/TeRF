@@ -1,10 +1,9 @@
 from copy import deepcopy
 from LOTlib.Hypotheses.Proposers.Proposer import (Proposer,
                                                   ProposalFailedException)
-from numpy import log
 from numpy.random import choice
 
-from TeRF.Miscellaneous import find_insertion, log1of
+from TeRF.Miscellaneous import find_insertion, log1of, log0
 
 
 def propose_value(old_value, **kwargs):
@@ -22,7 +21,7 @@ def give_proposal_log_p(old_value, new_value, **kwargs):
        new_value.variables == old_value.variables and \
        find_insertion(old_value.rules, new_value.rules) is not None:
         return log1of(old_value.rules)
-    return log(0)
+    return log0(0)
 
 
 class DeleteRuleProposer(Proposer):

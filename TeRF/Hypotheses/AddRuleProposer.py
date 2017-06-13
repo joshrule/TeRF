@@ -1,11 +1,10 @@
 from copy import deepcopy
 from LOTlib.Hypotheses.Proposers.Proposer import (Proposer,
                                                   ProposalFailedException)
-from numpy import log
 from numpy.random import choice
 
+from TeRF.Miscellaneous import find_insertion, log0
 from TeRF.TRS import RewriteRule, TRSError
-from TeRF.Miscellaneous import find_insertion
 from TeRF.Utilities import sample_term, log_p, alpha_eq
 
 
@@ -39,10 +38,9 @@ def give_proposal_log_p(old, new, **kwargs):
        old.operators == new.operators:
         p_lhs = log_p(rule.lhs, new.variables | new.operators)
         p_rhs = log_p(rule.rhs, new.operators | rule.lhs.variables())
-        p_slot = -log(len(new.rules)) if new.rules != [] else log(1)
+        p_slot = -log0(len(new.rules)) if new.rules != [] else log0(1)
         return (p_lhs + p_rhs + p_slot)
-    else:
-        return log(0)
+    return log0(0)
 
 
 class AddRuleProposer(Proposer):

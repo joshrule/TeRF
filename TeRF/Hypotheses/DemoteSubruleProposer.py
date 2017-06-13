@@ -1,12 +1,12 @@
 from copy import copy, deepcopy
 from LOTlib.Hypotheses.Proposers.Proposer import (Proposer,
                                                   ProposalFailedException)
-from numpy import log, inf
+from numpy import inf
 from numpy.random import choice
 from scipy.misc import logsumexp
 
 from TeRF.TRS import RR, App, TRSError
-from TeRF.Miscellaneous import find_difference, log1of
+from TeRF.Miscellaneous import find_difference, log1of, log0
 from TeRF.Utilities import sample_term, log_p
 
 
@@ -60,7 +60,7 @@ def log_p_is_demotion(r1, r2, signature):
     if r1 != r2 and hasattr(r2, 'body') and r1 in r2.body:
         operators = [a for a in signature
                      if hasattr(a, 'arity') and a.arity > 0]
-        p_op = -log(len(operators)) if r2.head in operators else log(0)
+        p_op = -log0(len(operators)) if r2.head in operators else log0(0)
 
         branches = copy(r2.body)
         branches.remove(r1)
@@ -69,14 +69,14 @@ def log_p_is_demotion(r1, r2, signature):
         p_index = log1of(r2.body)
 
         return p_op + p_branches + p_index
-    return log(0)
+    return log0(0)
 
 
 def give_proposal_log_p(old, new, **kwargs):
     if old.variables == new.variables and old.operators == new.operators:
         old_rule, new_rule = find_difference(old.rules, new.rules)
         try:
-            p_method = -log(3)
+            p_method = -log0(3)
             p_rule = log1of(old.rules)
             p_demote_lhs = log_p_is_demotion(old_rule.lhs, new_rule.lhs,
                                              new.operators | new.variables)
@@ -84,11 +84,11 @@ def give_proposal_log_p(old, new, **kwargs):
                                              new.operators |
                                              new_rule.lhs.variables())
 
-            p_lhs = log(0)
+            p_lhs = log0(0)
             if p_demote_rhs == -inf:
                 p_lhs = p_method + p_rule + p_demote_lhs
 
-            p_rhs = log(0)
+            p_rhs = log0(0)
             if p_demote_lhs == -inf:
                 p_rhs = p_method + p_rule + p_demote_rhs
 
@@ -97,7 +97,7 @@ def give_proposal_log_p(old, new, **kwargs):
             return logsumexp([p_lhs, p_rhs, p_both])
         except AttributeError:
             pass
-    return log(0)
+    return log0(0)
 
 
 class DemoteSubruleProposer(Proposer):

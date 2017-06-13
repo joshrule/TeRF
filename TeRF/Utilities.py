@@ -1,13 +1,13 @@
 from copy import copy
 from itertools import chain, repeat, izip
-from numpy import log, exp, argmin
+from numpy import exp, argmin
 from numpy.random import binomial, choice
 from scipy.misc import logsumexp
 from zss import distance
 
 from TeRF.TRS import Variable, Application, TRSError
 from TeRF.TRS import App, Var, Op, RR
-from TeRF.Miscellaneous import gift, list_possible_gifts
+from TeRF.Miscellaneous import gift, list_possible_gifts, log0
 
 
 class GenerationError(Exception):
@@ -51,14 +51,14 @@ def log_p(term, signature):
       a float representing log(p(term | signature))
     """
     if term in signature or hasattr(term, 'head') and term.head in signature:
-        p_head = -log(len(signature))
+        p_head = -log0(len(signature))
         try:
             p_body = [log_p(operand, signature) for operand in term.body]
             return p_head + sum(p_body)
         except AttributeError:
             return p_head
 
-    return log(0)
+    return log0(0)
 
 
 def sample_term_t(signature, term, p_r):
@@ -97,19 +97,19 @@ def log_p_t(new, signature, old, p_r):
       a float representing log(p(new | signature, old))
     """
     if hasattr(old, 'identity') and old == new and old in signature:
-        return logsumexp([log(1-p_r), log(p_r) - log(len(signature))])
+        return logsumexp([log0(1-p_r), log0(p_r) - log0(len(signature))])
     elif (hasattr(old, 'head') and hasattr(new, 'head') and
           old.head == new.head and old.head in signature):
         log_ps = [log_p_t(n, signature, o, p_r)
                   for n, o in izip(new.body, old.body)]
-        return logsumexp([log(1-p_r) + sum(log_ps),
-                          log(p_r) + log_p(new, signature)])
+        return logsumexp([log0(1-p_r) + sum(log_ps),
+                          log0(p_r) + log_p(new, signature)])
     elif hasattr(new, 'identity') and new in signature:
-        return log(p_r) - log(len(signature))
+        return log0(p_r) - log0(len(signature))
     elif hasattr(new, 'head') and new.head in signature:
-        return log(p_r) + log_p(new, signature)
+        return log0(p_r) + log_p(new, signature)
     else:
-        return log(0)
+        return log0(0)
 
 
 def filter_heads(signature, constraints):
@@ -159,30 +159,30 @@ def log_p_c(term, signature, constraints):
       a float representing log(p(term | signature, constraints))
     """
     if not signature >= constraints:
-        return log(0)
+        return log0(0)
 
     heads = filter_heads(signature, constraints)
     head = term.head if hasattr(term, 'head') else term
-    p_head = -log(len(heads)) if head in heads else log(0)
+    p_head = -log0(len(heads)) if head in heads else log0(0)
 
     if hasattr(term, 'identity'):
-        p_body = log(1)
+        p_body = log0(1)
     elif hasattr(term, 'head'):
         who_has_what = [[c if c in (b.variables() | b.operators()) else None
                          for c in set(constraints)-{head}]
                         for b in term.body]
         gfts = list_possible_gifts(who_has_what)
-        p_gfts = -log(len(gfts))
+        p_gfts = -log0(len(gfts))
         ps_body = [sum([log_p_c(b, signature, cs)
                         for b, cs in izip(term.body, gft)])
                    for gft in gfts]
         if ps_body:
             p_body = logsumexp([p+p_gfts for p in ps_body])
         else:
-            p_body = log(0)
+            p_body = log0(0)
     else:
-        p_body = log(0)
-    return (p_head + p_body)
+        p_body = log0(0)
+        return (p_head + p_body)
 
 
 def sample_term_tc(signature, term, p_r, constraints):
@@ -233,7 +233,7 @@ def log_p_tc(new, signature, old, p_r, constraints):
       a float representing log(p(term | signature, old, constraints))
     """
     if (not signature >= constraints):
-        return log(0)
+        return log0(0)
     else:
         if ((isinstance(old, Var) and len(constraints) > 0 and old == new) or
             (isinstance(old, App) and len(constraints) == 1 and
@@ -242,26 +242,26 @@ def log_p_tc(new, signature, old, p_r, constraints):
              old.head.arity < 2)):  # regeneration even if flip fails
             p_no_regen = log_p_c(new, signature, constraints)
         elif isinstance(old, Variable) and old == new:
-            p_no_regen = log(1)
+            p_no_regen = log0(1)
         elif (isinstance(old, App) and isinstance(new, App) and
               old.head == new.head):
             who_has_what = [[c if c in (b.variables() | b.operators()) else None
                              for c in set(constraints)-{old.head}]
                             for b in new.body]
             gfts = list_possible_gifts(who_has_what)
-            p_gfts = -log(len(gfts))
+            p_gfts = -log0(len(gfts))
             ps_body = [sum([log_p_tc(n, signature, o, p_r, cs)
                             for n, o, cs in izip(new.body, old.body, gft)])
                        for gft in gfts]
             if ps_body:
                 p_no_regen = logsumexp([p+p_gfts for p in ps_body])
             else:
-                p_no_regen = log(0)
+                p_no_regen = log0(0)
         else:  # no way to get there without regeneration
-            p_no_regen = log(0)
+            p_no_regen = log0(0)
 
-        p_regen = log(p_r) + log_p_c(new, signature, constraints)
-        p_no_regen += log(1-p_r)
+        p_regen = log0(p_r) + log_p_c(new, signature, constraints)
+        p_no_regen += log0(1-p_r)
         return logsumexp([p_regen, p_no_regen])
 
 

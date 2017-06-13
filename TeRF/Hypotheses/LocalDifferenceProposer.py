@@ -1,11 +1,10 @@
 from copy import deepcopy
 from LOTlib.Hypotheses.Proposers.Proposer import (Proposer,
                                                   ProposalFailedException)
-from numpy import log
 from numpy.random import choice
 
 from TeRF.Hypotheses.TRSProposerUtilities import choose_a_rule, make_a_rule
-from TeRF.Miscellaneous import find_difference, log1of
+from TeRF.Miscellaneous import find_difference, log1of, log0
 from TeRF.Utilities import differences
 
 
@@ -36,12 +35,12 @@ def give_proposal_log_p(old, new, **kwargs):
             all_diffs = differences(old_rule.lhs, old_rule.rhs)
             if (old_rule.lhs, old_rule.rhs) in all_diffs:
                 all_diffs.remove((old_rule.lhs, old_rule.rhs))
-                p_diff = (log(all_diffs.count((new_rule.lhs, new_rule.rhs))) +
+                p_diff = (log0(all_diffs.count((new_rule.lhs, new_rule.rhs))) +
                           log1of(all_diffs))
                 return p_rule + p_diff
         except AttributeError:
             pass
-    return log(0)
+    return log0(0)
 
 
 class LocalDifferenceProposer(Proposer):
