@@ -37,7 +37,8 @@ def give_proposal_log_p_maker(p_arity, p_rules):
                 p_lhs = log_p(rule.lhs, lhs_signature)
                 rhs_signature = new_value.operators | rule.lhs.variables()
                 p_rhs = log_p(rule.rhs, rhs_signature)
-                p_slot = -log(len(old_value.rules)+i)
+                p_slot = -log(len(old_value.rules)+i) \
+                    if len(old_value.rules)+i > 0 else log(0)
                 p_the_rules += (p_lhs + p_rhs + p_slot)
             return p_op + p_the_rules + geom.logpmf(k=len(rule_difference)+1,
                                                     p=p_rules)

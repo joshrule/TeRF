@@ -48,12 +48,19 @@ def list_possible_gifts(who_owns_what):
 
 
 def find_insertion(xs1, xs2):
-    if (len(xs1) - len(xs2)) != 1:
+    if len(xs1) - len(xs2) != 1:
         return None
-    candidates = [r for r in xs1 if r not in xs2]
-    if len(candidates) == 1:
-        return candidates[0]
-    return None
+    candidate = None
+    c = 0
+    for i in xrange(len(xs1)):
+        if i == len(xs2) and candidate is None:
+            return xs1[i]
+        elif xs1[i] != xs2[i-c] and candidate is None:
+            candidate = xs1[i]
+            c = 1
+        elif xs1[i] != xs2[i-c]:
+            return None
+    return candidate
 
 
 def find_difference(xs1, xs2):

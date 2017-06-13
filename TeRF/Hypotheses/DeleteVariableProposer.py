@@ -4,6 +4,8 @@ from LOTlib.Hypotheses.Proposers.Proposer import (Proposer,
 from numpy import log
 from numpy.random import choice
 
+from TeRF.Miscellaneous import log1of
+
 
 def propose_value(old_value, **kwargs):
     try:
@@ -22,7 +24,7 @@ def give_proposal_log_p(old_value, new_value, **kwargs):
         unchanged_rules = [r for r in old_value.rules
                            if variable not in r.variables()]
         if new_value.rules == unchanged_rules:
-            return -log(len(old_value.variables))
+            return log1of(old_value.variables)
     return log(0)
 
 

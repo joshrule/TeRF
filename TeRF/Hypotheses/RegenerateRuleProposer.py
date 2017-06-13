@@ -24,12 +24,14 @@ def propose_value_maker(p_r):
             new_lhs = rule.lhs
             if side != 'rhs':
                 lhs_signature = new_value.operators | new_value.variables
-                new_lhs = sample_term_t(lhs_signature, rule.lhs, p_r)
+                while new_lhs == rule.lhs:
+                    new_lhs = sample_term_t(lhs_signature, rule.lhs, p_r)
 
             new_rhs = rule.rhs
             if side != 'lhs':
                 rhs_signature = new_value.operators | new_lhs.variables()
-                new_rhs = sample_term_t(rhs_signature, rule.rhs, p_r)
+                while new_rhs == rule.rhs:
+                    new_rhs = sample_term_t(rhs_signature, rule.rhs, p_r)
 
             new_rule = RewriteRule(new_lhs, new_rhs)
         except TRSError:
@@ -60,7 +62,7 @@ def give_proposal_log_p_maker(p_r):
 
                 p_rhs = log(0)
                 if p_regen_lhs == -inf:
-                    p_rhs = p_method + p_rule + p_regen_lhs
+                    p_rhs = p_method + p_rule + p_regen_rhs
 
                 p_both = p_method + p_rule + p_regen_lhs + p_regen_rhs
 

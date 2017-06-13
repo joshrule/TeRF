@@ -7,8 +7,9 @@ from numpy.random import choice
 from random import sample
 from scipy.misc import logsumexp
 
-from TeRF.TRS import App, RR, TRSError
+from TeRF.Hypotheses.TRSProposerUtilities import make_a_rule
 from TeRF.Miscellaneous import find_difference, log1of
+from TeRF.TRS import App
 
 
 def can_be_swapped(rule, swap):
@@ -17,12 +18,13 @@ def can_be_swapped(rule, swap):
                                len(rule.rhs.body) > 1)))
 
 
-def shuffle(xs):
-    equal = True
-    while equal:
-        idxs = sample(xrange(len(xs)), len(xs))
-        equal = (range(len(xs)) == idxs)
-    return [xs[i] for i in idxs]
+def unique_shuffle(xs):
+    if len(set(xs)) == 1:
+        return None
+    while True:
+        result = sample(xs, len(xs))
+        if xs != result:
+            return result
 
 
 def propose_value(value, **kwargs):
@@ -33,16 +35,16 @@ def propose_value(value, **kwargs):
         idx = choice(idxs)
         rule = value.rules[idx]
     except ValueError:
-        raise ProposalFailedException('PromoteSubruleProposer: ' +
-                                      'TRS must have appropriate rules')
+        raise ProposalFailedException('SwapSubruleProposer: no TRS rules')
     try:
-        new_lhs = App(rule.lhs.head, shuffle(rule.lhs.body)) \
-            if swap != 'rhs' else rule.lhs
-        new_rhs = App(rule.rhs.head, shuffle(rule.rhs.body)) \
-            if swap != 'lhs' else rule.rhs
-        new_rule = RR(new_lhs, new_rhs)
-    except TRSError:
-        raise ProposalFailedException('SwapSubruleProposer: bad rule')
+        new_lhs = App(rule.lhs.head, unique_shuffle(rule.lhs.body)) \
+                  if swap != 'rhs' else rule.lhs
+        new_rhs = App(rule.rhs.head, unique_shuffle(rule.rhs.body)) \
+                  if swap != 'lhs' else rule.rhs
+    except TypeError:
+        raise ProposalFailedException('SwapSubruleProposer: cannot swap')
+
+    new_rule = make_a_rule(new_lhs, new_rhs)
     # print 'ssp: changing', rule, 'to', new_rule
     new_value.rules[idx] = new_rule
     return new_value
@@ -51,12 +53,10 @@ def propose_value(value, **kwargs):
 def log_p_is_a_swap(old, new):
     try:
         if old.head == new.head and len(old.body) == len(new.body) > 1:
-            options = list(permutations(old.body))
-            options.remove(tuple(old.body))
-            return log(options.count(tuple(new.body))) - log(len(options))
-    except AttributeError:
-        pass
-    except ValueError:
+            options = [x for x in list(permutations(old.body))
+                       if x != tuple(old.body)]
+            return log(options.count(tuple(new.body))) + log1of(options)
+    except (AttributeError, ValueError):
         pass
     return log(0)
 

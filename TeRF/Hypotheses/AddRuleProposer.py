@@ -39,7 +39,7 @@ def give_proposal_log_p(old, new, **kwargs):
        old.operators == new.operators:
         p_lhs = log_p(rule.lhs, new.variables | new.operators)
         p_rhs = log_p(rule.rhs, new.operators | rule.lhs.variables())
-        p_slot = -log(len(new.rules))
+        p_slot = -log(len(new.rules)) if new.rules != [] else log(1)
         return (p_lhs + p_rhs + p_slot)
     else:
         return log(0)
