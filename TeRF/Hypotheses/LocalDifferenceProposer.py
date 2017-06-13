@@ -6,19 +6,24 @@ from numpy.random import choice
 
 from TeRF.Hypotheses.TRSProposerUtilities import choose_a_rule, make_a_rule
 from TeRF.Miscellaneous import find_difference, log1of
-from TeRF.Utilities import local_differences
+from TeRF.Utilities import differences
 
 
 def propose_value(value, **kwargs):
     new_value = deepcopy(value)
     rule, idx = choose_a_rule(value.rules)
-    differences = local_differences(rule.lhs, rule.rhs)
-    if differences == [] or differences == [(rule.lhs, rule.rhs)]:
+    diffs = differences(rule.lhs, rule.rhs)
+    if (rule.lhs, rule.rhs) in diffs:
+        diffs.remove((rule.lhs, rule.rhs))
+
+    try:
+        new_lhs, new_rhs = diffs[choice(len(diffs))]
+    except ValueError:
         raise ProposalFailedException('LocalDifferenceProposer: ' +
                                       'no suitable differences')
-    new_lhs, new_rhs = differences[choice(len(differences))]
+
     new_rule = make_a_rule(new_lhs, new_rhs)
-    print 'ldp: changing', rule, 'to', new_rule
+    # print 'ldp: changing', rule, 'to', new_rule
     new_value.rules[idx] = new_rule
     return new_value
 
@@ -28,11 +33,12 @@ def give_proposal_log_p(old, new, **kwargs):
         old_rule, new_rule = find_difference(old.rules, new.rules)
         try:
             p_rule = log1of(old.rules)
-            all_diffs = local_differences(old_rule.lhs, old_rule.rhs)
-            p_diff = (log(all_diffs.count((new_rule.lhs, new_rule.rhs))) +
-                      log1of(all_diffs))
-
-            return p_rule + p_diff
+            all_diffs = differences(old_rule.lhs, old_rule.rhs)
+            if (old_rule.lhs, old_rule.rhs) in all_diffs:
+                all_diffs.remove((old_rule.lhs, old_rule.rhs))
+                p_diff = (log(all_diffs.count((new_rule.lhs, new_rule.rhs))) +
+                          log1of(all_diffs))
+                return p_rule + p_diff
         except AttributeError:
             pass
     return log(0)

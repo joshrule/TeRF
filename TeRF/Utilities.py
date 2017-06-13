@@ -424,16 +424,15 @@ def unify_var(t1, t2, env, type='simple'):
         raise UnifyError('unify-var: first arg must be a variable')
 
 
-def local_differences(t1, t2):
+def differences(t1, t2):
+    if t1 == t2:
+        return []
     try:
-        if t1.head == t2.head:
-            result = list(chain(*[local_differences(st1, st2)
-                                  for st1, st2 in izip(t1.body, t2.body)]))
-            return result
+        return [(t1, t2)] + list(chain(*[differences(st1, st2)
+                                         for st1, st2 in izip(t1.body,
+                                                              t2.body)]))
     except AttributeError:
-        if t1 == t2:  # only way to be same is if same variables
-            return []
-    return [(t1, t2)]
+        return [(t1, t2)]
 
 
 def sample_rule(atom, operators, variables):
