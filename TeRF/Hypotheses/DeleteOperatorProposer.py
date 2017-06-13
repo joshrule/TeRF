@@ -10,6 +10,7 @@ def propose_value_maker(privileged_ops):
         try:
             privileged = privileged_ops if privileged_ops else set()
             chosen = choice(list(old_value.operators-privileged))
+            # print 'dop: deleting operator', chosen
             return deepcopy(old_value).del_op(chosen)
         except ValueError:
             raise ProposalFailedException('DeleteOperatorProposer: ' +

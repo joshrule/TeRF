@@ -8,6 +8,7 @@ from numpy.random import choice
 def propose_value(old_value, **kwargs):
     try:
         chosen_var = choice(list(old_value.variables))
+        # print 'dvp: deleting variable', chosen_var
         return deepcopy(old_value).del_var(chosen_var)
     except ValueError:
         raise ProposalFailedException('DeleteVariableProposer: ' +

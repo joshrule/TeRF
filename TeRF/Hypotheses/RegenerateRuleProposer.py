@@ -1,11 +1,12 @@
 from copy import deepcopy
 from LOTlib.Hypotheses.Proposers.Proposer import (Proposer,
                                                   ProposalFailedException)
-from numpy import log
+from numpy import log, inf
 from numpy.random import choice
+from scipy.misc import logsumexp
 
 from TeRF.TRS import RewriteRule, TRSError
-from TeRF.Miscellaneous import find_difference
+from TeRF.Miscellaneous import find_difference, log1of
 from TeRF.Utilities import sample_term_t, log_p_t
 
 
@@ -13,20 +14,29 @@ def propose_value_maker(p_r):
     def propose_value(value, **kwargs):
         new_value = deepcopy(value)
         try:
-            rule = choice(new_value.rules)
+            idx = choice(len(new_value.rules))
+            rule = new_value.rules[idx]
         except ValueError:
             raise ProposalFailedException('RegenerateLHSProposer: ' +
                                           'TRS must have rules')
+        side = choice(['lhs', 'rhs', 'both'])
         try:
-            lhs_signature = new_value.operators | new_value.variables
-            new_lhs = sample_term_t(lhs_signature, rule.lhs, p_r)
-            rhs_signature = new_value.operators | new_lhs.variables()
-            new_rhs = sample_term_t(rhs_signature, rule.rhs, p_r)
+            new_lhs = rule.lhs
+            if side != 'rhs':
+                lhs_signature = new_value.operators | new_value.variables
+                new_lhs = sample_term_t(lhs_signature, rule.lhs, p_r)
+
+            new_rhs = rule.rhs
+            if side != 'lhs':
+                rhs_signature = new_value.operators | new_lhs.variables()
+                new_rhs = sample_term_t(rhs_signature, rule.rhs, p_r)
+
             new_rule = RewriteRule(new_lhs, new_rhs)
         except TRSError:
             raise ProposalFailedException('RegenerateLHSProposer: bad rule')
-        new_value.del_rule(rule)
-        return new_value.add_rule(new_rule)
+        # print 'rrp: changing', rule, 'to', new_rule
+        new_value.rules[idx] = new_rule
+        return new_value
     return propose_value
 
 
@@ -35,12 +45,26 @@ def give_proposal_log_p_maker(p_r):
         if old.variables == new.variables and old.operators == new.operators:
             old_rule, new_rule = find_difference(old.rules, new.rules)
             try:
-                p_choosing_rule = -log(len(new.rules))
+                p_method = -log(3)
+                p_rule = log1of(new.rules)
                 lhs_signature = new.operators | new.variables
-                p_lhs = log_p_t(new_rule.lhs, lhs_signature, old_rule.lhs, p_r)
+                p_regen_lhs = log_p_t(new_rule.lhs, lhs_signature,
+                                      old_rule.lhs, p_r)
                 rhs_signature = new.operators | new_rule.lhs.variables()
-                p_rhs = log_p_t(new_rule.rhs, rhs_signature, old_rule.rhs, p_r)
-                return p_choosing_rule + p_lhs + p_rhs
+                p_regen_rhs = log_p_t(new_rule.rhs, rhs_signature,
+                                      old_rule.rhs, p_r)
+
+                p_lhs = log(0)
+                if p_regen_rhs == -inf:
+                    p_lhs = p_method + p_rule + p_regen_lhs
+
+                p_rhs = log(0)
+                if p_regen_lhs == -inf:
+                    p_rhs = p_method + p_rule + p_regen_lhs
+
+                p_both = p_method + p_rule + p_regen_lhs + p_regen_rhs
+
+                return logsumexp([p_lhs, p_rhs, p_both])
             except AttributeError:
                 pass
         return log(0)

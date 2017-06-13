@@ -6,7 +6,7 @@ from numpy.random import choice
 from scipy.misc import logsumexp
 
 from TeRF.TRS import RR, App, TRSError
-from TeRF.Miscellaneous import find_difference
+from TeRF.Miscellaneous import find_difference, log1of
 from TeRF.Utilities import sample_term, log_p
 
 
@@ -23,7 +23,8 @@ def demote(t, signature):
 def propose_value(value, **kwargs):
     new_value = deepcopy(value)
     try:
-        rule = choice(new_value.rules)
+        idx = choice(len(new_value.rules))
+        rule = new_value.rules[idx]
     except ValueError:
         raise ProposalFailedException('DemoteSubruleProposer: ' +
                                       'TRS must have rules')
@@ -48,11 +49,11 @@ def propose_value(value, **kwargs):
     try:
         new_rule = RR(new_lhs, new_rhs)
     except TRSError:
-        raise ProposalFailedException('PromoteSubruleProposer: bad rule')
+        raise ProposalFailedException('DemoteSubruleProposer: bad rule')
 
     # print 'dsp: changing', rule, 'to', new_rule
-    new_value.del_rule(rule)
-    return new_value.add_rule(new_rule)
+    new_value.rules[idx] = new_rule
+    return new_value
 
 
 def log_p_is_demotion(r1, r2, signature):
@@ -65,7 +66,7 @@ def log_p_is_demotion(r1, r2, signature):
         branches.remove(r1)
         p_branches = sum([log_p(b, signature) for b in branches])
 
-        p_index = -log(len(r2.body))
+        p_index = log1of(r2.body)
 
         return p_op + p_branches + p_index
     return log(0)
@@ -76,7 +77,7 @@ def give_proposal_log_p(old, new, **kwargs):
         old_rule, new_rule = find_difference(old.rules, new.rules)
         try:
             p_method = -log(3)
-            p_rule = -log(len(old.rules)) if old.rules != [] else log(0)
+            p_rule = log1of(old.rules)
             p_demote_lhs = log_p_is_demotion(old_rule.lhs, new_rule.lhs,
                                              new.operators | new.variables)
             p_demote_rhs = log_p_is_demotion(old_rule.rhs, new_rule.rhs,

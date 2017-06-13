@@ -25,6 +25,7 @@ def propose_value(value, **kwargs):
         rhs = sample_term(value.operators | lhs.variables())
         new_rule = RewriteRule(lhs, rhs)
         idx = int(choice(len(value.rules)+1))
+        # print 'arp: adding rule', new_rule
     except TRSError:
         raise ProposalFailedException('AddRuleProposer: ' +
                                       'couldn\'t generate new rule')

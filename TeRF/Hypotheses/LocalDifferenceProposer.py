@@ -4,45 +4,35 @@ from LOTlib.Hypotheses.Proposers.Proposer import (Proposer,
 from numpy import log
 from numpy.random import choice
 
-from TeRF.TRS import RR, TRSError
-from TeRF.Miscellaneous import find_difference
+from TeRF.Hypotheses.TRSProposerUtilities import choose_a_rule, make_a_rule
+from TeRF.Miscellaneous import find_difference, log1of
 from TeRF.Utilities import local_differences
 
 
 def propose_value(value, **kwargs):
     new_value = deepcopy(value)
-    try:
-        rule = choice(new_value.rules)
-    except ValueError:
-        raise ProposalFailedException('LocalDifferenceProposer: ' +
-                                      'TRS must have rules')
-
+    rule, idx = choose_a_rule(value.rules)
     differences = local_differences(rule.lhs, rule.rhs)
     if differences == [] or differences == [(rule.lhs, rule.rhs)]:
         raise ProposalFailedException('LocalDifferenceProposer: ' +
                                       'no suitable differences')
-
-    # print 'diffs:', differences
     new_lhs, new_rhs = differences[choice(len(differences))]
-    try:
-        new_rule = RR(new_lhs, new_rhs)
-    except TRSError:
-        raise ProposalFailedException('LocalDifferenceProposer: bad rule')
-
+    new_rule = make_a_rule(new_lhs, new_rhs)
     print 'ldp: changing', rule, 'to', new_rule
-    new_value.del_rule(rule)
-    return new_value.add_rule(new_rule)
+    new_value.rules[idx] = new_rule
+    return new_value
 
 
 def give_proposal_log_p(old, new, **kwargs):
     if old.variables == new.variables and old.operators == new.operators:
         old_rule, new_rule = find_difference(old.rules, new.rules)
         try:
-            p_choosing_rule = -log(len(old.rules))
-            all_rules = local_differences(old_rule.lhs, old_rule.rhs)
-            p_new_rule = (log(all_rules.count((new_rule.lhs, new_rule.rhs))) -
-                          log(len(all_rules)))
-            return p_choosing_rule + p_new_rule
+            p_rule = log1of(old.rules)
+            all_diffs = local_differences(old_rule.lhs, old_rule.rhs)
+            p_diff = (log(all_diffs.count((new_rule.lhs, new_rule.rhs))) +
+                      log1of(all_diffs))
+
+            return p_rule + p_diff
         except AttributeError:
             pass
     return log(0)

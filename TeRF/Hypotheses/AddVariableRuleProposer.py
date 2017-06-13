@@ -18,6 +18,7 @@ def propose_value_maker(gensym, p_rules):
         for rule in rules:
             idx = choice(len(new_value.rules)+1)
             new_value.add_rule(rule, index=idx)
+        # print 'avrp: adding variable', var, 'and rules', rules
         return new_value
     return propose_value
 

@@ -1,3 +1,4 @@
+from numpy import log
 from numpy.random import choice
 from itertools import repeat, product, izip
 
@@ -62,3 +63,7 @@ def find_difference(xs1, xs2):
     if len(candidates) == 1:
         return candidates[0]
     return None, None
+
+
+def log1of(xs):
+    return -log(len(xs)) if len(xs) > 0 else log(0)

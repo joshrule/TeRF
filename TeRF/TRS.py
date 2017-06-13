@@ -196,7 +196,7 @@ class RewriteRule(object):
     def __len__(self):
         return len(self.lhs) + len(self.rhs)
 
-    def __neq__(self, other):
+    def __ne__(self, other):
         return not self.__eq__(other)
 
     def __eq__(self, other):

@@ -8,7 +8,7 @@ from random import sample
 from scipy.misc import logsumexp
 
 from TeRF.TRS import App, RR, TRSError
-from TeRF.Miscellaneous import find_difference
+from TeRF.Miscellaneous import find_difference, log1of
 
 
 def can_be_swapped(rule, swap):
@@ -28,31 +28,35 @@ def shuffle(xs):
 def propose_value(value, **kwargs):
     new_value = deepcopy(value)
     swap = choice(['lhs', 'rhs', 'both'])
-    rules = [r for r in value.rules if can_be_swapped(r, swap)]
+    idxs = [i for i, r in enumerate(value.rules) if can_be_swapped(r, swap)]
     try:
-        rule = choice(rules)
+        idx = choice(idxs)
+        rule = value.rules[idx]
     except ValueError:
         raise ProposalFailedException('PromoteSubruleProposer: ' +
                                       'TRS must have appropriate rules')
     try:
         new_lhs = App(rule.lhs.head, shuffle(rule.lhs.body)) \
-                  if swap != 'rhs' else rule.lhs
+            if swap != 'rhs' else rule.lhs
         new_rhs = App(rule.rhs.head, shuffle(rule.rhs.body)) \
-                  if swap != 'lhs' else rule.rhs
+            if swap != 'lhs' else rule.rhs
         new_rule = RR(new_lhs, new_rhs)
     except TRSError:
         raise ProposalFailedException('SwapSubruleProposer: bad rule')
     # print 'ssp: changing', rule, 'to', new_rule
-    new_value.del_rule(rule)
-    return new_value.add_rule(new_rule)
+    new_value.rules[idx] = new_rule
+    return new_value
 
 
-def log_p_is_a_swap(t1, t2):
+def log_p_is_a_swap(old, new):
     try:
-        if t1.head == t2.head and len(t1.body) == len(t2.body) > 1:
-            options = list(permutations(t1.body)).remove(tuple(t1.body))
-            return log(options.count(tuple(t2.body))) - log(len(options))
+        if old.head == new.head and len(old.body) == len(new.body) > 1:
+            options = list(permutations(old.body))
+            options.remove(tuple(old.body))
+            return log(options.count(tuple(new.body))) - log(len(options))
     except AttributeError:
+        pass
+    except ValueError:
         pass
     return log(0)
 
@@ -65,22 +69,22 @@ def give_proposal_log_p(old, new, **kwargs):
             p_swap_lhs = log_p_is_a_swap(old_rule.lhs, new_rule.lhs)
             p_swap_rhs = log_p_is_a_swap(old_rule.rhs, new_rule.rhs)
 
-            lhs_rules = [r for r in old.rules if len(r.lhs.body) > 1]
-            p_lhs_rule = -log(len(lhs_rules)) if lhs_rules != [] else log(0)
             p_lhs = log(0)
             if p_swap_rhs == -inf:
-                p_lhs = p_method + p_lhs_rule + p_swap_lhs
+                rules = [r for r in old.rules if len(r.lhs.body) > 1]
+                p_rule = log1of(rules)
+                p_lhs = p_method + p_rule + p_swap_lhs
 
-            rhs_rules = [r for r in old.rules
-                         if hasattr(r.rhs, 'body') and len(r.rhs.body) > 1]
-            p_rhs_rule = -log(len(rhs_rules)) if rhs_rules != [] else log(0)
             p_rhs = log(0)
             if p_swap_lhs == -inf:
+                rhs_rules = [r for r in old.rules
+                             if hasattr(r.rhs, 'body') and len(r.rhs.body) > 1]
+                p_rhs_rule = log1of(rhs_rules)
                 p_rhs = p_method + p_rhs_rule + p_swap_rhs
 
             both_rules = [r for r in old.rules if len(r.lhs.body) > 1 and
-                          hasattr(r.rhs, 'body') and len(r.lhs.body) > 1]
-            p_both_rule = -log(len(both_rules)) if both_rules != [] else log(0)
+                          hasattr(r.rhs, 'body') and len(r.rhs.body) > 1]
+            p_both_rule = log1of(both_rules)
             p_both = p_method + p_both_rule + p_swap_lhs + p_swap_rhs
 
             return logsumexp([p_lhs, p_rhs, p_both])
