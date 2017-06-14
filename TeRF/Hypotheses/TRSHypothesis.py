@@ -41,15 +41,16 @@ def test(n, filename):
 
     def make_data():
         data = set()
-        while len(data) < 10:
+        nChanged = 10
+        nTotal = 30
+        while len(data) < nTotal:
             lhs = sample_term(trs.operators)
             rhs = rewrite(trs, lhs, steps=10)
-            if lhs != rhs and RR(lhs, rhs) not in trs.rules:
-                data.add(RR(lhs, rhs))
-        while len(data) < 30:
-            lhs = sample_term(trs.operators)
-            rhs = rewrite(trs, lhs, steps=10)
-            data.add(RR(lhs, rhs))
+            rule = RR(lhs, rhs)
+            if len(data) < nChanged and lhs != rhs and rule not in trs.rules:
+                data.add(rule)
+            elif len(data) >= nChanged and rule not in trs.rules:
+                data.add(rule)
         return data
 
     def make_hypothesis(data):
