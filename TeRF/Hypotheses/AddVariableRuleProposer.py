@@ -1,7 +1,7 @@
 from copy import deepcopy
 from LOTlib.Hypotheses.Proposers.Proposer import Proposer
 from numpy.random import choice
-from scipy.stats import geom
+from scipy.stats import bernoulli
 
 from TeRF.Miscellaneous import log0
 from TeRF.TRS import Var
@@ -12,7 +12,7 @@ def propose_value_maker(gensym, p_rules):
     def propose_value(old_value, **kwargs):
         var = Var(name=gensym())
         new_value = deepcopy(old_value).add_var(var)
-        n_rules = geom.rvs(p=p_rules)-1
+        n_rules = bernoulli.rvs(p=p_rules)
         rules = sample_rules(n_rules, var, new_value.operators,
                              new_value.variables)
         for rule in rules:
@@ -28,6 +28,7 @@ def give_proposal_log_p_maker(p_rules):
         var_difference = new_value.variables - old_value.variables
         rule_difference = set(new_value.rules)-set(old_value.rules)
         if len(var_difference) == 1 and \
+           len(rule_difference) <= 1 and \
            old_value.operators == new_value.operators:
             p_the_rules = 0
             for i, rule in enumerate(rule_difference):
@@ -38,8 +39,8 @@ def give_proposal_log_p_maker(p_rules):
                 p_slot = -log0(len(old_value.rules)+i) \
                     if len(old_value.rules)+i > 0 else log0(0)
                 p_the_rules += (p_lhs + p_rhs + p_slot)
-            return p_the_rules + geom.logpmf(k=len(rule_difference)+1,
-                                             p=p_rules)
+            return p_the_rules + bernoulli.logpmf(k=len(rule_difference),
+                                                  p=p_rules)
         return log0(0)
     return give_proposal_log_p
 
