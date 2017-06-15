@@ -24,8 +24,7 @@ class TRSLikelihood(object):
           datum: a rewriteRule representing a single datum
         Returns: a float, -inf <= x <= 0, log p(datum | self.value)
         """
-        p_gen_lhs = log_p(datum.lhs, self.value.variables |
-                          self.value.operators)
+        p_gen_lhs = log_p(datum.lhs, self.value.operators)
         min_step, min_dist, nf_step = rewrites_to(self.value,
                                                   datum.lhs,
                                                   datum.rhs,
