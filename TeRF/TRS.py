@@ -2,6 +2,7 @@ from itertools import chain, imap
 
 counter = 0
 
+
 def gensym():
     global counter
     counter += 1
@@ -35,7 +36,7 @@ class Operator(Atom):
 
     def __eq__(self, other):
         try:
-            return (self.arity is other.arity and self.name is other.name)
+            return (self.arity == other.arity and self.name == other.name)
         except AttributeError:
             return False
 
