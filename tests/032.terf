@@ -1,0 +1,4 @@
+# Assume count
+chit nil = 0;
+chit (cons x_ y_) = count x_ y_;
+signature chit/0 count/0 nil/0 cons/0 S/1 ./2 x_ y_ z_;

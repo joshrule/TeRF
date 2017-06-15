@@ -37,7 +37,7 @@ class TRSHypothesis(TRSGenerativePrior, TRSLikelihood, TRSTestProposer,
 def test(n, filename):
     trs, _ = load_source(filename)
 
-    print 'Ground Truth:\n{:d}\n{}\n'.format(id(trs), trs)
+    print '# Ground Truth:\n{}\n'.format(trs)
 
     def make_data():
         data = set()
@@ -70,3 +70,7 @@ def test(n, filename):
     return standard_sample(make_hypothesis, make_data,
                            save_top=None, show_skip=99, trace=False, N=10,
                            steps=n)
+
+    print '\n\n# The best hypotheses of', n, 'samples:'
+    for hyp in hyps.get_all(sorted=True):
+        print hyp.prior, hyp.likelihood, hyp.posterior_score, hyp
