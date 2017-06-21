@@ -1,6 +1,8 @@
 from copy import deepcopy
 from LOTlib.Hypotheses.Hypothesis import Hypothesis
 from LOTlib.Inference.Samplers.StandardSample import standard_sample
+from numpy.random import choice
+from scipy.stats import geom
 
 from TeRF.Hypotheses.TRSGenerativePrior import TRSGenerativePrior
 from TeRF.Hypotheses.TRSLikelihood import TRSLikelihood
@@ -41,11 +43,14 @@ def test(n, filename):
 
     def make_data():
         data = set()
-        nChanged = 10
-        nTotal = 30
+        nChanged = 25
+        nTotal = 50
         while len(data) < nTotal:
             lhs = sample_term(trs.operators)
-            rhs = rewrite(trs, lhs, steps=10)
+            ws = [geom.pmf(k=x, p=0.1)/geom.cdf(k=10, p=.1)
+                  for x in range(1, 11)]
+            n_steps = choice(range(1, 11), p=ws)
+            rhs = rewrite(trs, lhs, steps=n_steps)
             rule = RR(lhs, rhs)
             if len(data) < nChanged and lhs != rhs and rule not in trs.rules:
                 data.add(rule)

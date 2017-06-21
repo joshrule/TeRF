@@ -403,7 +403,8 @@ def unify(t1, t2, env=None, type='simple'):
         if type is 'simple':
             return unify_var(t2, t1, env, type)
     except UnifyError:
-        return False, None
+        pass
+    return False, None
 
 
 def unify_var(t1, t2, env, type='simple'):
@@ -438,7 +439,9 @@ def differences(t1, t2):
 def sample_rule(atom, operators, variables):
     atoms = set()
     side = 'lhs' if hasattr(atom, 'identity') else choice(['lhs', 'rhs'])
-    if atom not in operators | variables:
+    if atom is None:
+        side = 'neither'
+    if atom is not None and atom not in operators | variables:
         raise ValueError('sample_rule: atom must be in signature')
     while atom not in atoms:
         lhs_signature = operators | variables
@@ -455,7 +458,7 @@ def sample_rule(atom, operators, variables):
 
         try:
             rule = RR(lhs, rhs)
-            atoms = rule.operators() | rule.variables()
+            atoms = rule.operators() | rule.variables() | {None}
         except TRSError:
             atoms = set()
 

@@ -35,7 +35,7 @@ class TRSGenerativePrior(object):
         for r in self.value.rules:
             p_rules += log_p(r.lhs, self.value.operators |
                              self.value.variables)
-            rhs_signature = set(self.value.operators) | r.lhs.variables()
+            rhs_signature = self.value.operators | r.lhs.variables()
             p_rules += log_p(r.rhs, rhs_signature)
         return (geom.logpmf(k=n_operators, p=self.p_operators) +
                 geom.logpmf(k=total_arity, p=self.p_arity) +

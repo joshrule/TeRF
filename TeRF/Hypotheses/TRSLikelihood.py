@@ -30,9 +30,11 @@ class TRSLikelihood(object):
                                                   datum.rhs,
                                                   steps=10)
         if min_step == nf_step:
-            p_eval_rhs = geom.logsf(k=min_step, p=self.p_observe)
+            p_eval_rhs = geom.logsf(k=min_step, p=self.p_observe) - \
+                geom.logcdf(k=10, p=self.p_observe)  # truncated geometric
         else:
-            p_eval_rhs = geom.logpmf(k=min_step+1, p=self.p_observe)
-        # p_distance = geom.logpmf(k=min_dist+1, p=self.p_similar)
+            p_eval_rhs = geom.logpmf(k=min_step+1, p=self.p_observe) - \
+                geom.logcdf(k=10, p=self.p_observe)  # truncated geometric
+            # p_distance = geom.logpmf(k=min_dist+1, p=self.p_similar)
         p_distance = bernoulli.logpmf(k=min_dist, p=(1-self.p_similar))
         return p_gen_lhs + p_eval_rhs + p_distance

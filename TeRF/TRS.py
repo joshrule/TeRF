@@ -85,7 +85,7 @@ class Variable(Atom, Term):
 
     def __eq__(self, other):
         try:
-            return (self.identity is other.identity)
+            return (self.identity == other.identity)
         except AttributeError:
             return False
 
