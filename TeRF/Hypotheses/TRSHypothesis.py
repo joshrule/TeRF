@@ -72,9 +72,9 @@ def test(n, filename):
                              p_rules=0.5,
                              p_r=0.3)
 
-    return standard_sample(make_hypothesis, make_data,
-                           save_top=None, show_skip=99, trace=False, N=10,
-                           steps=n)
+    hyps = standard_sample(make_hypothesis, make_data,
+                           save_top=None, show_skip=99, trace=True, N=10,
+                           steps=n, likelihood_temperature=1.0)
 
     print '\n\n# The best hypotheses of', n, 'samples:'
     for hyp in hyps.get_all(sorted=True):
