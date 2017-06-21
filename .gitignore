@@ -4,3 +4,6 @@
 # PLY detritus
 parsetab.py
 parser.out
+
+# project detritus
+test_logs/
