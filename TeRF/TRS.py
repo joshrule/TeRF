@@ -1,12 +1,3 @@
-counter = 0
-
-
-def gensym():
-    global counter
-    counter += 1
-    return '#g_' + str(counter)
-
-
 class TRSError(Exception):
     pass
 
@@ -53,10 +44,9 @@ class Term(object):
 
 class Variable(Atom, Term):
     """an arbitrary term"""
-    def __init__(self, name=None, identity=None, **kwargs):
-        self.name = name if name else gensym()
-        self.identity = (identity if identity else
-                         (gensym() if name else self.name))
+    def __init__(self, name=None, **kwargs):
+        self.identity = object()  # gensym!
+        self.name = name if name else 'v' + str(id(self.identity))
         self.str = self.name + '_'
         self.variables = {self}
         self.operators = set()
@@ -69,7 +59,7 @@ class Variable(Atom, Term):
         return self.str
 
     def __repr__(self):
-        return 'Variable(\'{}\', \'{}\')'.format(self.name, self.identity)
+        return 'Variable(\'{}\')'.format(self.name)
 
     def __eq__(self, other):
         try:
