@@ -9,8 +9,9 @@ class Atom(object):
 class Operator(Atom):
     """a lone operator of fixed arity"""
 
-    def __init__(self, name, arity):
-        self.name = name
+    def __init__(self, name=None, arity=0):
+        self.id = object()
+        self.name = name if name is not None else 'o' + str(id(self.id))
         self.arity = arity
 
     def __str__(self):
@@ -197,12 +198,12 @@ class TRS(object):
     def del_rule(self, item):
         try:  # treat as a rule
             self.rules.remove(item)
-        except ValueError:  # could be an index
+        except (ValueError, AttributeError):  # could be an index
             try:
                 del self.rules[item]
             except TypeError:  # not an index
                 pass
-            except IndexError:  # index is too high
+            except IndexError:  # index is too high or too low
                 pass
         return self
 

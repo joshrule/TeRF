@@ -128,47 +128,42 @@ def add_signature(trs, s):
     for t in s:
         if t[0] == 'operator':
             trs.operators.add(Operator(t[1], int(t[2])))
-        else:
-            name = t[1][:-1]
-            if name not in [v.name for v in trs.variables]:
-                trs.variables.add(Variable(name))
     return trs
 
 
 def add_rule(trs, t1, t2):
-    lhs, trs = make_term(t1[1], trs=trs)
-    rhs, trs = make_term(t2[1], trs=trs)
+    lhs = make_term(t1[1], trs=trs)
+    rhs = make_term(t2[1], vs=lhs.variables, trs=trs)
     return trs.add_rule(RewriteRule(lhs, rhs))
 
 
-def make_term(t, trs=None):
+def make_term(t, vs=None, trs=None):
+    if vs is None:
+        vs = set()
+
     if t[0] == 'variable':
         name = t[1][:-1]
-        if trs is not None:
-            for v in trs.variables:
-                if v.name == name:
-                    return v, trs
-            var = Variable(name)
-            return var, trs.add_var(var)
-        return Variable(name)
-    
-    elif t[0] == 'application':
+        for v in vs:
+            if v.name == name:
+                return v
+        return Variable(name) if name != '' else Variable()
+
+    if t[0] == 'application':
         head = Operator(t[1], len(t[2]))
-        if trs is not None:
-            trs.operators.add(head)
-            body = []
-            for part in t[2]:
-                term, trs = make_term(part[1], trs=trs)
-                body.append(term)
-            term = Application(head, body)
-            return term, trs
-        return Application(head, [make_term(part[1]) for part in t[2]])
+        if trs is not None and head not in trs.operators:
+            trs.add_op(head)
+        body = []
+        for part in t[2]:
+            term = make_term(part[1], vs=vs, trs=trs)
+            vs |= term.variables
+            body.append(term)
+        return Application(head, body)
 
 
 def load_source(filename):
     with open(filename) as file:
         ss = parser.parse(file.read())
-    terms = [make_term(s[1], {})[0] for s in ss if s[0] == 'term']
+    terms = [make_term(s[1]) for s in ss if s[0] == 'term']
     return make_trs(ss), terms
 
 
