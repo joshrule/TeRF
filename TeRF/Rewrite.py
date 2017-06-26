@@ -9,12 +9,16 @@ class RewriteError(Exception):
     pass
 
 
-def rewrite(trs, term, max_steps=1):
+def rewrite(trs, term, max_steps=1, trace=False):
+    if trace:
+        the_trace = [term]
     for _ in xrange(max_steps):
         term, changed, _ = single_rewrite(trs, term)
         if not changed:
             break
-    return term
+        if trace:
+            the_trace.append(term)
+    return the_trace if trace else term
 
 
 def rewrites_to(trs, t1, t2, steps=100):

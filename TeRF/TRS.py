@@ -85,6 +85,7 @@ class Application(Term):
             if head.arity == len(body):
                 self.head = head
                 self.body = body
+                self.name = str(self.head)
                 self.str = '{}[{}]'.format(
                     self.head,
                     ', '.join(str(x) for x in self.body))

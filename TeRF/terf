@@ -2,46 +2,66 @@
 """TeRF: a Term Rewriting Framework
 
 Usage:
-    terf [--batch=<filename>] [--print=<level>] [--steps=<N>]
+    terf [-ht] [--batch=<filename>] [--print=<level>] [--steps=<N>]
 
 Options:
+    -h --help           Show this message
+    -t --trace          Trace evaluations
     --batch=<filename>  Process <filename> in batch mode.
     --print=<int>       how to print terms [default: 0].
     --steps=<int>       maximum execution steps for each term. [default: 1000]
-"""
 
-# TODO: add tracing options
+REPL mode:
+  The following commands are availabile in REPL mode:
+
+   >> <lhs_term> = <rhs_term>       # add the rule <lhs_term> = <rhs_term>
+   >> <term>                        # evaluate the term under the current TRS
+   >> quit                          # exit the REPL
+   >> exit                          # exit the REPL
+   >> ^D                            # exit the REPL
+   >> show                          # print the current TRS
+   >> del(ete) op(erator) <op_name> # delete operator <op_name> and its rules
+   >> del(ete) rule <rule_number>   # delete rule <rule_number>
+   >> save <filename>               # save the current TRS to <filename>
+   >> load <filename>               # run the statements in <filename>
+   >> canon(ical) <term>            # print the canonical form of <term>
+   >> pretty <term>                 # pretty-print <term>
+   >> paren(s|thesized) <term>      # print <term> with full parentheses
+   >> tree <term>                   # print <term> as a tree
+   >> generate                      # generate a new term and assign it a name
+"""
 
 from TeRF.parser import parser, load_source, add_rule, make_term
 from TeRF.TRS import TRS, Op, RR, App
 from TeRF.Rewrite import rewrite
 from TeRF.Sampling import sample_term
 
+from pptree import print_tree
 import re
 
 
 def batch_process(filename, verbosity, count):
     trs, terms = load_source(filename)
-    print 'Rules:'
-    for rule in trs.rules:
-        print '\n    {}'.format(rule)
+    print 'TRS:'
+    print show_trs(trs)
     print '\nEvaluations:'
     for term in terms:
         if verbosity >= 0:
-            print '\n    {} -*-> {}'.format(term.pretty_print(2*verbosity),
-                trs.eval(term, steps=count).pretty_print(2*verbosity))
+            evaled = trs.eval(term, steps=count)
+            print '\n  {} -*-> {}'.format(term.pretty_print(2*verbosity),
+                                          evaled.pretty_print(2*verbosity))
         else:
-            print '\n    {} -*-> {}'.format(term,
-                                            trs.eval(term, steps=count))
+            print '\n  {} -*-> {}'.format(term, trs.eval(term, steps=count))
 
 
-def repl(verbosity, count):
+def repl(verbosity, count, trace):
     trs = TRS()
     while True:
         try:
             statements = [s.strip() for s in repl_read().split(';') if s != '']
             for statement in statements:
-                output, new_ss = repl_eval(trs, statement, verbosity, count)
+                output, new_ss = repl_eval(trs, statement,
+                                           verbosity, count, trace)
                 if output != '' and output is not None:
                     print output
                 statements += new_ss
@@ -56,7 +76,7 @@ def repl_read():
         return input('>> ') + ';'
 
 
-def repl_eval(trs, statement, verbosity, count):
+def repl_eval(trs, statement, verbosity, count, trace):
     quit = re.compile('quit')
     exit = re.compile('exit')
     show = re.compile('show')
@@ -67,8 +87,8 @@ def repl_eval(trs, statement, verbosity, count):
     pretty = re.compile('pretty\s+(?P<term>.+)')
     parens = re.compile('paren(s|thesized)?\s+(?P<term>.+)')
     generate = re.compile('generate')
-    # TODO: print term as tree?
-    
+    tree = re.compile('tree\s+(?P<term>.+)')
+
     if quit.match(statement) or exit.match(statement):
         raise EOFError
     if show.match(statement):
@@ -98,9 +118,15 @@ def repl_eval(trs, statement, verbosity, count):
     if generate.match(statement):
         rule = make_a_named_term(trs)
         return None, [str(rule), 'show']
-    else:
-        trs = process_statement(trs, statement, verbosity, count)
+    if tree.match(statement):
+        parse = parser.parse(tree.match(statement).group('term') + ';')[0]
+        if parse[0] == 'term':
+            term = make_term(parse[1])
+            return print_tree(term, childattr='body'), []
         return None, []
+    else:
+        trs, words = process_statement(trs, statement, verbosity, count, trace)
+        return words, []
 
 
 def make_a_named_term(trs):
@@ -112,7 +138,7 @@ def make_a_named_term(trs):
 def show_trs(trs):
     operators = ', '.join(o.name + '/' + str(o.arity) for o in trs.operators)
     rules = '\n'.join('{:d}: {}'.format(i, rule)
-                      for i, rule in enumerate(trs.rules)) 
+                      for i, rule in enumerate(trs.rules))
     return operators + '\n' + rules
 
 
@@ -140,33 +166,44 @@ def print_term(term, how):
     if how == 'pretty':
         return term.pretty_print(verbose=0)
     if how == 'parens':
-        return term.pretty_print(verbose=1)
+        return term.pretty_print(verbose=2)
 
 
-def process_statement(trs, statement, verbosity, count):
+def process_statement(trs, statement, verbosity, count, trace):
     s = parser.parse(statement + ';')[0]
     if s[0] == 'rule':
         trs = add_rule(trs, s[1], s[2])
+        return trs, ''
     elif s[0] == 'term':
         term = make_term(s[1])
-        evaled = rewrite(trs, term, max_steps=count)
+        evaled = rewrite(trs, term, max_steps=count, trace=trace)
         if verbosity >= 0:
-            print evaled.pretty_print(2*verbosity)
+            if trace:
+                return trs, '\n'.join(t.pretty_print(2*verbosity)
+                                      for t in evaled)
+            else:
+                return trs, evaled.pretty_print(2*verbosity)
         else:
-            print evaled
+            if trace:
+                return trs, '\n'.join(evaled)
+            else:
+                return trs, evaled
     else:
-        print 'Oops! ' + str(s)
-    return trs
+        return trs, 'Oops! ' + str(s)
 
 
 if __name__ == "__main__":
     from docopt import docopt
     arguments = docopt(__doc__, version="terf 0.0.1")
+    try:
+        trace = arguments['--trace']
+    except KeyError:
+        trace = False
     if arguments['--batch']:
         batch_process(arguments['--batch'],
                       int(arguments['--print']),
                       int(arguments['--steps']))
     else:
         repl(int(arguments['--print']),
-             int(arguments['--steps']))
-
+             int(arguments['--steps']),
+             trace)
