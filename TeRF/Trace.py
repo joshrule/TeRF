@@ -7,16 +7,24 @@ from TeRF.Rewrite import single_rewrite
 from TeRF.Miscellaneous import log0, log1of
 
 
+def rewrites_to(trs, t1, t2, p_observe, steps=100):
+    # NOTE: we only use tree equality and don't consider tree edit distance
+    trace = Trace(t1, p_observe=p_observe, max_steps=steps)
+    return sum(l.log_p for l in trace.leaves()
+               if l == t2 and (l.state in ['normal', 'observed']))
+
+
 class TraceComplete(Exception):
     pass
 
 
 class Trace(object):
     """An evaluation trace for a TRS term"""
-    def __init__(self, term, p_observe=0.2, max_steps=1000, min_p=1e-6):
+    def __init__(self, trs, term, p_observe=0.2, max_steps=1000, min_p=1e-6):
         root = TraceState(term)
         self.unobserved = heappush([], root)
         self.root = root
+        self.trs = trs
         self.p_observe = p_observe
         self.max_steps = max_steps
         self.min_p = min_p
@@ -46,7 +54,7 @@ class Trace(object):
         if state.log_p < log0(self.min_p) or self.steps > self.max_steps:
             raise TraceComplete('step: no further steps can be taken')
 
-        rewrites = single_rewrite(state.term, type='all')
+        rewrites = single_rewrite(self.trs, state.term, type='all')
 
         if rewrites == [state.term] or rewrites == []:
             nf = TraceState(state.term,

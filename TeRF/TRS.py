@@ -200,8 +200,8 @@ class TRS(object):
 
     def add_rule(self, rule, index=0):
         for r in self.rules:
-            eq, sub = unify(r.lhs, rule.lhs, type='alpha')
-            if eq:
+            sub = unify(r.lhs, rule.lhs, type='alpha')
+            if sub is not None:
                 r.rhs = [substitute(rhs, sub) for rhs in rule.rhs] + r.rhs
                 break
         else:
@@ -211,8 +211,8 @@ class TRS(object):
     def del_rule(self, item):
         try:  # treat as a rule
             for r in self.rules:
-                eq, sub = unify(r.lhs, item.lhs, type='alpha')
-                if eq:
+                sub = unify(r.lhs, item.lhs, type='alpha')
+                if sub is not None:
                     spec = [substitute(rhs, sub) for rhs in item.rhs]
                     r.rhs = [r for r in r.rhs if r not in spec]
                 if r.rhs == []:
