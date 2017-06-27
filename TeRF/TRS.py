@@ -1,3 +1,6 @@
+from TeRF.Rewrite import unify, substitute
+
+
 class TRSError(Exception):
     pass
 
@@ -8,7 +11,6 @@ class Atom(object):
 
 class Operator(Atom):
     """a lone operator of fixed arity"""
-
     def __init__(self, name=None, arity=0):
         self.id = object()
         self.name = name if name is not None else 'o' + str(id(self.id))
@@ -119,7 +121,7 @@ class Application(Term):
 
     def __str__(self):
         return self.str
-        
+
     def __repr__(self):
         return 'Application({},{})'.format(self.head, self.body)
 
@@ -140,26 +142,33 @@ class Application(Term):
 
 
 class RewriteRule(object):
-    def __init__(self, t1, t2):
-        if hasattr(t1, 'head'):
-            if t1.variables >= t2.variables:
-                self.lhs = t1
-                self.rhs = t2
-                self.variables = t1.variables | t2.variables
-                self.operators = t1.operators | t2.operators
-            else:
-                raise TRSError('Rule rhs invents variables')
+    def __init__(self, lhs, rhss):
+        if hasattr(lhs, 'head'):
+            self.lhs = lhs
+            self.variables = lhs.variables
+            self.operators = lhs.operators
+            self.rhs = []
+            for rhs in rhss:
+                if self.lhs.variables >= rhs.variables:
+                    self.rhs.append(rhs)
+                    self.operators |= rhs.operators
+                else:
+                    raise TRSError('Rule rhs invents variables')
         else:
-            raise TRSError('t1 cannot be a variable')
+            raise TRSError('t1 much be an application')
 
     def __str__(self):
-        return self.lhs.pretty_print() + ' = ' + self.rhs.pretty_print()
+        lhs_str = self.lhs.pretty_print()
+        start = lhs_str + ' = '
+        padding = '\n' + ' '*(len(lhs_str)+1) + '| '
+        finish = padding.join(rhs.pretty_print() for rhs in self.rhs)
+        return start + finish
 
     def __repr__(self):
         return 'RewriteRule({}, {})'.format(self.lhs, self.rhs)
 
     def __len__(self):
-        return len(self.lhs) + len(self.rhs)
+        return len(self.lhs) + sum(len(rhs) for rhs in self.rhs)
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -168,7 +177,7 @@ class RewriteRule(object):
         return self.lhs == other.lhs and self.rhs == other.rhs
 
     def __hash__(self):
-        return hash((self.lhs, self.rhs))
+        return hash((self.lhs, tuple(self.rhs)))
 
 
 class TRS(object):
@@ -189,22 +198,30 @@ class TRS(object):
             pass
         return self
 
-    def add_rule(self, rule, index=None):
-        try:
+    def add_rule(self, rule, index=0):
+        for r in self.rules:
+            eq, sub = unify(r.lhs, rule.lhs, type='alpha')
+            if eq:
+                r.rhs = [substitute(rhs, sub) for rhs in rule.rhs] + r.rhs
+                break
+        else:
             self.rules.insert(index, rule)
-        except TypeError:
-            self.rules += [rule]
         return self
 
     def del_rule(self, item):
         try:  # treat as a rule
-            self.rules.remove(item)
+            for r in self.rules:
+                eq, sub = unify(r.lhs, item.lhs, type='alpha')
+                if eq:
+                    spec = [substitute(rhs, sub) for rhs in item.rhs]
+                    r.rhs = [r for r in r.rhs if r not in spec]
+                if r.rhs == []:
+                    self.rules.remove(r)
+                break
         except (ValueError, AttributeError):  # could be an index
             try:
                 del self.rules[item]
-            except TypeError:  # not an index
-                pass
-            except IndexError:  # index is too high or too low
+            except (TypeError, IndexError):  # not an index
                 pass
         return self
 
