@@ -1,11 +1,12 @@
-from TeRF.Trees import possible_roots, head
+from TeRF.Trees import possible_roots, head, leaves
 from TeRF.TRS import App, Var, Op, RR
 from numpy import exp
 from numpy.random import choice, binomial
 from itertools import repeat, izip
 from TeRF.Miscellaneous import log0, log1of, gift, list_possible_gifts
 from scipy.misc import logsumexp
-from copy import copy, deepcopy
+from scipy.stats import geom
+from copy import copy
 
 
 class GenerationError(Exception):
@@ -35,6 +36,8 @@ def sample_term(signature, invent=True):
     Returns:
       a TRS term sampled from the grammar defined by signature
     """
+    if leaves(signature) == [] and not invent:
+        raise GenerationError('sample_term: no terminals!')
     sig = copy(signature)
     head = sample_head(sig, invent)
     sig |= {head}
@@ -135,6 +138,8 @@ def sample_term_c(signature, constraints, invent=True):
     Raises:
       GenerationError: raised when the signature or constraints are invalid
     """
+    if leaves(signature) == [] and not invent:
+        raise GenerationError('sample_term: no terminals!')
     sig = copy(signature)
     if not set(sig) >= set(constraints):
         raise GenerationError('sample_term_c: constraints not in signature')
@@ -263,22 +268,26 @@ def log_p_tc(new, signature, old, p_r, constraints, invent=True):
     return p_make_head
 
 
-def sample_rule(operators, variables, constraints=None, invent=True):
+def sample_rule(operators, variables, constraints=None,
+                p_rhs=0.5, invent=True):
     if constraints is None or len(constraints) == 0:
         lhs = sample_term(operators | variables, invent)
-        rhs = sample_term(operators | lhs.variables, invent)
+        rhs = [sample_term(operators | lhs.variables, invent=False)
+               for _ in repeat(None, geom.rvs(p_rhs))]
         return RR(lhs, rhs)
 
     if all(c in operators | variables for c in constraints):
-        var_constraints = {c for c in constraints if hasattr(c, 'identity')}
-        op_constraints = constraints - var_constraints
+        op_constraints = {c for c in constraints if hasattr(c, 'arity')}
+        var_constraints = constraints - op_constraints
 
         lhs_constraints = var_constraints + {c for c in op_constraints
                                              if choice([True, False])}
         rhs_constraints = constraints - lhs_constraints
 
         lhs = sample_term_c(operators | variables, lhs_constraints, invent)
-        rhs = sample_term_c(operators | lhs.variables, rhs_constraints, invent)
+        rhs = [sample_term_c(operators | lhs.variables,
+                             rhs_constraints, invent=False)
+               for _ in repeat(None, geom.rvs(p_rhs))]
         return RR(lhs, rhs)
     raise GenerationError('sample_rule: constraints must be in signature')
 
