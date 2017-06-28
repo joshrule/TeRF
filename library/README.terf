@@ -1,0 +1,81 @@
+# This is an example of the syntax TeRF uses to describe terms and 
+# Term Rewriting Systems (TRSs). The example uses SK combinatory logic,
+# SK logic is a Turing-Complete computational formalism that is very simple
+# to describe. For more, see https://en.wikipedia.org/wiki/Combinatory_logic.
+
+# Here are the operators or symbols needed to describe SK logic.
+signature K/0 S/0 ./2;
+
+# Things to note:
+# - Every statement in a *.terf file ends with a semicolon, ";".
+# - "signature" is the only reserved keyword and occurs at the beginning of a
+#   declaration of symbols to be included in the TRS.
+# - each symbol in a signature has two components separated by "/".
+#   - The left component is the symbol's name.
+#   - The right component is the symbol's arity.
+# - An explicit signature isn't always necessary. TeRF can learn about operators
+#   as they are used. The only time an explicit signature *is* necessary is when
+#   you want to declare symbols which don't appear in any of the TRS's rules.
+
+# Here are the two rules for SK combinatory logic.
+.[.[K x_] y_] = x_;
+(((S x_) y_) z_) = x_ z_ (y_ z_);
+
+# Things to note:
+# - A rule is two terms separated by "=". The first term, to the left of "=" is
+#   known as the left-hand-side, or LHS. The second term is correspondingly 
+#   called the right-hand-side, or RHS. As with the signature, The entire 
+#   statement ends with ";".
+# - Although unnecessary for SK logic, rules can be non-deterministic and have
+#   multiple RHSs. For example, look at this minimal TRS for lists:
+#
+#   list = nil | cons list list;
+#
+# - Operator are applied to arguments by writing <op_name>[<arg1> <arg2> ...].
+# - Variables are declared by writing "_" after a name.
+# - Whenever it appears that multiple terms in a row appear where only one term
+#   is expected, TeRF assumes ./2 is used to build a single term. ./2 is applied
+#   from left to right. 
+# - Parentheses can be used to group a series of terms into a single term.
+# - The upshot of the above is that our two rules could be written as:
+#
+#   .[.[K x_] y_] = x_;
+#   .[.[.[S x_] y_] z_] = .[.[x_ z_] .[y_ z_]];
+#
+#   ((K x_) y_) = x_;
+#   (((S x_) y_) z_) = ((x_ z_) (y_ z_));
+#
+#   K x_ y_ = x_;
+#   S x_ y_ z_ = x_ z_ (y_ z_);
+#
+#   Each is equivalent to the others, and the second and third are syntactic
+#   sugar for the first.
+
+# Test Terms
+S;
+
+K[];
+
+.[_ y_];
+
+.[.[K K] S];
+
+S (K K S) K S;
+
+x_;
+
+ABC;
+
+(DEF);
+
+(D E F);
+
+# Things to note:
+# - To evaluate a term, simply write it down and follow it with ";"
+# - Constants (symbols of arity 0) can be written with or without their
+#   argument list. "S" is the same as "S[]".
+# - "_" is a variable with an empty name. A new variable is bound each time
+#   "_" is used
+# - Variables are valid terms.
+# - Operators which don't appear in the signature or ruleset can still occur
+#   in a term to be evaluated.

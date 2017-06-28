@@ -1,10 +1,11 @@
-The goal of this library is to provide a way to describe and compute with Term Rewriting Systems (TRS).
+* TErm Rewriting Framework (TeRF)
+TeRF provides tools to describe, compute with, and learn Term Rewriting Systems (TRS).
 
-TRSs are a simple formalism from theoretical computer science used to model the evolution of tree-based structures like natural langauge parse trees or abstract syntax trees.
+TRSs are a simple formalism from theoretical computer science used to model the behavior and evolution of tree-based structures like natural langauge parse trees or abstract syntax trees.
 
-A TRS is defined in two parts. The first is a set, /S/, of symbols. /S/ is called the signature and together with a disjoint set of variables, defines the set of all possible trees, or terms, which the system can consider. The second is a set, /R/, of rewrite rules. A rewrite rule is an equation, /s = t/, and is interpreted as follows: any term matching the pattern described by /s/ can be rewritten according to the pattern described by /t/. Together /S/ and /R/ define a TRS that describes a system of computation, which can be considered as a sort of programming language. TeRF provides a way to describe arbitrary TRSs.
+A TRS is defined in two parts. The first is a set, /S/, of symbols. /S/ is called the signature and together with a disjoint set of variables, defines the set of all possible trees, or terms, which the system can consider. The second is a set, /R/, of rewrite rules. A rewrite rule is an equation, /s = t/, and is interpreted as follows: any term matching the pattern described by /s/ can be rewritten according to the pattern described by /t/. Together /S/ and /R/ define a TRS that describes a system of computation, which can often be considered as a sort of programming language. TeRF provides a way to describe arbitrary TRSs.
 
-* Requirements
+** Requirements
 In addition to Python 2.7+, TeRF requires the following:
 - [[https://pypi.python.org/pypi/docopt/][docopt]]
 - [[https://github.com/piantado/LOTlib][LOTlib]]
@@ -13,11 +14,11 @@ In addition to Python 2.7+, TeRF requires the following:
 - [[https://www.scipy.org/scipylib/index.html][Scipy]]
 - [[https://pypi.python.org/pypi/zss/][zss]]
 
-* REPL
+** The ~terf~ utility
 
-TeRF provides a batch-mode processor and REPl with the ~terf~ tool. From the base directory, run ~./TeRF/terf -h~ for details.
+~terf~ provides a processor for *.terf files with both batch and interactive modes. From the base directory, run ~./TeRF/terf -h~ for details.
 
-* Further Reading
+** Further Reading
 
 - Baader & Nipkow (1999). [[http://www.cambridge.org/us/academic/subjects/computer-science/programming-languages-and-applied-logic/term-rewriting-and-all?format=PB&isbn=9780521779203][Term rewriting and all that]]. Cambridge University Press.
 - Bezem, Klop, & de Vrijer (Eds.) (2003). [[http://www.cambridge.org/us/academic/subjects/computer-science/programming-languages-and-applied-logic/term-rewriting-systems?format=HB&isbn=9780521391153][Term Rewriting Systems]]. Cambridge University Press.
