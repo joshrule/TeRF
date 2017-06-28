@@ -14,7 +14,8 @@ Options:
 REPL mode:
   The following commands are availabile in REPL mode:
 
-   >> <lhs_term> = <rhs_term>       # add the rule <lhs_term> = <rhs_term>
+   >> <lhs> = <rhs>                 # add the deterministic rule <lhs> = <rhs>
+   >> <lhs> = <rhs1> | <rhs2> | ... # add a non-deterministic rule
    >> <term>                        # evaluate the term under the current TRS
    >> quit                          # exit the REPL
    >> exit                          # exit the REPL
@@ -32,7 +33,8 @@ REPL mode:
 """
 
 from TeRF.parser import parser, load_source, add_rule, make_term
-from TeRF.TRS import TRS, Op, RR, App
+from TeRF.Terms import Op, App
+from TeRF.TRS import TRS, RR
 from TeRF.Rewrite import rewrite
 from TeRF.Sampling import sample_term
 
@@ -40,18 +42,28 @@ from pptree import print_tree
 import re
 
 
-def batch_process(filename, verbosity, count):
+def batch(filename, verbosity, count, trace):
     trs, terms = load_source(filename)
     print 'TRS:'
     print show_trs(trs)
     print '\nEvaluations:'
     for term in terms:
+        evaled = rewrite(trs, term, max_steps=count, trace=trace)
         if verbosity >= 0:
-            evaled = trs.eval(term, steps=count)
-            print '\n  {} -*-> {}'.format(term.pretty_print(2*verbosity),
-                                          evaled.pretty_print(2*verbosity))
+            if trace:
+                print '\n  {}'.format(term.pretty_print(2*verbosity))
+                for t in evaled[1:]:
+                    print '  = {}'.format(t.pretty_print(2*verbosity))
+            else:
+                print '\n  {} = {}'.format(term.pretty_print(2*verbosity),
+                                           evaled.pretty_print(2*verbosity))
         else:
-            print '\n  {} -*-> {}'.format(term, trs.eval(term, steps=count))
+            if trace:
+                print '\n  {}'.format(term)
+                for t in evaled[1:]:
+                    print '  = {}'.format(t)
+            else:
+                print '\n  {} = {}'.format(term, evaled)
 
 
 def repl(verbosity, count, trace):
@@ -79,8 +91,10 @@ def repl_read():
 def repl_eval(trs, statement, verbosity, count, trace):
     quit = re.compile('quit')
     exit = re.compile('exit')
+    help = re.compile('help')
     show = re.compile('show')
-    delete = re.compile('del(ete)?\s+(?P<type>(rule|op(erator)?))\s+(?P<obj>\S+)')
+    delete = re.compile('del(ete)?\s+' +
+                        '(?P<type>(rule|op(erator)?))\s+(?P<obj>\S+)')
     save = re.compile('save\s+(?P<filename>\S+)')
     load = re.compile('load\s+(?P<filename>\S+)')
     canon = re.compile('canon(ical)?\s+(?P<term>.+)')
@@ -93,16 +107,11 @@ def repl_eval(trs, statement, verbosity, count, trace):
         raise EOFError
     if show.match(statement):
         return show_trs(trs), []
+    if help.match(statement):
+        return __doc__, []
     if delete.match(statement):
-        obj = delete.match(statement).group('obj')
-        if delete.match(statement).group('type') == 'rule':
-            trs.del_rule(int(obj))
-            return None, []
-        try:
-            op = [op for op in trs.operators if op.name == obj][0]
-            trs.del_op(op)
-        except IndexError:
-            pass
+        delete_from_trs(delete.match(statement).group('type'),
+                        delete.match(statement).group('obj'))
         return None, []
     if save.match(statement):
         save_trs(trs, save.match(statement).group('filename'))
@@ -141,14 +150,23 @@ def show_trs(trs):
                       for i, rule in enumerate(trs.rules))
     return operators + '\n' + rules
 
+def delete_from_trs(type, obj):
+    if type == 'rule':
+        trs.del_rule(int(obj))
+    try:
+        op = [op for op in trs.operators if op.name == obj][0]
+        trs.del_op(op)
+    except IndexError:
+        pass
+
 
 def save_trs(trs, filename):
     with open(filename, 'w') as f:
         f.write(';\n'.join([str(rule) for rule in trs.rules])+';\n')
 
 
-def load_file(filename):
-    statements = []
+        def load_file(filename):
+            statements = []
     with open(filename, 'r') as file:
         for line in file:
             statements += [s.strip() for s in line.strip().split(';')
@@ -185,7 +203,7 @@ def process_statement(trs, statement, verbosity, count, trace):
                 return trs, evaled.pretty_print(2*verbosity)
         else:
             if trace:
-                return trs, '\n'.join(evaled)
+                return trs, '\n'.join(str(e) for e in evaled)
             else:
                 return trs, evaled
     else:
@@ -200,9 +218,10 @@ if __name__ == "__main__":
     except KeyError:
         trace = False
     if arguments['--batch']:
-        batch_process(arguments['--batch'],
-                      int(arguments['--print']),
-                      int(arguments['--steps']))
+        batch(arguments['--batch'],
+              int(arguments['--print']),
+              int(arguments['--steps']),
+              trace)
     else:
         repl(int(arguments['--print']),
              int(arguments['--steps']),

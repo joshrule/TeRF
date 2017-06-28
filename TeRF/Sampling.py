@@ -1,5 +1,6 @@
 from TeRF.Trees import possible_roots, head, leaves
-from TeRF.TRS import App, Var, Op, RR
+from TeRF.Terms import App, Var, Op
+from TeRF.TRS import RR
 from numpy import exp
 from numpy.random import choice, binomial
 from itertools import repeat, izip

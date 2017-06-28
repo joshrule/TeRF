@@ -9,9 +9,10 @@ class RewriteError(Exception):
     pass
 
 
-def rewrite(trs, term, max_steps=1, type='one'):
+def rewrite(trs, term, max_steps=1, type='one', trace=False):
+    # hack! trace only works for rewrite_one
     if type == 'one':
-        return rewrite_one(trs, term, max_steps)
+        return rewrite_one(trs, term, max_steps, trace)
     return rewrite_all(trs, term, max_steps)
 
 
@@ -28,13 +29,15 @@ def rewrite_all(trs, term, max_steps=1):
     return terms
 
 
-def rewrite_one(trs, term, max_steps=1):
+def rewrite_one(trs, term, max_steps=1, trace=False):
+    the_trace = [term]
     for _ in repeat(None, max_steps):
         term_out = single_rewrite(trs, term)
         if term_out is None or term == term_out:
             break
         term = term_out
-    return term
+        the_trace.append(term)
+    return (the_trace if trace else term)
 
 
 def single_rewrite(trs, term, type='one'):
@@ -134,7 +137,7 @@ def substitute(terms, sub, type='one'):
     for term in terms:
         try:
             rets.append(App(term.head,
-                            [substitute(part, sub) for part in term.body]))
+                            [substitute([part], sub) for part in term.body]))
         except AttributeError:
             try:
                 rets.append(sub[term])

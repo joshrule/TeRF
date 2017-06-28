@@ -162,7 +162,7 @@ def make_term(t, vs=None, trs=None):
         head = Operator(t[1], len(t[2]))
         if trs is not None and head not in trs.operators:
             trs.add_op(head)
-            body = []
+        body = []
         for part in t[2]:
             term = make_term(part[1], vs=vs, trs=trs)
             vs |= term.variables
