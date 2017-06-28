@@ -2,7 +2,7 @@ from copy import copy
 from itertools import repeat, izip
 from numpy.random import choice
 
-from TeRF.TRS import App
+from TeRF.Terms import App
 
 
 class RewriteError(Exception):

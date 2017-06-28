@@ -1,7 +1,8 @@
 import ply.yacc as yacc
 
 from TeRF.lexer import tokens
-from TeRF.TRS import Operator, Variable, Application, RewriteRule, TRS
+from TeRF.Terms import Operator, Variable, Application
+from TeRF.TRS import RewriteRule, TRS
 
 
 def p_program(p):
@@ -25,8 +26,17 @@ def p_statement(p):
 
 
 def p_rule(p):
-    """ rule : termlisttop RULE_KW termlisttop"""
-    p[0] = ('rule', builder(p[1]), builder(p[3]))
+    """ rule : termlisttop RULE_KW rhs"""
+    p[0] = ('rule', builder(p[1]), p[3])
+
+
+def p_rhs(p):
+    """ rhs : termlisttop
+            | rhs PIPE termlisttop"""
+    if len(p) == 2:
+        p[0] = [builder(p[1])]
+    else:
+        p[0] = p[1] + [builder(p[3])]
 
 
 def p_termlisttop(p):
@@ -128,12 +138,12 @@ def add_signature(trs, s):
     for t in s:
         if t[0] == 'operator':
             trs.operators.add(Operator(t[1], int(t[2])))
-    return trs
+            return trs
 
 
-def add_rule(trs, t1, t2):
-    lhs = make_term(t1[1], trs=trs)
-    rhs = make_term(t2[1], vs=lhs.variables, trs=trs)
+def add_rule(trs, lhst, rhsts):
+    lhs = make_term(lhst[1], trs=trs)
+    rhs = [make_term(t[1], vs=lhs.variables, trs=trs) for t in rhsts]
     return trs.add_rule(RewriteRule(lhs, rhs))
 
 
@@ -152,7 +162,7 @@ def make_term(t, vs=None, trs=None):
         head = Operator(t[1], len(t[2]))
         if trs is not None and head not in trs.operators:
             trs.add_op(head)
-        body = []
+            body = []
         for part in t[2]:
             term = make_term(part[1], vs=vs, trs=trs)
             vs |= term.variables
@@ -163,8 +173,8 @@ def make_term(t, vs=None, trs=None):
 def load_source(filename):
     with open(filename) as file:
         ss = parser.parse(file.read())
-    terms = [make_term(s[1]) for s in ss if s[0] == 'term']
-    return make_trs(ss), terms
+        terms = [make_term(s[1]) for s in ss if s[0] == 'term']
+        return make_trs(ss), terms
 
 
 if __name__ == '__main__':

@@ -24,3 +24,5 @@ ABC;
 (DEF);
 
 (D E F);
+
+list = nil | cons list list;

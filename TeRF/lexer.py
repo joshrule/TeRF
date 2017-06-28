@@ -7,7 +7,7 @@ What kinds of things are in TRSs?
   - Applications of Operators to Terms
      - T[x_, ABC]
      - (x_ ABC) (i.e. .[x_, ABC])
-- Rewrite Rules "lhs = rhs"
+- Rewrite Rules "lhs = rhs" or "lhs = rhs1 | rhs2 | ..."
 - Comments "# comment"
 - Signatures "signature X/0 y_"
 """
@@ -27,17 +27,18 @@ tokens = ['VARIABLE',
           'RPAREN',
           'LBRACKET',
           'RBRACKET',
+          'PIPE',
           'SEMICOLON'] + list(reserved.values())
 
 
 def t_VARIABLE(t):
-    r'([^\s\#\[\]\(\)=;/])*_(?=[\s\#\[\]\(\);])'
+    r'([^\s\#\[\]\(\)=;/\|])*_(?=[\s\#\[\]\(\);\|])'
     t.type = reserved.get(t.value, 'VARIABLE')  # Check for reserved words
     return t
 
 
 def t_OPERATOR(t):
-    r'([^\s\#\[\]\(\)=;/])*[^_\s\#\[\]\(\)=;/](?=[\s\#\[\]\(\);/])'
+    r'([^\s\#\[\]\(\)=;/\|])*[^_\s\#\[\]\(\)=;/\|](?=[\s\#\[\]\(\);/\|])'
     t.type = reserved.get(t.value, 'OPERATOR')  # Check for reserved words
     return t
 
@@ -48,6 +49,7 @@ t_LPAREN = r'\('
 t_RPAREN = r'\)'
 t_LBRACKET = r'\['
 t_RBRACKET = r'\]'
+t_PIPE = r'\|'
 t_SEMICOLON = r';'
 
 
