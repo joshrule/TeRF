@@ -1,8 +1,0 @@
-.[car .[.[cons x_] y_]] -> x_
-
-.[cdr nil] -> nil
-.[cdr .[.[cons x_] y_]] -> y_
-
-.[.[map f] nil] = nil
-.[.[map f_] .[.[cons x_] y_]] = .[.[cons .[f_ x_]] .[.[map f_ y_]]]
-
