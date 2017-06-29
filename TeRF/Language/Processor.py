@@ -1,4 +1,3 @@
-#!/usr/local/bin/python
 """TeRF: a Term Rewriting Framework
 
 Usage:
@@ -23,8 +22,9 @@ REPL mode:
    >> show                          # print the current TRS
    >> del(ete) op(erator) <op_name> # delete operator <op_name> and its rules
    >> del(ete) rule <rule_number>   # delete rule <rule_number>
+   >> clear                         # reset the TRS
    >> save <filename>               # save the current TRS to <filename>
-   >> load <filename>               # run the statements in <filename>
+   >> assume <filename>             # run the statements in <filename>
    >> canon(ical) <term>            # print the canonical form of <term>
    >> pretty <term>                 # pretty-print <term>
    >> paren(s|thesized) <term>      # print <term> with full parentheses
@@ -32,12 +32,11 @@ REPL mode:
    >> generate                      # generate a new term and assign it a name
 """
 
-from TeRF.parser import parser, load_source, add_rule, make_term
-from TeRF.Terms import Op, App
-from TeRF.TRS import TRS, RR
-from TeRF.Rewrite import rewrite
-from TeRF.Sampling import sample_term
+from TeRF.Language.parser import parser, load_source, make_term
+from TeRF.Language.parser import add_signature, add_rule
+from TeRF.Types import Op, App, TRS, R, Sig
 
+from docopt import docopt
 from pptree import print_tree
 import re
 
@@ -48,7 +47,7 @@ def batch(filename, verbosity, count, trace):
     print show_trs(trs)
     print '\nEvaluations:'
     for term in terms:
-        evaled = rewrite(trs, term, max_steps=count, trace=trace)
+        evaled = term.rewrite(trs, max_steps=count, trace=trace)
         if verbosity >= 0:
             if trace:
                 print '\n  {}'.format(term.pretty_print(2*verbosity))
@@ -92,25 +91,30 @@ def repl_eval(trs, statement, verbosity, count, trace):
     quit = re.compile('quit')
     exit = re.compile('exit')
     help = re.compile('help')
+    clear = re.compile('clear')
     show = re.compile('show')
     delete = re.compile('del(ete)?\s+' +
                         '(?P<type>(rule|op(erator)?))\s+(?P<obj>\S+)')
     save = re.compile('save\s+(?P<filename>\S+)')
-    load = re.compile('load\s+(?P<filename>\S+)')
+    load = re.compile('assume\s+(?P<filename>\S+)')
     canon = re.compile('canon(ical)?\s+(?P<term>.+)')
     pretty = re.compile('pretty\s+(?P<term>.+)')
     parens = re.compile('paren(s|thesized)?\s+(?P<term>.+)')
     generate = re.compile('generate')
     tree = re.compile('tree\s+(?P<term>.+)')
-
+    
     if quit.match(statement) or exit.match(statement):
         raise EOFError
     if show.match(statement):
         return show_trs(trs), []
     if help.match(statement):
         return __doc__, []
+    if clear.match(statement):
+        trs.operators, trs.rules = set(), []
+        return None, []
     if delete.match(statement):
-        delete_from_trs(delete.match(statement).group('type'),
+        delete_from_trs(trs,
+                        delete.match(statement).group('type'),
                         delete.match(statement).group('obj'))
         return None, []
     if save.match(statement):
@@ -134,14 +138,14 @@ def repl_eval(trs, statement, verbosity, count, trace):
             return print_tree(term, childattr='body'), []
         return None, []
     else:
-        trs, words = process_statement(trs, statement, verbosity, count, trace)
+        words = process_statement(trs, statement, verbosity, count, trace)
         return words, []
 
 
 def make_a_named_term(trs):
     lhs = App(Op(), [])
-    rhs = sample_term(trs.operators, invent=False)
-    return RR(lhs, rhs)
+    rhs = [Sig(trs.operators).sample_term(invent=False)]
+    return R(lhs, rhs)
 
 
 def show_trs(trs):
@@ -150,14 +154,18 @@ def show_trs(trs):
                       for i, rule in enumerate(trs.rules))
     return operators + '\n' + rules
 
-def delete_from_trs(type, obj):
+
+def delete_from_trs(trs, type, obj):
     if type == 'rule':
         trs.del_rule(int(obj))
+        return trs
+
     try:
         op = [op for op in trs.operators if op.name == obj][0]
         trs.del_op(op)
     except IndexError:
         pass
+    return trs
 
 
 def save_trs(trs, filename):
@@ -165,13 +173,17 @@ def save_trs(trs, filename):
         f.write(';\n'.join([str(rule) for rule in trs.rules])+';\n')
 
 
-        def load_file(filename):
-            statements = []
-    with open(filename, 'r') as file:
-        for line in file:
-            statements += [s.strip() for s in line.strip().split(';')
-                           if s != '']
-        return statements
+def load_file(filename):
+    statements = []
+    try:
+        with open(filename, 'r') as file:
+            for line in file:
+                statements += [s.strip() for s in line.strip().split(';')
+                               if s != '']
+            return statements
+    except IOError:
+        print 'Can\'t find {}'.format(filename)
+        return []
 
 
 def print_term(term, how):
@@ -190,28 +202,29 @@ def print_term(term, how):
 def process_statement(trs, statement, verbosity, count, trace):
     s = parser.parse(statement + ';')[0]
     if s[0] == 'rule':
-        trs = add_rule(trs, s[1], s[2])
-        return trs, ''
+        add_rule(trs, s[1], s[2])
+        return ''
     elif s[0] == 'term':
         term = make_term(s[1])
-        evaled = rewrite(trs, term, max_steps=count, trace=trace)
+        evaled = term.rewrite(trs, max_steps=count, trace=trace)
         if verbosity >= 0:
             if trace:
-                return trs, '\n'.join(t.pretty_print(2*verbosity)
-                                      for t in evaled)
+                return '\n'.join(t.pretty_print(2*verbosity)
+                                 for t in evaled)
             else:
-                return trs, evaled.pretty_print(2*verbosity)
+                return evaled.pretty_print(2*verbosity)
         else:
             if trace:
-                return trs, '\n'.join(str(e) for e in evaled)
+                return '\n'.join(str(e) for e in evaled)
             else:
-                return trs, evaled
+                return evaled
+    elif s[0] == 'signature':
+        add_signature(trs, s[1])
     else:
-        return trs, 'Oops! ' + str(s)
+        return 'Oops! ' + str(s)
 
 
-if __name__ == "__main__":
-    from docopt import docopt
+def main():
     arguments = docopt(__doc__, version="terf 0.0.1")
     try:
         trace = arguments['--trace']
@@ -226,3 +239,7 @@ if __name__ == "__main__":
         repl(int(arguments['--print']),
              int(arguments['--steps']),
              trace)
+
+
+if __name__ == "__main__":
+    main()

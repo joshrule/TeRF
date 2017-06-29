@@ -1,8 +1,7 @@
 import ply.yacc as yacc
 
-from TeRF.lexer import tokens
-from TeRF.Terms import Operator, Variable, Application
-from TeRF.TRS import RewriteRule, TRS
+from TeRF.Language.lexer import tokens
+from TeRF.Types import Op, Var, App, TRS, R
 
 
 def p_program(p):
@@ -137,14 +136,14 @@ def make_trs(ss):
 def add_signature(trs, s):
     for t in s:
         if t[0] == 'operator':
-            trs.operators.add(Operator(t[1], int(t[2])))
-            return trs
+            trs.operators.add(Op(t[1], int(t[2])))
+    return trs
 
 
 def add_rule(trs, lhst, rhsts):
     lhs = make_term(lhst[1], trs=trs)
     rhs = [make_term(t[1], vs=lhs.variables, trs=trs) for t in rhsts]
-    return trs.add_rule(RewriteRule(lhs, rhs))
+    return trs.add_rule(R(lhs, rhs))
 
 
 def make_term(t, vs=None, trs=None):
@@ -156,10 +155,10 @@ def make_term(t, vs=None, trs=None):
         for v in vs:
             if v.name == name:
                 return v
-        return Variable(name) if name != '' else Variable()
+        return Var(name) if name != '' else Var()
 
     if t[0] == 'application':
-        head = Operator(t[1], len(t[2]))
+        head = Op(t[1], len(t[2]))
         if trs is not None and head not in trs.operators:
             trs.add_op(head)
         body = []
@@ -167,7 +166,7 @@ def make_term(t, vs=None, trs=None):
             term = make_term(part[1], vs=vs, trs=trs)
             vs |= term.variables
             body.append(term)
-        return Application(head, body)
+        return App(head, body)
 
 
 def load_source(filename):
@@ -178,7 +177,7 @@ def load_source(filename):
 
 
 if __name__ == '__main__':
-    with open('test.trs') as file:
+    with open('library/README.terf') as file:
         ss = [s for s in parser.parse(file.read())]
         for statement in ss:
             print statement

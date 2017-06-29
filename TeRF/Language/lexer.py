@@ -71,7 +71,7 @@ lexer = lex.lex()
 
 
 if __name__ == "__main__":
-    with open('test.trs') as f:
+    with open('library/README.terf') as f:
         lexer.input(f.read())
         for token in lexer:
             print token
