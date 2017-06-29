@@ -1,14 +1,17 @@
 """TeRF: a Term Rewriting Framework
 
 Usage:
-    terf [-ht] [--batch=<filename>] [--print=<level>] [--steps=<N>]
+    terf [-ht] [--print=<level>] [--steps=<N>] [--path=<dir>] [<filename>]
 
 Options:
-    -h --help           Show this message
-    -t --trace          Trace evaluations
-    --batch=<filename>  Process <filename> in batch mode.
-    --print=<int>       how to print terms [default: 0].
-    --steps=<int>       maximum execution steps for each term. [default: 1000]
+    -h --help            Show this message
+    -t --trace           Trace evaluations
+    --print=<int>        how to print terms [default: 0].
+    --steps=<int>        maximum execution steps for each term. [default: 1000]
+    --path=<dir>          where the library is located
+
+Batch mode:
+  Include a <filename> as the last argument to run terf in batch mode
 
 REPL mode:
   The following commands are availabile in REPL mode:
@@ -16,6 +19,7 @@ REPL mode:
    >> <lhs> = <rhs>                 # add the deterministic rule <lhs> = <rhs>
    >> <lhs> = <rhs1> | <rhs2> | ... # add a non-deterministic rule
    >> <term>                        # evaluate the term under the current TRS
+   >> assume <filename>             # run the statements in <filename>
    >> quit                          # exit the REPL
    >> exit                          # exit the REPL
    >> ^D                            # exit the REPL
@@ -24,7 +28,6 @@ REPL mode:
    >> del(ete) rule <rule_number>   # delete rule <rule_number>
    >> clear                         # reset the TRS
    >> save <filename>               # save the current TRS to <filename>
-   >> assume <filename>             # run the statements in <filename>
    >> canon(ical) <term>            # print the canonical form of <term>
    >> pretty <term>                 # pretty-print <term>
    >> paren(s|thesized) <term>      # print <term> with full parentheses
@@ -33,7 +36,7 @@ REPL mode:
 """
 
 from TeRF.Language.parser import parser, load_source, make_term
-from TeRF.Language.parser import add_signature, add_rule
+from TeRF.Language.parser import add_signature, add_rule, add_assumption
 from TeRF.Types import Op, App, TRS, R, Sig
 
 from docopt import docopt
@@ -41,8 +44,8 @@ from pptree import print_tree
 import re
 
 
-def batch(filename, verbosity, count, trace):
-    trs, terms = load_source(filename)
+def batch(filename, verbosity, count, trace=False, path=None):
+    trs, terms = load_source(filename, path=path)
     print 'TRS:'
     print show_trs(trs)
     print '\nEvaluations:'
@@ -65,14 +68,14 @@ def batch(filename, verbosity, count, trace):
                 print '\n  {} = {}'.format(term, evaled)
 
 
-def repl(verbosity, count, trace):
+def repl(verbosity, count, trace=False, path=None):
     trs = TRS()
     while True:
         try:
             statements = [s.strip() for s in repl_read().split(';') if s != '']
             for statement in statements:
                 output, new_ss = repl_eval(trs, statement,
-                                           verbosity, count, trace)
+                                           verbosity, count, trace, path)
                 if output != '' and output is not None:
                     print output
                 statements += new_ss
@@ -87,7 +90,7 @@ def repl_read():
         return input('>> ') + ';'
 
 
-def repl_eval(trs, statement, verbosity, count, trace):
+def repl_eval(trs, statement, verbosity, count, trace, path):
     quit = re.compile('quit')
     exit = re.compile('exit')
     help = re.compile('help')
@@ -96,7 +99,6 @@ def repl_eval(trs, statement, verbosity, count, trace):
     delete = re.compile('del(ete)?\s+' +
                         '(?P<type>(rule|op(erator)?))\s+(?P<obj>\S+)')
     save = re.compile('save\s+(?P<filename>\S+)')
-    load = re.compile('assume\s+(?P<filename>\S+)')
     canon = re.compile('canon(ical)?\s+(?P<term>.+)')
     pretty = re.compile('pretty\s+(?P<term>.+)')
     parens = re.compile('paren(s|thesized)?\s+(?P<term>.+)')
@@ -120,8 +122,6 @@ def repl_eval(trs, statement, verbosity, count, trace):
     if save.match(statement):
         save_trs(trs, save.match(statement).group('filename'))
         return None, []
-    if load.match(statement):
-        return None, load_file(load.match(statement).group('filename'))
     if canon.match(statement):
         return print_term(canon.match(statement).group('term'), 'canon'), []
     if pretty.match(statement):
@@ -138,7 +138,8 @@ def repl_eval(trs, statement, verbosity, count, trace):
             return print_tree(term, childattr='body'), []
         return None, []
     else:
-        words = process_statement(trs, statement, verbosity, count, trace)
+        words = process_statement(trs, statement,
+                                  verbosity, count, trace, path=path)
         return words, []
 
 
@@ -199,7 +200,7 @@ def print_term(term, how):
         return term.pretty_print(verbose=2)
 
 
-def process_statement(trs, statement, verbosity, count, trace):
+def process_statement(trs, statement, verbosity, count, trace, path=None):
     s = parser.parse(statement + ';')[0]
     if s[0] == 'rule':
         add_rule(trs, s[1], s[2])
@@ -209,36 +210,39 @@ def process_statement(trs, statement, verbosity, count, trace):
         evaled = term.rewrite(trs, max_steps=count, trace=trace)
         if verbosity >= 0:
             if trace:
-                return '\n'.join(t.pretty_print(2*verbosity)
-                                 for t in evaled)
+                evaled = evaled[1:] if len(evaled) > 1 else evaled
+                return '\n'.join(t.pretty_print(2*verbosity) for t in evaled)
             else:
                 return evaled.pretty_print(2*verbosity)
         else:
             if trace:
+                evaled = evaled[1:] if len(evaled) > 1 else evaled
                 return '\n'.join(str(e) for e in evaled)
             else:
-                return evaled
+                return str(evaled)
     elif s[0] == 'signature':
         add_signature(trs, s[1])
+    elif s[0] == 'assumption':
+        add_assumption(trs, s[1], path=path)
     else:
         return 'Oops! ' + str(s)
 
 
 def main():
     arguments = docopt(__doc__, version="terf 0.0.1")
-    try:
-        trace = arguments['--trace']
-    except KeyError:
-        trace = False
-    if arguments['--batch']:
-        batch(arguments['--batch'],
+    trace = arguments.get('--trace', False)
+    path = ['./'] + arguments.get('--path', '').split(':')
+    if arguments['<filename>']:
+        batch(arguments['<filename>'],
               int(arguments['--print']),
               int(arguments['--steps']),
-              trace)
+              trace,
+              path=path)
     else:
         repl(int(arguments['--print']),
              int(arguments['--steps']),
-             trace)
+             trace,
+             path=path)
 
 
 if __name__ == "__main__":

@@ -5,22 +5,28 @@ What kinds of things are in TRSs?
 - Terms
   - Variables "x_"
   - Applications of Operators to Terms
-     - T[x_, ABC]
-     - (x_ ABC) (i.e. .[x_, ABC])
-- Rewrite Rules "lhs = rhs" or "lhs = rhs1 | rhs2 | ..."
+    - T[x_ ABC]
+    - (x_ ABC) (i.e. .[x_ ABC])
+    - x_ ABC (i.e. .[x_ ABC])
+- Rules
+  - Deterministic "lhs = rhs"
+  - Non-Deterministic "lhs = rhs1 | rhs2 | ..."
+- Assumptions "assume lists.terf"
 - Comments "# comment"
-- Signatures "signature X/0 y_"
+- Signatures "signature X/0 ./2"
 """
 import ply.lex as lex
 
 
 reserved = {
-   'signature': 'SIGNATURE_KW'
+    'signature': 'SIGNATURE_KW',
+    'assume': 'ASSUME_KW'
 }
 
 
 tokens = ['VARIABLE',
           'OPERATOR',
+          'STRING',
           'ARITY',
           'RULE_KW',
           'LPAREN',
@@ -32,14 +38,20 @@ tokens = ['VARIABLE',
 
 
 def t_VARIABLE(t):
-    r'([^\s\#\[\]\(\)=;/\|])*_(?=[\s\#\[\]\(\);\|])'
+    r'([^\s\#\[\]\(\)=;/\|\'\"])*_(?=[\s\#\[\]\(\);\|])'
     t.type = reserved.get(t.value, 'VARIABLE')  # Check for reserved words
     return t
 
 
 def t_OPERATOR(t):
-    r'([^\s\#\[\]\(\)=;/\|])*[^_\s\#\[\]\(\)=;/\|](?=[\s\#\[\]\(\);/\|])'
+    r'([^\s\#\[\]\(\)=;/\|\'\"])*[^_\s\#\[\]\(\)=;/\|\'\"](?=[\s\#\[\]\(\);/\|])'
     t.type = reserved.get(t.value, 'OPERATOR')  # Check for reserved words
+    return t
+
+
+def t_STRING(t):
+    r'\'.*\'|\".+\"'
+    t.type = reserved.get(t.value, 'STRING')  # Check for reserved words
     return t
 
 

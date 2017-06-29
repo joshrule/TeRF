@@ -16,9 +16,10 @@ def p_program(p):
 
 def p_statement(p):
     """ statement : rule SEMICOLON
+                  | assumption SEMICOLON
                   | signature SEMICOLON
                   | termlisttop SEMICOLON"""
-    if p[1][0] != 'rule' and p[1][0] != 'signature':
+    if p[1][0] not in ['rule', 'signature', 'assumption']:
         p[0] = builder(p[1])
     else:
         p[0] = p[1]
@@ -65,6 +66,11 @@ def p_termlist(p):
     else:
         p[0] = p[1]
         p[0].append(p[2])
+
+
+def p_assumption(p):
+    """ assumption : ASSUME_KW STRING"""
+    p[0] = ('assumption', p[2][1:-1])
 
 
 def p_signature(p):
@@ -123,13 +129,31 @@ def p_error(p):
 parser = yacc.yacc()
 
 
-def make_trs(ss):
-    trs = TRS()
+def make_trs(ss, trs=None, path=None):
+    trs = TRS() if trs is None else trs
     for s in ss:
         if s[0] == 'rule':
             trs = add_rule(trs, s[1], s[2])
         elif s[0] == 'signature':
             trs = add_signature(trs, s[1])
+        elif s[0] == 'assumption':
+            trs = add_assumption(trs, s[1], path=path)
+    return trs
+
+
+def add_assumption(trs, s, path=None):
+    s += '.terf' if len(s) <= 5 or s[-5:] != '.terf' else ''
+    if path is None:
+        path = ['./']
+    for lib in path:
+        try:
+            filename = lib + s
+            with open(filename) as file:
+                ss = parser.parse(file.read())
+                return make_trs(ss, trs=trs, path=path)
+        except IOError:
+            pass
+    print 'Can\'t find {}'.format(s)
     return trs
 
 
@@ -137,7 +161,7 @@ def add_signature(trs, s):
     for t in s:
         if t[0] == 'operator':
             trs.operators.add(Op(t[1], int(t[2])))
-    return trs
+            return trs
 
 
 def add_rule(trs, lhst, rhsts):
@@ -169,11 +193,11 @@ def make_term(t, vs=None, trs=None):
         return App(head, body)
 
 
-def load_source(filename):
+def load_source(filename, path=None):
     with open(filename) as file:
         ss = parser.parse(file.read())
         terms = [make_term(s[1]) for s in ss if s[0] == 'term']
-        return make_trs(ss), terms
+        return make_trs(ss, path=path), terms
 
 
 if __name__ == '__main__':

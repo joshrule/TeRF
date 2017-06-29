@@ -15,13 +15,14 @@ class TRS(object):
             pass
         return self
 
-    def add_rule(self, rule, index=0):
+    def add_rule(self, rule, index=None):
         for r in self.rules:
             sub = r.lhs.unify(rule.lhs, type='alpha')
             if sub is not None:
-                r.rhs = [rhs.substitute(sub) for rhs in rule.rhs] + r.rhs
+                r.rhs += [rhs.substitute(sub) for rhs in rule.rhs]
                 break
         else:
+            index = len(self.rules) if index is None else index
             self.rules.insert(index, rule)
         return self
 
