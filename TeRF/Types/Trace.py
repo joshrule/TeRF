@@ -3,13 +3,12 @@ from itertools import chain
 from numpy import exp
 from numpy.random import choice
 
-from TeRF.Rewrite import single_rewrite
-from TeRF.Miscellaneous import log0, log1of
+from TeRF.Miscellaneous import log, log1of
 
 
 def rewrites_to(trs, t1, t2, p_observe, steps=100):
     # NOTE: we only use tree equality and don't consider tree edit distance
-    trace = Trace(t1, p_observe=p_observe, max_steps=steps)
+    trace = Trace(t1, p_observe=p_observe, max_steps=steps).run()
     return sum(l.log_p for l in trace.leaves()
                if l == t2 and (l.state in ['normal', 'observed']))
 
@@ -51,10 +50,10 @@ class Trace(object):
         except IndexError:
             raise TraceComplete('step: no further steps can be taken')
 
-        if state.log_p < log0(self.min_p) or self.steps > self.max_steps:
+        if state.log_p < log(self.min_p) or self.steps > self.max_steps:
             raise TraceComplete('step: no further steps can be taken')
 
-        rewrites = single_rewrite(self.trs, state.term, type='all')
+        rewrites = state.term.single_rewrite(self.trs, type='all')
 
         if rewrites == [state.term] or rewrites == []:
             nf = TraceState(state.term,
@@ -64,7 +63,7 @@ class Trace(object):
             state.children.append(nf)
 
         observed = TraceState(state.term,
-                              log_p=(log0(self.p_observe) + state.log_p),
+                              log_p=(log(self.p_observe) + state.log_p),
                               parent=state,
                               state='observed')
         state.children.append(observed)
