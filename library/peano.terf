@@ -1,9 +1,9 @@
 # "Peano" Addition
 # Nat: 0 | s(Nat)
 
-+[0 y_] -> y_
++[0 y_] = y_;
 
-+[s[x_] y_] -> s[+[x_ y_]]
++[s[x_] y_] = s[+[x_ y_]];
 
 # Test Terms
 # +[0 0]
