@@ -4,11 +4,11 @@ Usage:
     terf [-ht] [--print=<level>] [--steps=<N>] [--path=<dir>] [<filename>]
 
 Options:
-    -h --help            Show this message
-    -t --trace           Trace evaluations
-    --print=<int>        how to print terms [default: 0].
+    -h --help            Show this message.
+    -t --trace           Trace evaluations.
+    --print=<int>        how to print terms. [default: 0].
     --steps=<int>        maximum execution steps for each term. [default: 1000]
-    --path=<dir>          where the library is located
+    --path=<dir>         where the library is located. [default: ./]
 
 Batch mode:
   Include a <filename> as the last argument to run terf in batch mode
@@ -231,7 +231,8 @@ def process_statement(trs, statement, verbosity, count, trace, path=None):
 def main():
     arguments = docopt(__doc__, version="terf 0.0.1")
     trace = arguments.get('--trace', False)
-    path = ['./'] + arguments.get('--path', '').split(':')
+    path = arguments['--path'].split(':')
+    path += [] if './' in path else ['./']
     if arguments['<filename>']:
         batch(arguments['<filename>'],
               int(arguments['--print']),
