@@ -3,11 +3,9 @@ class TRSSimplePrior(object):
         """
         the log prior of the hypothesis
 
-        TRSSimplePrior is based entirely on the /size/ of the TRS =
-        # symbols in the signature +
-        # rules +
-        # nodes in each rule (lhs + rhs)
-        
+        TRSSimplePrior is based entirely on the /size/ of the TRS:
+        # operators + # rules + # nodes in each rule (lhs + rhss)
+
         Given the assumptions below, it should be part of a LOTlib Hypothesis.
 
         Assumes:

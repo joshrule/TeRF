@@ -6,13 +6,6 @@ from numpy.random import choice
 from TeRF.Miscellaneous import log, log1of
 
 
-def rewrites_to(trs, t1, t2, p_observe, steps=100):
-    # NOTE: we only use tree equality and don't consider tree edit distance
-    trace = Trace(t1, p_observe=p_observe, max_steps=steps).run()
-    return sum(l.log_p for l in trace.leaves()
-               if l == t2 and (l.state in ['normal', 'observed']))
-
-
 class TraceComplete(Exception):
     pass
 
@@ -75,6 +68,12 @@ class Trace(object):
                                     state='unobserved')
             heappush(self.unobserved, unobserved)
             state.children.append(unobserved)
+
+    def rewrites_to(self, term):
+        # NOTE: we only use tree equality and don't consider tree edit distance
+        self.run()
+        return sum(l.log_p for l in self.leaves()
+                   if l == term and (l.state in ['normal', 'observed']))
 
 
 class TraceState(object):

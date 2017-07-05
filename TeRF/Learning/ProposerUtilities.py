@@ -1,7 +1,7 @@
 from LOTlib.Hypotheses.Proposers.Proposer import ProposalFailedException
 from numpy.random import choice
 
-from TeRF.TRS import TRSError, RR
+from TeRF.Types import Rule
 
 
 def choose_a_rule(xs):
@@ -10,12 +10,12 @@ def choose_a_rule(xs):
         rule = xs[idx]
         return rule, idx
     except ValueError:
-        raise ProposalFailedException('LocalDifferenceProposer: ' +
+        raise ProposalFailedException('choose_a_rule: ' +
                                       'TRS must have rules')
 
 
 def make_a_rule(lhs, rhs):
     try:
-        return RR(lhs, rhs)
-    except TRSError:
-        raise ProposalFailedException('LocalDifferenceProposer: bad rule')
+        return Rule(lhs, rhs)
+    except ValueError:
+        raise ProposalFailedException('make_a_rule: bad rule')

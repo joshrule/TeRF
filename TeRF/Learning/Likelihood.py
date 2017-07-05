@@ -1,7 +1,7 @@
-from TeRF.Types.Trace import rewrites_to
+from TeRF.Types import Trace
 
 
-class TRSLikelihood(object):
+class Likelihood(object):
     def compute_single_likelihood(self, datum):
         """
         the log likelihood of the hypothesis for a single datum
@@ -21,9 +21,8 @@ class TRSLikelihood(object):
           datum: a rewriteRule representing a single datum
         Returns: a float, -inf <= x <= 0, log p(datum | self.value)
         """
-        lhs = datum.lhs
-        rhs = datum.rhs
-        start = self.start
-        p_lhs = rewrites_to(self.value, lhs, start, self.p_observe, steps=10)
-        p_rhs = rewrites_to(self.value, rhs, lhs, self.p_observe, steps=10)
+        p_lhs = Trace(self.value, self.start, p_observe=self.p_observe,
+                      max_steps=10).rewrites_to(datum.lhs)
+        p_rhs = Trace(self.value, datum.lhs, p_observe=self.p_observe,
+                      max_steps=10).rewrites_to(datum.rhs)
         return p_lhs + p_rhs

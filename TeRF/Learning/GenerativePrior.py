@@ -4,7 +4,7 @@ from scipy.stats import geom
 from TeRF.Types import Signature
 
 
-class TRSGenerativePrior(object):
+class GenerativePrior(object):
 
     @attrmem('prior')
     def compute_prior(self):
