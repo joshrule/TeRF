@@ -19,10 +19,10 @@ class TRS(object):
         for r in self.rules:
             sub = r.lhs.unify(rule.lhs, type='alpha')
             if sub is not None:
-                r.rhs += [rhs.substitute(sub) for rhs in rule.rhs]
+                r.rhs = [rhs.substitute(sub) for rhs in rule.rhs] + r.rhs
                 break
         else:
-            index = len(self.rules) if index is None else index
+            index = 0 if index is None else index
             self.rules.insert(index, rule)
         return self
 

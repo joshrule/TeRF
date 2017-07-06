@@ -1,46 +1,33 @@
 from copy import deepcopy
 from LOTlib.Hypotheses.Proposers.Proposer import (Proposer,
                                                   ProposalFailedException)
-from numpy.random import choice
 
-from TeRF.Miscellaneous import find_insertion, log0
-from TeRF.TRS import RewriteRule, TRSError
-from TeRF.Utilities import sample_term, log_p, alpha_eq
+from TeRF.Miscellaneous import find_insertion, log
+from TeRF.Types import Rule, Sig
 
 
 def propose_value(value, **kwargs):
     new_value = deepcopy(value)
-    terminals = {x for x in value.operators if x.arity == 0} | value.variables
-    if len(terminals) == 0:
-        raise ProposalFailedException('AddRuleProposer: no terminals')
+    lhs = None
+    while not hasattr(lhs, 'head'):
+        lhs = Sig(value.operators).sample_term(invent=True)
+    rhs = Sig(value.operators | lhs.variables()).sample_term(invent=False)
     try:
-        curr_lhss = [r.lhs for r in value.rules]
-        lhs = None
-        blahs = [False]
-        while (not hasattr(lhs, 'head')) or any(blahs):
-            lhs = sample_term(value.variables | value.operators)
-            protoblahs = [alpha_eq(lhs, clhs) for clhs in curr_lhss]
-            blahs = [tf for tf, env in protoblahs]
-        rhs = sample_term(value.operators | lhs.variables())
-        new_rule = RewriteRule(lhs, rhs)
-        idx = int(choice(len(value.rules)+1))
-        # print 'arp: adding rule', new_rule
-    except TRSError:
-        raise ProposalFailedException('AddRuleProposer: ' +
-                                      'couldn\'t generate new rule')
-    return new_value.add_rule(new_rule, index=idx)
+        new_rule = Rule(lhs, [rhs])
+    except ValueError:
+        raise ProposalFailedException('AddRuleProposer: bad rule')
+    print 'arp: adding rule', new_rule
+    return new_value.add_rule(new_rule)
 
 
 def give_proposal_log_p(old, new, **kwargs):
     rule = find_insertion(new.rules, old.rules)
-    if rule is not None and \
-       old.variables == new.variables and \
-       old.operators == new.operators:
-        p_lhs = log_p(rule.lhs, new.variables | new.operators)
-        p_rhs = log_p(rule.rhs, new.operators | rule.lhs.variables())
-        p_slot = -log0(len(new.rules)) if new.rules != [] else log0(1)
-        return (p_lhs + p_rhs + p_slot)
-    return log0(0)
+    if rule is not None and old.operators == new.operators:
+        p_lhs = Sig(new.operators).log_p(rule.lhs, invent=True)
+        rhs_sig = Sig(new.operators | rule.lhs.variables())
+        p_rhs = rhs_sig.log_p(rule.rhs, invent=False)
+        return (p_lhs + p_rhs)
+    return log(0)
 
 
 class AddRuleProposer(Proposer):

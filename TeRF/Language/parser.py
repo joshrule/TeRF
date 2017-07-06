@@ -167,7 +167,7 @@ def add_signature(trs, s):
 def add_rule(trs, lhst, rhsts):
     lhs = make_term(lhst[1], trs=trs)
     rhs = [make_term(t[1], vs=lhs.variables, trs=trs) for t in rhsts]
-    return trs.add_rule(R(lhs, rhs))
+    return trs.add_rule(R(lhs, rhs), index=len(trs.rules))
 
 
 def make_term(t, vs=None, trs=None):

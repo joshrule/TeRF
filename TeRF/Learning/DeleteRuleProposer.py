@@ -3,25 +3,23 @@ from LOTlib.Hypotheses.Proposers.Proposer import (Proposer,
                                                   ProposalFailedException)
 from numpy.random import choice
 
-from TeRF.Miscellaneous import find_insertion, log1of, log0
+from TeRF.Miscellaneous import find_insertion, log1of, log
 
 
 def propose_value(old_value, **kwargs):
     try:
         chosen_rule = choice(old_value.rules)
-        # print 'drp: deleting', chosen_rule
+        print 'drp: deleting', chosen_rule
         return deepcopy(old_value).del_rule(chosen_rule)
     except ValueError:
-        raise ProposalFailedException('DeleteRuleProposer: ' +
-                                      'No rules to Delete')
+        raise ProposalFailedException('DeleteRuleProposer: TRS has no rules')
 
 
 def give_proposal_log_p(old_value, new_value, **kwargs):
     if new_value.operators == old_value.operators and \
-       new_value.variables == old_value.variables and \
        find_insertion(old_value.rules, new_value.rules) is not None:
         return log1of(old_value.rules)
-    return log0(0)
+    return log(0)
 
 
 class DeleteRuleProposer(Proposer):
