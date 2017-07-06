@@ -4,16 +4,14 @@ from LOTlib.Inference.Samplers.StandardSample import standard_sample
 from numpy.random import choice
 from scipy.stats import geom
 
-from TeRF.Hypotheses.TRSGenerativePrior import TRSGenerativePrior
-from TeRF.Hypotheses.TRSLikelihood import TRSLikelihood
-from TeRF.Hypotheses.TRSTestProposer import TRSTestProposer
-from TeRF.parser import load_source
-from TeRF.TRS import RR, gensym
-from TeRF.Utilities import sample_term, rewrite
+from TeRF.Learning.GenerativePrior import GenerativePrior
+from TeRF.Learning.Likelihood import Likelihood
+from TeRF.Learning.TestProposer import TestProposer
+from TeRF.Language.parser import load_source
+from TeRF.Types import R, Sig
 
 
-class TRSHypothesis(TRSGenerativePrior, TRSLikelihood, TRSTestProposer,
-                    Hypothesis):
+class TRSHypothesis(GenerativePrior, Likelihood, TestProposer, Hypothesis):
     """
     A Hypothesis in the space of Term Rewriting Systems (TRS)
 
@@ -25,7 +23,6 @@ class TRSHypothesis(TRSGenerativePrior, TRSLikelihood, TRSTestProposer,
       p_similar: rate of noisiness in evaluation (in timesteps)
       p_operators: probability of adding a new operator
       p_arity: probability of increasing the arity of an operator
-      p_variables: probability of adding a new variable
       p_rules: probability of adding a new rule
       p_r: probability of regenerating any given subtree
       proposers: the components of the mixture
@@ -46,12 +43,12 @@ def test(n, filename):
         nChanged = 25
         nTotal = 50
         while len(data) < nTotal:
-            lhs = sample_term(trs.operators)
+            lhs = Sig(trs.operators).sample_term()
             ws = [geom.pmf(k=x, p=0.1)/geom.cdf(k=10, p=.1)
                   for x in range(1, 11)]
             n_steps = choice(range(1, 11), p=ws)
-            rhs = rewrite(trs, lhs, steps=n_steps)
-            rule = RR(lhs, rhs)
+            rhs = lhs.rewrite(trs, max_steps=n_steps)
+            rule = R(lhs, [rhs])
             if len(data) < nChanged and lhs != rhs and rule not in trs.rules:
                 data.add(rule)
             elif len(data) >= nChanged and rule not in trs.rules:
@@ -63,12 +60,10 @@ def test(n, filename):
         hyp_trs.rules = list(data)
         return TRSHypothesis(value=hyp_trs,
                              privileged_ops=hyp_trs.operators,
-                             gensym=gensym,
                              p_observe=0.1,
                              p_similar=0.99,
                              p_operators=0.5,
                              p_arity=0.9,
-                             p_variables=0.5,
                              p_rules=0.5,
                              p_r=0.3)
 
@@ -79,3 +74,7 @@ def test(n, filename):
     print '\n\n# The best hypotheses of', n, 'samples:'
     for hyp in hyps.get_all(sorted=True):
         print hyp.prior, hyp.likelihood, hyp.posterior_score, hyp
+
+
+if __name__ == '__main__':
+    test(3200, 'library/simple_tree_manipulations/001.terf')
