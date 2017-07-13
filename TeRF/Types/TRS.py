@@ -1,62 +1,107 @@
-class TRS(object):
+import collections as C
+
+import TeRF.Types.Signature as S
+
+
+class TRS(C.MutableMapping):
     def __init__(self):
-        self.operators = set()
-        self.rules = []
-
-    def add_op(self, operator):
-        self.operators.add(operator)
-        return self
-
-    def del_op(self, operator):
-        try:
-            self.operators.remove(operator)
-            self.rules = [r for r in self.rules if operator not in r.operators]
-        except:
-            pass
-        return self
-
-    def add_rule(self, rule, index=None):
-        for r in self.rules:
-            sub = r.lhs.unify(rule.lhs, type='alpha')
-            if sub is not None:
-                r.rhs = [rhs.substitute(sub) for rhs in rule.rhs] + r.rhs
-                break
-        else:
-            index = 0 if index is None else index
-            self.rules.insert(index, rule)
-        return self
-
-    def del_rule(self, item):
-        try:  # treat as a rule
-            for r in self.rules:
-                sub = r.lhs.unify(item.lhs, type='alpha')
-                if sub is not None:
-                    spec = [rhs.substitute(sub) for rhs in item.rhs]
-                    r.rhs = [r for r in r.rhs if r not in spec]
-                if r.rhs == []:
-                    self.rules.remove(r)
-                break
-        except (ValueError, AttributeError):  # could be an index
-            try:
-                del self.rules[item]
-            except (TypeError, IndexError):  # not an index
-                pass
-        return self
+        self.signature = S.Signature()
+        self._order = []
+        self._rules = {}
 
     def __str__(self):
-        return '[\n  Operators: ' + \
-            ', '.join(o.name + '/' + str(o.arity) for o in self.operators) + \
+        return '[\n  Signature: ' + \
+            ', '.join(str(s) for s in self.signature) + \
             '\n  Rules:\n    ' + \
-            ',\n    '.join(str(rule) for rule in self.rules) + '\n]'
-
-    def __len__(self):
-        return sum(len(r) for r in self.rules + [self.rules, self.operators])
+            ',\n    '.join(str(rule) for rule in self) + '\n]'
 
     def __eq__(self, other):
-        return self.rules == other.rules and self.operators == other.operators
+        return self._order == other._order and \
+            self._rules == other._rules and \
+            self.signature == other.signature
 
     def __ne__(self, other):
         return not self == other
 
     def __hash__(self):
-        return hash((tuple(self.rules), frozenset(self.operators)))
+        return hash((frozenset(self.signature),
+                     tuple(self._rules),
+                     tuple(self._order)))
+
+    def __setitem__(self, index, value):
+        """
+        Args:
+          index: an integer, the order the rule should take. This would be used
+            as a key in most mappings, but here it acts as an index, because
+            the key comes from the value itself
+          value: a Rule, the LHS is used as the key
+        """
+        if self.signature.operators >= value.signature.operators:
+            if value.lhs not in self:
+                self._rules[value.lhs] = value
+            else:
+                self[value.lhs].add(value)
+                self._order.remove(value.lhs)
+            self._order.insert(index, value.lhs)
+        else:
+            raise ValueError('TRS.__setitem__: inconsistent signature')
+
+    def __getitem__(self, key):
+        # assume key is a rule -- not a common case, probably
+        # does it make sense to return only part of the rule?
+        try:
+            rule = self._rules[key.lhs]
+            if key in rule:
+                env = rule.unify(key, type='alpha')
+                return key.substitute(env)
+        except (AttributeError, KeyError):
+            pass
+
+        # assume key is a term
+        try:
+            return self._rules[key]
+        except KeyError:
+            pass
+
+        # assume key is a number
+        try:
+            return self._rules[self._order[key]]
+        except TypeError:
+            raise KeyError
+
+    def __delitem__(self, key):
+        # assume it's a rule
+        try:
+            self._order.remove(key.lhs)
+            del self._rules[key.lhs]
+        except AttributeError:
+            pass
+
+        # assume it's a term
+        try:
+            self._order.remove(key)
+            del self._rules[key]
+        except (KeyError, TypeError):
+            pass
+
+        # assume it's a number
+        del self._rules[self._order[key]]
+        del self._order[key]
+
+    def __iter__(self):
+        for lhs in self._order:
+                yield self._rules[lhs]
+
+    def __len__(self):
+        return sum(1 for _ in self)
+
+    def rules(self):
+        for lhs in self._order:
+            for rule in self._rules[lhs]:
+                yield rule
+
+    def num_rules(self):
+        return sum(1 for _ in self.rules())
+
+    def index(self, value):
+        return self._order.index(value)

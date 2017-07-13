@@ -1,16 +1,17 @@
-from TeRF.Types.Atom import Atom
-from TeRF.Types.Term import Term
+import TeRF.Types.Atom as A
+import TeRF.Types.Term as T
+import TeRF.Types.Signature as S
 
 
-class Variable(Atom, Term):
-    """an arbitrary term"""
+class Variable(T.Term, A.Atom):
+    """an unspecified term"""
     def __init__(self, name=None):
-        super(Variable, self).__init__(name=name)
-        self.variables = {self}
-        self.operators = set()
+        A.Atom.__init__(self, name=name, terminal=True)
+        # we need to define __hash__ via Atom before creating a signature
+        T.Term.__init__(self, head=self, signature=S.Signature([self]))
 
     def pretty_print(self, verbose=0):
-        return self.name + '_'
+        return ('' if self.name == str(id(self.identity)) else self.name) + '_'
 
     def substitute(self, sub):
         try:
@@ -21,7 +22,7 @@ class Variable(Atom, Term):
     def unify(self, t, env=None, type='simple'):
         env = {} if env is None else env
 
-        if self == t:
+        if self is t:
             return env
         if self in env:
             return env[self].unify(t, env, type)
@@ -34,17 +35,8 @@ class Variable(Atom, Term):
             return t.unify_var(self, env, type)
         return None
 
-    def single_rewrite_helper(self, trs, type):
+    def single_rewrite(self, trs, type):
         return None
-
-    def head(self):
-        return self
-
-    def is_atom(self):
-        return True
-
-    def difference_helper(self, other):
-        return [(self, other)]
 
     def __str__(self):
         return self.name + '_'
@@ -52,21 +44,14 @@ class Variable(Atom, Term):
     def __repr__(self):
         return 'Variable(\'{}\')'.format(self.name)
 
-    def __eq__(self, other):
-        try:
-            return (self.identity == other.identity and
-                    not hasattr(other, 'arity'))
-        except AttributeError:
-            return False
-
-    def __ne__(self, other):
-        return not self == other
-
     def __hash__(self):
         return hash(self.identity)
 
     def __len__(self):
         return 1
+
+#    def difference_helper(self, other):
+#        return [(self, other)]
 
 
 Var = Variable
