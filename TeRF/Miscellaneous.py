@@ -1,6 +1,7 @@
+from itertools import repeat, product, izip
 from numpy import inf, log as numpy_log
 from numpy.random import choice
-from itertools import repeat, product, izip
+from random import sample
 
 
 def gift(xs, N):
@@ -48,6 +49,15 @@ def list_possible_gifts(who_owns_what):
 
 
 def find_insertion(xs1, xs2):
+    """
+    Find the item inserted into xs2 to create xs1
+
+    Args:
+      xs1: a list
+      xs2: a list
+    Returns:
+      the item inserted into xs2 to create xs1
+    """
     if len(xs1) - len(xs2) != 1:
         return None
     candidate = None
@@ -78,3 +88,12 @@ def log1of(xs, empty=0):
 
 def log(x):
     return -inf if x == 0.0 else numpy_log(x)
+
+
+def unique_shuffle(xs):
+    if len(set(xs)) == 1:
+        return None
+    while True:
+        result = sample(xs, len(xs))
+        if xs != result:
+            return result
