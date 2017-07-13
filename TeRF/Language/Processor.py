@@ -31,16 +31,19 @@ REPL mode:
    >> canon(ical) <term>            # print the canonical form of <term>
    >> pretty <term>                 # pretty-print <term>
    >> paren(s|thesized) <term>      # print <term> with full parentheses
-   >> tree <term>                   # print <term> as a tree
    >> generate                      # generate a new term and assign it a name
 """
 
 from TeRF.Language.parser import parser, load_source, make_term
 from TeRF.Language.parser import add_signature, add_rule, add_assumption
-from TeRF.Types import Op, App, TRS, R, Sig
+from TeRF.Types.Operator import Op
+from TeRF.Types.Application import App
+from TeRF.Types.TRS import TRS
+from TeRF.Types.Rule import R
+from TeRF.Types.Signature import SignatureError
 
+from copy import copy
 from docopt import docopt
-from pptree import print_tree
 import re
 
 
@@ -50,7 +53,7 @@ def batch(filename, verbosity, count, trace=False, path=None):
     print show_trs(trs)
     print '\nEvaluations:'
     for term in terms:
-        evaled = term.rewrite(trs, max_steps=count, trace=trace)
+        evaled = term.rewrite(trs, max_steps=count, type='one', trace=trace)
         if verbosity >= 0:
             if trace:
                 print '\n  {}'.format(term.pretty_print(2*verbosity))
@@ -103,7 +106,6 @@ def repl_eval(trs, statement, verbosity, count, trace, path):
     pretty = re.compile('pretty\s+(?P<term>.+)')
     parens = re.compile('paren(s|thesized)?\s+(?P<term>.+)')
     generate = re.compile('generate')
-    tree = re.compile('tree\s+(?P<term>.+)')
     
     if quit.match(statement) or exit.match(statement):
         raise EOFError
@@ -112,7 +114,7 @@ def repl_eval(trs, statement, verbosity, count, trace, path):
     if help.match(statement):
         return __doc__, []
     if clear.match(statement):
-        trs.operators, trs.rules = set(), []
+        trs = TRS()
         return None, []
     if delete.match(statement):
         delete_from_trs(trs,
@@ -130,13 +132,10 @@ def repl_eval(trs, statement, verbosity, count, trace, path):
         return print_term(parens.match(statement).group('term'), 'parens'), []
     if generate.match(statement):
         rule = make_a_named_term(trs)
-        return None, [str(rule), 'show']
-    if tree.match(statement):
-        parse = parser.parse(tree.match(statement).group('term') + ';')[0]
-        if parse[0] == 'term':
-            term = make_term(parse[1])
-            return print_tree(term, childattr='body'), []
-        return None, []
+        if rule is not None:
+            return None, [str(rule), 'show']
+        return 'cannot invent term -- no terminals?', []
+    # TODO: add a tree statement to print trees
     else:
         words = process_statement(trs, statement,
                                   verbosity, count, trace, path=path)
@@ -144,15 +143,18 @@ def repl_eval(trs, statement, verbosity, count, trace, path):
 
 
 def make_a_named_term(trs):
-    lhs = App(Op(), [])
-    rhs = [Sig(trs.operators).sample_term(invent=False)]
-    return R(lhs, rhs)
+    try:
+        lhs = App(Op(), [])
+        rhs = [trs.signature.sample_term(invent=False)]
+        return R(lhs, rhs)
+    except SignatureError:
+        return None
 
 
 def show_trs(trs):
-    operators = ', '.join(o.name + '/' + str(o.arity) for o in trs.operators)
+    operators = ', '.join(str(s) for s in trs.signature)
     rules = '\n'.join('{:d}: {}'.format(i, rule)
-                      for i, rule in enumerate(trs.rules))
+                      for i, rule in enumerate(trs))
     return operators + '\n' + rules
 
 
@@ -162,7 +164,7 @@ def delete_from_trs(trs, type, obj):
         return trs
 
     try:
-        op = [op for op in trs.operators if op.name == obj][0]
+        op = [op for op in trs.signature if op.name == obj][0]
         trs.del_op(op)
     except IndexError:
         pass
@@ -173,7 +175,7 @@ def save_trs(trs, filename):
     with open(filename, 'w') as f:
         f.write('signature ')
         f.write(' '.join(op.fullname() for op in trs.operators) + ';\n')
-        f.write(';\n'.join([str(rule) for rule in trs.rules])+';\n')
+        f.write(';\n'.join([str(rule) for rule in trs])+';\n')
 
 
 def load_file(filename):
@@ -208,18 +210,30 @@ def process_statement(trs, statement, verbosity, count, trace, path=None):
         add_rule(trs, s[1], s[2])
         return ''
     elif s[0] == 'term':
-        term = make_term(s[1])
-        evaled = term.rewrite(trs, max_steps=count, trace=trace)
+        term = make_term(s[1], signature=copy(trs.signature))
+        evaled = term.rewrite(trs, max_steps=count, type='one', trace=trace)
         if verbosity >= 0:
             if trace:
-                evaled = evaled[1:] if len(evaled) > 1 else evaled
-                return '\n'.join(t.pretty_print(2*verbosity) for t in evaled)
+                evaled = evaled.root
+                the_trace = []
+                while evaled.children != []:
+                    evaled = evaled.children[0]
+                    the_trace.append(evaled.term)
+                if the_trace == []:
+                    the_trace.append(evaled.term)
+                return '\n'.join(t.pretty_print(2*verbosity) for t in the_trace)
             else:
                 return evaled.pretty_print(2*verbosity)
         else:
             if trace:
-                evaled = evaled[1:] if len(evaled) > 1 else evaled
-                return '\n'.join(str(e) for e in evaled)
+                evaled = evaled.root
+                the_trace = []
+                while evaled.children != []:
+                    evaled = evaled.children[0]
+                    the_trace.append(evaled.term)
+                if the_trace == []:
+                    the_trace.append(evaled.term)
+                return '\n'.join(str(t) for t in the_trace)
             else:
                 return str(evaled)
     elif s[0] == 'signature':

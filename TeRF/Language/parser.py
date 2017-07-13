@@ -1,7 +1,13 @@
+from copy import copy
 import ply.yacc as yacc
 
 from TeRF.Language.lexer import tokens
-from TeRF.Types import Op, Var, App, TRS, R
+from TeRF.Types.Operator import Op
+from TeRF.Types.Variable import Var
+from TeRF.Types.Application import App
+from TeRF.Types.TRS import TRS
+from TeRF.Types.Rule import R
+from TeRF.Types.Signature import Signature
 
 
 def p_program(p):
@@ -133,11 +139,11 @@ def make_trs(ss, trs=None, path=None):
     trs = TRS() if trs is None else trs
     for s in ss:
         if s[0] == 'rule':
-            trs = add_rule(trs, s[1], s[2])
+            add_rule(trs, s[1], s[2])
         elif s[0] == 'signature':
-            trs = add_signature(trs, s[1])
+            add_signature(trs, s[1])
         elif s[0] == 'assumption':
-            trs = add_assumption(trs, s[1], path=path)
+            add_assumption(trs, s[1], path=path)
     return trs
 
 
@@ -154,41 +160,44 @@ def add_assumption(trs, s, path=None):
         except IOError:
             pass
     print 'Can\'t find {}'.format(s)
-    return trs
 
 
 def add_signature(trs, s):
     for t in s:
         if t[0] == 'operator':
-            trs.operators.add(Op(t[1], int(t[2])))
-            return trs
+            trs.signature.add(Op(t[1], int(t[2])))
 
 
 def add_rule(trs, lhst, rhsts):
-    lhs = make_term(lhst[1], trs=trs)
-    rhs = [make_term(t[1], vs=lhs.variables, trs=trs) for t in rhsts]
-    return trs.add_rule(R(lhs, rhs), index=len(trs.rules))
+    sig = copy(trs.signature)
+    lhs = make_term(lhst[1], signature=sig)
+    rhs = [make_term(t[1], signature=sig) for t in rhsts]
+    trs.signature |= sig.operators
+    trs[len(trs)] = R(lhs, rhs)
 
 
-def make_term(t, vs=None, trs=None):
-    if vs is None:
-        vs = set()
+def make_term(t, signature=None):
+    if signature is None:
+        signature = Signature()
 
     if t[0] == 'variable':
         name = t[1][:-1]
-        for v in vs:
+        for v in signature.variables:
             if v.name == name:
                 return v
-        return Var(name) if name != '' else Var()
+        var = Var(name) if name != '' else Var()
+        signature.add(var)
+        return var
 
     if t[0] == 'application':
         head = Op(t[1], len(t[2]))
-        if trs is not None and head not in trs.operators:
-            trs.add_op(head)
+        for o in signature.operators:
+            if o.name == t[1] and o.arity == len(t[2]):
+                head = o
+        signature.add(head)
         body = []
         for part in t[2]:
-            term = make_term(part[1], vs=vs, trs=trs)
-            vs |= term.variables
+            term = make_term(part[1], signature=signature)
             body.append(term)
         return App(head, body)
 
@@ -196,8 +205,10 @@ def make_term(t, vs=None, trs=None):
 def load_source(filename, path=None):
     with open(filename) as file:
         ss = parser.parse(file.read())
-        terms = [make_term(s[1]) for s in ss if s[0] == 'term']
-        return make_trs(ss, path=path), terms
+        trs = make_trs(ss, path=path)
+        terms = [make_term(s[1], signature=copy(trs.signature))
+                 for s in ss if s[0] == 'term']
+        return trs, terms
 
 
 if __name__ == '__main__':
