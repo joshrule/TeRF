@@ -13,7 +13,7 @@ class TraceComplete(Exception):
 class Trace(object):
     """An evaluation trace for a TRS term"""
     def __init__(self, trs, term, type='all', p_observe=0.2,
-                 max_steps=1000, min_p=1e-6):
+                 max_steps=10, min_p=1e-6):
         root = TraceState(term, 0)
         self.unobserved = []
         heappush(self.unobserved, root)
@@ -52,6 +52,9 @@ class Trace(object):
             raise ValueError('Trace.report: more than one outcome (' +
                              str(len(outcomes)) + ')!')
         return [o.term for o in self.root.leaves()]
+
+    def rewrite(self, trace=False):
+        return self.run().report(trace)
 
     def step(self):
         try:

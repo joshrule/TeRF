@@ -1,3 +1,5 @@
+import collections as C
+
 # from numpy import exp
 # from numpy.random import choice, binomial
 # from itertools import repeat, izip
@@ -16,30 +18,46 @@ class SignatureError(Exception):
     pass
 
 
-class Signature(set):
-    def __init__(self, elements=None):
-        if elements is not None:
-            super(Signature, self).__init__(elements)
-        else:
-            super(Signature, self).__init__()
+class Signature(C.MutableSet):
+    def __init__(self, elements=None, parent=None):
+        self.parent = parent
+        self._elements = set(([] if elements is None else elements))
 
     @property
     def variables(self):
-        return {v for v in self if not hasattr(v, 'arity')}
+        return {v for v in self._elements if not hasattr(v, 'arity')}
 
     @property
     def operators(self):
-        return {o for o in self if hasattr(o, 'arity')}
+        return {o for o in self._elements if hasattr(o, 'arity')}
 
     @property
     def terminals(self):
-        return {s for s in self if s.terminal}
+        return {s for s in self._elements if s.terminal}
 
-    def remove(self, element):
-        super(Signature, self).remove(element)
-        for rule in self.parent.rules:
-            if element in rule.operators | rule.variables:
-                del self.parent[rule]
+    def __contains__(self, item):
+        return (item in self._elements)
+
+    def __len__(self):
+        return len(self._elements)
+
+    def __iter__(self):
+        for x in self._elements:
+            yield x
+
+    def add(self, item):
+        self._elements.add(item)
+
+    def discard(self, item):
+        self._elements.discard(item)
+        if self.parent is not None:
+            for rule in self.parent:
+                if item in rule.signature:
+                    del self.parent[rule]
+
+    def replace_vars(self, new_vars):
+        self._elements = self.operators | new_vars
+        return self
 
 #     def possible_roots(self, must_haves):
 #         if len(must_haves) == 0:
@@ -326,11 +344,6 @@ class Signature(set):
 #         self.replace_vars(rule.lhs.variables())
 #         p_rhs = sum(self.log_p(rhs[0], invent=False) for rhs in rule.rhs)
 #         return p_lhs + p_n_clauses + p_rhs
-
-    def replace_vars(self, new_vars):
-        self -= {s for s in self if not hasattr(s, 'arity')}
-        self |= new_vars
-        return self
 
 
 Sig = Signature

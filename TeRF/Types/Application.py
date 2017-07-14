@@ -15,7 +15,7 @@ class Application(T.Term):
             else:
                 raise ValueError('Application: wrong number of arguments')
         except AttributeError:
-            raise ValueError('head of term must be an operator')
+            raise ValueError('Application: head must be an operator')
         sig = S.Signature({head} | {s for b in body for s in b.signature})
         super(Application, self).__init__(head=head,
                                           signature=sig)

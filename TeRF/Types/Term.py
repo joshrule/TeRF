@@ -1,12 +1,17 @@
+import abc
+
 import TeRF.Types.Trace as T
 
 
 class Term(object):
     """trees built of Variables or Operators applied to Terms"""
 
+    __metaclass__ = abc.ABCMeta
+
     def __init__(self, head, signature, **kwargs):
         self.head = head
         self.signature = signature
+        super(Term, self).__init__(**kwargs)
 
     def __copy__(self):
         return self
@@ -14,32 +19,20 @@ class Term(object):
     def __deepcopy__(self, memo):
         return self
 
-    def pretty_print(self, verbose=0):
-        raise NotImplementedError
+    @abc.abstractmethod
+    def pretty_print(self, verbose=0): raise NotImplementedError
 
-    def substitute(self, env):
-        raise NotImplementedError
+    @abc.abstractmethod
+    def substitute(self, env): raise NotImplementedError
 
-    def unify(self, t, env=None, type='simple'):
-        raise NotImplementedError
+    @abc.abstractmethod
+    def unify(self, t, env=None, type='simple'): raise NotImplementedError
 
-    def rewrite(self, trs, max_steps=1, type='one', trace=False, **kwargs):
-        t = T.Trace(trs, self, type=type, max_steps=max_steps, **kwargs)
-        return t.run().report(trace)
+    @abc.abstractmethod
+    def single_rewrite(self, trs, type='one'): raise NotImplementedError
 
-    def single_rewrite(self, trs, type='one'):
-        """
-        Perform a single rewrite of term using the TRS trs.
-
-        Args:
-          term: a Term a la TRS.py, the term to be rewritten
-          trs: a TRS a la TRS.py
-          type: how many possible rewrites to return either 'one' or 'all'
-        Returns:
-          None if no rewrite is possible, otherwise a single rewrite if type is
-            'one' and all possible single rewrites if type is 'all'
-        """
-        raise NotImplementedError
+    def rewrite(self, trs, trace=False, **kwargs):
+        return T.Trace(trs, self, **kwargs).rewrite(trace)
 
     # def differences(self, other):
     #     """all mismatching pairs of corresponding subtrees in self & other"""
