@@ -1,11 +1,12 @@
 import collections as C
+import copy
 
 import TeRF.Types.Signature as S
 
 
 class TRS(C.MutableMapping):
     def __init__(self):
-        self.signature = S.Signature()
+        self.signature = S.Signature(parent=self)
         self._order = []
         self._rules = {}
 
@@ -74,6 +75,7 @@ class TRS(C.MutableMapping):
         try:
             self._order.remove(key.lhs)
             del self._rules[key.lhs]
+            return
         except AttributeError:
             pass
 
@@ -81,7 +83,8 @@ class TRS(C.MutableMapping):
         try:
             self._order.remove(key)
             del self._rules[key]
-        except (KeyError, TypeError):
+            return
+        except (ValueError, KeyError, TypeError):
             pass
 
         # assume it's a number
@@ -89,7 +92,8 @@ class TRS(C.MutableMapping):
         del self._order[key]
 
     def __iter__(self):
-        for lhs in self._order:
+        order = copy.copy(self._order)
+        for lhs in order:
                 yield self._rules[lhs]
 
     def __len__(self):
@@ -105,3 +109,8 @@ class TRS(C.MutableMapping):
 
     def index(self, value):
         return self._order.index(value)
+
+    def clear(self):
+        self.signature = S.Signature(parent=self)
+        self._order = []
+        self._rules = {}

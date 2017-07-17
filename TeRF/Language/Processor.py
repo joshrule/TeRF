@@ -19,6 +19,7 @@ REPL mode:
    >> <lhs> = <rhs>                 # add the deterministic rule <lhs> = <rhs>
    >> <lhs> = <rhs1> | <rhs2> | ... # add a non-deterministic rule
    >> <term>                        # evaluate the term under the current TRS
+   >> signature [<name>/<arity>]+   # add the name/arity pairs as operators
    >> assume <filename>             # run the statements in <filename>
    >> quit                          # exit the REPL
    >> exit                          # exit the REPL
@@ -106,7 +107,7 @@ def repl_eval(trs, statement, verbosity, count, trace, path):
     pretty = re.compile('pretty\s+(?P<term>.+)')
     parens = re.compile('paren(s|thesized)?\s+(?P<term>.+)')
     generate = re.compile('generate')
-    
+
     if quit.match(statement) or exit.match(statement):
         raise EOFError
     if show.match(statement):
@@ -114,7 +115,7 @@ def repl_eval(trs, statement, verbosity, count, trace, path):
     if help.match(statement):
         return __doc__, []
     if clear.match(statement):
-        trs = TRS()
+        trs.clear()
         return None, []
     if delete.match(statement):
         delete_from_trs(trs,
@@ -160,12 +161,12 @@ def show_trs(trs):
 
 def delete_from_trs(trs, type, obj):
     if type == 'rule':
-        trs.del_rule(int(obj))
+        del trs[int(obj)]
         return trs
 
     try:
         op = [op for op in trs.signature if op.name == obj][0]
-        trs.del_op(op)
+        trs.signature.discard(op)
     except IndexError:
         pass
     return trs
@@ -174,7 +175,7 @@ def delete_from_trs(trs, type, obj):
 def save_trs(trs, filename):
     with open(filename, 'w') as f:
         f.write('signature ')
-        f.write(' '.join(op.fullname() for op in trs.operators) + ';\n')
+        f.write(' '.join(op.fullname() for op in trs.signature) + ';\n')
         f.write(';\n'.join([str(rule) for rule in trs])+';\n')
 
 
