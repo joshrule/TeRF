@@ -175,7 +175,7 @@ def delete_from_trs(trs, type, obj):
 def save_trs(trs, filename):
     with open(filename, 'w') as f:
         f.write('signature ')
-        f.write(' '.join(op.fullname() for op in trs.signature) + ';\n')
+        f.write(' '.join(str(op) for op in trs.signature) + ';\n')
         f.write(';\n'.join([str(rule) for rule in trs])+';\n')
 
 

@@ -8,7 +8,7 @@ class Term(object):
 
     __metaclass__ = abc.ABCMeta
 
-    def __init__(self, head, signature, **kwargs):
+    def __init__(self, head, signature=None, **kwargs):
         self.head = head
         self.signature = signature
         super(Term, self).__init__(**kwargs)
@@ -18,6 +18,20 @@ class Term(object):
 
     def __deepcopy__(self, memo):
         return self
+
+    @property
+    def operators(self):
+        return {o for o in self.atoms if hasattr(o, 'arity')}
+
+    @property
+    def variables(self):
+        return {v for v in self.atoms if not hasattr(v, 'arity')}
+
+    @abc.abstractproperty
+    def atoms(self): raise NotImplementedError
+
+    @abc.abstractproperty
+    def subterms(self): raise NotImplementedError
 
     @abc.abstractmethod
     def pretty_print(self, verbose=0): raise NotImplementedError

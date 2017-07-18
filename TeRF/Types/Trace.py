@@ -13,7 +13,7 @@ class TraceComplete(Exception):
 class Trace(object):
     """An evaluation trace for a TRS term"""
     def __init__(self, trs, term, type='all', p_observe=0.2,
-                 max_steps=10, min_p=1e-6):
+                 max_steps=10, min_p=1e-300):
         root = TraceState(term, 0)
         self.unobserved = []
         heappush(self.unobserved, root)
@@ -62,22 +62,21 @@ class Trace(object):
         except IndexError:
             raise TraceComplete('step: no further steps can be taken')
 
-        if state.log_p < log(self.min_p) or self.steps > self.max_steps:
-            raise TraceComplete('step: no further steps can be taken')
-
         rewrites = state.term.single_rewrite(self.trs, type='all')
 
         if rewrites == [state.term] or rewrites is None:
             state.state = 'normal'
         else:
             for term in rewrites:
-                unobserved = TraceState(term,
-                                        state.step+1,
-                                        log_p=(log1of(rewrites) + state.log_p),
-                                        parent=state,
-                                        state='unobserved')
-                heappush(self.unobserved, unobserved)
-                state.children.append(unobserved)
+                new_p = log1of(rewrites) + state.log_p
+                if state.step < self.max_steps and new_p >= log(self.min_p):
+                    unobserved = TraceState(term,
+                                            state.step+1,
+                                            log_p=new_p,
+                                            parent=state,
+                                            state='unobserved')
+                    heappush(self.unobserved, unobserved)
+                    state.children.append(unobserved)
 
         # if only exploring a single path, kill the other paths
         if self.type == 'one' and state.children != []:
@@ -104,10 +103,11 @@ class TraceState(object):
         self.state = state
         self.children = []
 
-    def leaves(self):
+    def leaves(self, states=None):
         if self.children != []:
-            return list(chain(*[c.leaves() for c in self.children]))
-        return [self]
+            return list(chain(*[c.leaves(states=states)
+                                for c in self.children]))
+        return [self] if states is None or self.state in states else []
 
     def __cmp__(self, other):
         return self.log_p < other.log_p

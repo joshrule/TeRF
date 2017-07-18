@@ -9,22 +9,31 @@ class Rule(C.MutableSet):
     def __init__(self, lhs, rhs):
         if isinstance(lhs, A.Application):
             self.lhs = lhs
-            self.signature = lhs.signature
             # ensure rhs is iterable of RHSs
             if isinstance(rhs, T.Term):
                 rhs = [rhs]
             self.rhs = set()
             for case in rhs:
+                if not isinstance(case, T.Term):
+                    raise ValueError('Rule: rhs must be terms')
                 try:
-                    if self.signature.variables >= case.signature.variables:
+                    if self.lhs.variables >= case.variables:
                         self.rhs.add(case)
-                        self.signature |= case.signature
                     else:
                         raise ValueError('Rule: rhs invents variables')
                 except AttributeError:
                     raise ValueError('Rule: rhs isn\'t a term')
         else:
             raise ValueError('Rule: lhs must be an application')
+
+    @property
+    def variables(self):
+        return self.lhs.variables
+
+    @property
+    def operators(self):
+        return self.lhs.operators | {o for rhs in self.rhs
+                                     for o in rhs.operators}
 
     def __contains__(self, item):
         # treat item as rule
@@ -73,20 +82,21 @@ class Rule(C.MutableSet):
         # assume item is a rule
         try:
             env = self.lhs.unify(item.lhs, type='alpha')
-            self.rhs.add(item.rhs.substitute(env))
 
         # assume item is a term
-        except (TypeError, AttributeError):
-            if self.signature.variables >= item.signature.variables:
+        except AttributeError:
+            if self.lhs.variables >= item.variables:
                 self.rhs.add(item)
-            else:
-                raise ValueError('Rule.insert: rhs invents variables')
+        else:
+            for rhs in item.rhs:
+                self.rhs.add(rhs.substitute(env))
 
     def discard(self, item):
         # assume item is a rule
         try:
             env = self.lhs.unify(item.lhs, type='alpha')
-            self.rhs.discard(item.rhs.substitute(env))
+            for rhs in item.rhs:
+                self.rhs.discard(rhs.substitute(env))
         except AttributeError:
             pass
 
@@ -101,6 +111,10 @@ class Rule(C.MutableSet):
                     env = srhs.unify(orhs, env=env, type=type)
             return env
         return None
+
+    def substitute(self, env):
+        return Rule(self.lhs.substitute(env),
+                    [rhs.substitute(env) for rhs in self.rhs])
 
 
 R = Rule

@@ -1,17 +1,17 @@
 import collections as C
+import scipy.stats as ss
+import copy
 
 # from numpy import exp
-# from numpy.random import choice, binomial
+from numpy.random import choice, binomial
 # from itertools import repeat, izip
 # from scipy.misc import logsumexp
-# from scipy.stats import geom
-# from copy import copy
 
-# from TeRF.Miscellaneous import log, log1of, gift, list_possible_gifts
-# import TeRF.Types.Application as A
-# import TeRF.Types.Operator as O
-# import TeRF.Types.Variable as V
-# import TeRF.Types.Rule as R
+from TeRF.Miscellaneous import log, log1of, gift, list_possible_gifts
+import TeRF.Types.Application as A
+import TeRF.Types.Operator as O
+import TeRF.Types.Variable as V
+import TeRF.Types.Rule as R
 
 
 class SignatureError(Exception):
@@ -25,11 +25,13 @@ class Signature(C.MutableSet):
 
     @property
     def variables(self):
-        return {v for v in self._elements if not hasattr(v, 'arity')}
+        return Signature({v for v in self._elements
+                          if not hasattr(v, 'arity')})
 
     @property
     def operators(self):
-        return {o for o in self._elements if hasattr(o, 'arity')}
+        return Signature({o for o in self._elements
+                          if hasattr(o, 'arity')})
 
     @property
     def terminals(self):
@@ -59,29 +61,34 @@ class Signature(C.MutableSet):
         self._elements = self.operators | new_vars
         return self
 
-#     def possible_roots(self, must_haves):
-#         if len(must_haves) == 0:
-#             return list(self)
-#         if len(must_haves) == 1:
-#             return [s for s in self
-#                     if s in must_haves or getattr(s, 'arity', 0) > 0]
-#         return [s for s in self if getattr(s, 'arity', 0) > 1]
-# 
-#     def sample_head(self, invent=True):
-#         head = choice(list(self) + (['new var'] if invent else []))
-#         if head == 'new var':
-#             head = V.Var()
-#         return head
-# 
-#     def log_p_head(self, head, invent=True):
-#         if head in self or (invent and hasattr(head, 'identity')):
-#             return -log(len(self) + (1 if invent else 0))
-#         return log(0)
-# 
+    def find(self, name, arity=None):
+        for s in self.operators:
+            if s.name == name and (arity is None or s.arity == arity):
+                return s
+
+    def possible_roots(self, must_haves):
+        if len(must_haves) == 0:
+            return list(self)
+        if len(must_haves) == 1:
+            return [s for s in self
+                    if s in must_haves or getattr(s, 'arity', 0) > 0]
+        return [s for s in self if getattr(s, 'arity', 0) > 1]
+
+    def sample_head(self, invent=True):
+        head = choice(list(self) + (['new var'] if invent else []))
+        if head == 'new var':
+            head = V.Var()
+        return head
+
+    def log_p_head(self, head, invent=True):
+        if head in self or (invent and isinstance(head, V.Variable)):
+            return -log(len(self) + (1 if invent else 0))
+        return log(0)
+
 #     def sample_term(self, invent=True):
 #         """
 #         sample a TRS term given a TRS signature
-# 
+#
 #         Args:
 #           signature: an iterable containing TRS Operators and Variables
 #           invent: a boolean marking whether to invent variables
@@ -102,29 +109,28 @@ class Signature(C.MutableSet):
 #             return A.App(head, body)
 #         except AttributeError:
 #             return head
-# 
-#     def log_p(self, term, invent=True):
-#         """
-#         compute the probability of sampling a term given a signature
-# 
-#         Args:
-#           term: a TRS term
-#           signature: an iterable containing TRS Operators and Variables
-#           invent: a boolean marking whether to invent variables
-#         Returns:
-#           a float representing log(p(term | signature))
-#         """
-#         sig = copy(self)
-#         p = sig.log_p_head(term.give_head(), invent)
-#         sig |= ({term.give_head()} if invent else set())
-#         try:
-#             for t in term.body:
-#                 p += sig.log_p(t, invent)
-#                 sig |= (t.variables() if invent else set())
-#         except AttributeError:
-#             pass
-#         return p
-# 
+
+    def log_p(self, term, invent=True):
+        """
+        compute the probability of sampling a term given a signature
+
+        Args:
+          term: a TRS term
+          signature: an iterable containing TRS Operators and Variables
+          invent: a boolean marking whether to invent variables
+        Returns:
+          a float representing log(p(term | signature))
+        """
+        sig = copy.copy(self)
+        p = sig.log_p_head(term.head, invent)
+        try:
+            for t in term.body:
+                p += sig.log_p(t, invent)
+                sig |= t.variables if invent else Signature()
+        except AttributeError:
+            pass
+        return p
+
 #     def sample_term_t(self, term, p_r, invent=True):
 #         """
 #         generate a term conditioned on an existing term
@@ -338,12 +344,12 @@ class Signature(C.MutableSet):
 #             return R.Rule(lhs, rhs)
 #         raise SignatureError('sample_rule: constraints must be in signature')
 #     
-#     def log_p_rule(self, rule, p_rhs=0.5, invent=True):
-#         p_lhs = self.log_p(rule.lhs, invent=invent)
-#         p_n_clauses = geom.logpdf(p=p_rhs, k=len(rule.rhs))
-#         self.replace_vars(rule.lhs.variables())
-#         p_rhs = sum(self.log_p(rhs[0], invent=False) for rhs in rule.rhs)
-#         return p_lhs + p_n_clauses + p_rhs
+    def log_p_rule(self, rule, p_rhs=0.5, invent=True):
+        p_lhs = self.log_p(rule.lhs, invent=invent)
+        p_n_clauses = ss.geom.logpmf(p=p_rhs, k=len(rule.rhs))
+        self.replace_vars(rule.lhs.variables)
+        p_rhs = sum(self.log_p(case, invent=False) for case in rule.rhs)
+        return p_lhs + p_n_clauses + p_rhs
 
 
 Sig = Signature

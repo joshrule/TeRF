@@ -1,14 +1,13 @@
 import itertools as I
 import numpy.random as random
 
-import TeRF.Types.Signature as S
 import TeRF.Types.Term as T
 
 
 class Application(T.Term):
     """a term applying an operator to arguments"""
 
-    def __init__(self, head, body):
+    def __init__(self, head, body, **kwargs):
         try:
             if head.arity == len(body):
                 self.body = body
@@ -16,9 +15,21 @@ class Application(T.Term):
                 raise ValueError('Application: wrong number of arguments')
         except AttributeError:
             raise ValueError('Application: head must be an operator')
-        sig = S.Signature({head} | {s for b in body for s in b.signature})
-        super(Application, self).__init__(head=head,
-                                          signature=sig)
+        super(Application, self).__init__(head=head, **kwargs)
+
+    @property
+    def atoms(self):
+        yield self.head
+        for term in self.body:
+            for atom in term.atoms:
+                yield atom
+
+    @property
+    def subterms(self):
+        yield self
+        for term in self.body:
+            for subterm in term.subterms:
+                yield subterm
 
     def __str__(self):
         return '{}[{}]'.format(self.head, ', '.join(str(x) for x in self.body))
@@ -27,7 +38,7 @@ class Application(T.Term):
         return 'Application({},{})'.format(self.head, self.body)
 
     def __len__(self):
-        return 1 + sum(len(t) for t in self.body)
+        return sum(1 for _ in self)
 
     def __eq__(self, other):
         try:
@@ -57,6 +68,8 @@ class Application(T.Term):
         return self.head.pretty_print() + body
 
     def substitute(self, sub):
+        if sub is None:
+            raise ValueError('Application.substitute: bad environment')
         return App(self.head, [t.substitute(sub) for t in self.body])
 
     def unify(self, t, env=None, type='simple'):

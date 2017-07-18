@@ -37,7 +37,7 @@ class TRS(C.MutableMapping):
             the key comes from the value itself
           value: a Rule, the LHS is used as the key
         """
-        if self.signature.operators >= value.signature.operators:
+        if self.signature.operators >= value.operators:
             if value.lhs not in self:
                 self._rules[value.lhs] = value
             else:
@@ -53,9 +53,9 @@ class TRS(C.MutableMapping):
         try:
             rule = self._rules[key.lhs]
             if key in rule:
-                env = rule.unify(key, type='alpha')
+                env = rule.lhs.unify(key.lhs, type='alpha')
                 return key.substitute(env)
-        except (AttributeError, KeyError):
+        except (AttributeError, KeyError, ValueError):
             pass
 
         # assume key is a term
@@ -73,8 +73,10 @@ class TRS(C.MutableMapping):
     def __delitem__(self, key):
         # assume it's a rule
         try:
-            self._order.remove(key.lhs)
-            del self._rules[key.lhs]
+            self._rules[key.lhs].discard(key)
+            if len(self._rules[key.lhs]) == 0:
+                self._order.remove(key.lhs)
+                del self._rules[key.lhs]
             return
         except AttributeError:
             pass
@@ -114,3 +116,6 @@ class TRS(C.MutableMapping):
         self.signature = S.Signature(parent=self)
         self._order = []
         self._rules = {}
+
+    def add(self, rule):
+        self[len(self)] = rule

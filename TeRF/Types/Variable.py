@@ -1,14 +1,30 @@
 import TeRF.Types.Atom as A
 import TeRF.Types.Term as T
-import TeRF.Types.Signature as S
 
 
 class Variable(A.Atom, T.Term):
     """an unspecified term"""
-    def __init__(self, name=None):
+    def __init__(self, name=None, **kwargs):
         super(Variable, self).__init__(name=name, terminal=True,
-                                       head=self, signature=S.Signature())
-        self.signature.add(self)  # need to wait until __hash__ is defied
+                                       head=self, **kwargs)
+        try:
+            self.signature.add(self)
+        except:
+            pass
+
+    def __str__(self):
+        return self.name + '_'
+
+    def __len__(self):
+        return 1
+
+    @property
+    def atoms(self):
+        yield self
+
+    @property
+    def subterms(self):
+        yield self
 
     def pretty_print(self, verbose=0):
         return ('' if self.name == str(id(self.identity)) else self.name) + '_'
@@ -37,12 +53,6 @@ class Variable(A.Atom, T.Term):
 
     def single_rewrite(self, trs, type):
         return None
-
-    def __str__(self):
-        return self.name + '_'
-
-    def __len__(self):
-        return 1
 
 
 Var = Variable

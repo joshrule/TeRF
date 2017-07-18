@@ -164,7 +164,7 @@ def add_assumption(trs, s, path=None):
 
 def add_signature(trs, s):
     for t in s:
-        if t[0] == 'operator':
+        if t[0] == 'operator' and trs.signature.find(t[1], int(t[2])) is None:
             trs.signature.add(Op(t[1], int(t[2])))
 
 
