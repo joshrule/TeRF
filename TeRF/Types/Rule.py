@@ -1,11 +1,10 @@
-import collections as C
+import collections
 import itertools as I
-
 import TeRF.Types.Term as T
 import TeRF.Types.Application as A
 
 
-class Rule(C.MutableSet):
+class Rule(collections.MutableSet):
     def __init__(self, lhs, rhs):
         if isinstance(lhs, A.Application):
             self.lhs = lhs

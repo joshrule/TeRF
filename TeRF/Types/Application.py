@@ -1,6 +1,5 @@
 import itertools as I
 import numpy.random as random
-
 import TeRF.Types.Term as T
 
 

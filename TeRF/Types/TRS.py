@@ -1,10 +1,9 @@
-import collections as C
+import collections
 import copy
-
 import TeRF.Types.Signature as S
 
 
-class TRS(C.MutableMapping):
+class TRS(collections.MutableMapping):
     def __init__(self):
         self.signature = S.Signature(parent=self)
         self._order = []

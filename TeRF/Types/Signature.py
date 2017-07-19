@@ -1,13 +1,11 @@
-import collections as C
-import scipy.stats as ss
+import collections
 import copy
-
+import itertools as I
+import scipy.stats as ss
 # from numpy import exp
 from numpy.random import choice, binomial
-# from itertools import repeat, izip
 # from scipy.misc import logsumexp
-
-from TeRF.Miscellaneous import log, log1of, gift, list_possible_gifts
+import TeRF.Miscellaneous as M
 import TeRF.Types.Application as A
 import TeRF.Types.Operator as O
 import TeRF.Types.Variable as V
@@ -18,7 +16,7 @@ class SignatureError(Exception):
     pass
 
 
-class Signature(C.MutableSet):
+class Signature(collections.MutableSet):
     def __init__(self, elements=None, parent=None):
         self.parent = parent
         self._elements = set(([] if elements is None else elements))

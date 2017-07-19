@@ -35,21 +35,19 @@ REPL mode:
    >> generate                      # generate a new term and assign it a name
 """
 
-from TeRF.Language.parser import parser, load_source, make_term
-from TeRF.Language.parser import add_signature, add_rule, add_assumption
+import copy
+import docopt
+import re
+import TeRF.Language.parser as p
 from TeRF.Types.Operator import Op
 from TeRF.Types.Application import App
 from TeRF.Types.TRS import TRS
 from TeRF.Types.Rule import R
 from TeRF.Types.Signature import SignatureError
 
-from copy import copy
-from docopt import docopt
-import re
-
 
 def batch(filename, verbosity, count, trace=False, path=None):
-    trs, terms = load_source(filename, path=path)
+    trs, terms = p.load_source(filename, path=path)
     print 'TRS:'
     print show_trs(trs)
     print '\nEvaluations:'
@@ -193,10 +191,10 @@ def load_file(filename):
 
 
 def print_term(term, how):
-    s = parser.parse(term + ';')[0]
+    s = p.parser.parse(term + ';')[0]
     if s[0] != 'term':
         return ''
-    term = make_term(s[1])
+    term = p.make_term(s[1])
     if how == 'canon':
         return str(term)
     if how == 'pretty':
@@ -206,12 +204,12 @@ def print_term(term, how):
 
 
 def process_statement(trs, statement, verbosity, count, trace, path=None):
-    s = parser.parse(statement + ';')[0]
+    s = p.parser.parse(statement + ';')[0]
     if s[0] == 'rule':
-        add_rule(trs, s[1], s[2])
+        p.add_rule(trs, s[1], s[2])
         return ''
     elif s[0] == 'term':
-        term = make_term(s[1], signature=copy(trs.signature))
+        term = p.make_term(s[1], signature=copy.copy(trs.signature))
         evaled = term.rewrite(trs, max_steps=count, type='one', trace=trace)
         if verbosity >= 0:
             if trace:
@@ -238,15 +236,15 @@ def process_statement(trs, statement, verbosity, count, trace, path=None):
             else:
                 return str(evaled)
     elif s[0] == 'signature':
-        add_signature(trs, s[1])
+        p.add_signature(trs, s[1])
     elif s[0] == 'assumption':
-        add_assumption(trs, s[1], path=path)
+        p.add_assumption(trs, s[1], path=path)
     else:
         return 'Oops! ' + str(s)
 
 
 def main():
-    arguments = docopt(__doc__, version="terf 0.0.1")
+    arguments = docopt.docopt(__doc__, version="terf 0.0.1")
     trace = arguments.get('--trace', False)
     path = arguments['--path'].split(':')
     path += [] if './' in path else ['./']

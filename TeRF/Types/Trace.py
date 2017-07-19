@@ -1,9 +1,8 @@
-from heapq import heappush, heappop
-from itertools import chain
-from numpy import exp
-from numpy.random import choice
-
-from TeRF.Miscellaneous import log, log1of
+import heapq as hq
+import itertools as I
+import numpy as np
+import numpy.random as random
+import TeRF.Miscellaneous as M
 
 
 class TraceComplete(Exception):
@@ -16,7 +15,7 @@ class Trace(object):
                  max_steps=10, min_p=1e-300):
         root = TraceState(term, 0)
         self.unobserved = []
-        heappush(self.unobserved, root)
+        hq.heappush(self.unobserved, root)
         self.root = root
         self.trs = trs
         self.type = type
@@ -30,8 +29,8 @@ class Trace(object):
 
     def sample(self):
         outcomes = self.root.leaves()
-        ps = [exp(o.log_p) for o in outcomes]
-        return choice(outcomes, p=ps)
+        ps = [np.exp(o.log_p) for o in outcomes]
+        return random.choice(outcomes, p=ps)
 
     def run(self):
         while True:
@@ -58,7 +57,7 @@ class Trace(object):
 
     def step(self):
         try:
-            state = heappop(self.unobserved)
+            state = hq.heappop(self.unobserved)
         except IndexError:
             raise TraceComplete('step: no further steps can be taken')
 
@@ -68,28 +67,28 @@ class Trace(object):
             state.state = 'normal'
         else:
             for term in rewrites:
-                new_p = log1of(rewrites) + state.log_p
-                if state.step < self.max_steps and new_p >= log(self.min_p):
+                new_p = M.log1of(rewrites) + state.log_p
+                if state.step < self.max_steps and new_p >= M.log(self.min_p):
                     unobserved = TraceState(term,
                                             state.step+1,
                                             log_p=new_p,
                                             parent=state,
                                             state='unobserved')
-                    heappush(self.unobserved, unobserved)
+                    hq.heappush(self.unobserved, unobserved)
                     state.children.append(unobserved)
 
         # if only exploring a single path, kill the other paths
         if self.type == 'one' and state.children != []:
             self.unobserved = []
-            chosen_one = choice(state.children)
+            chosen_one = random.choice(state.children)
             if chosen_one.state == 'unobserved':
-                heappush(self.unobserved, chosen_one)
+                hq.heappush(self.unobserved, chosen_one)
             state.children = [chosen_one]
 
     def rewrites_to(self, term):
         # NOTE: we only use tree equality and don't consider tree edit distance
         self.run()
-        return sum(l.log_p + int(l.state != 'normal')*log(self.p_observe)
+        return sum(l.log_p + int(l.state != 'normal')*M.log(self.p_observe)
                    for l in self.root.leaves() if l.term == term)
 
 
@@ -105,8 +104,8 @@ class TraceState(object):
 
     def leaves(self, states=None):
         if self.children != []:
-            return list(chain(*[c.leaves(states=states)
-                                for c in self.children]))
+            return list(I.chain(*[c.leaves(states=states)
+                                  for c in self.children]))
         return [self] if states is None or self.state in states else []
 
     def __cmp__(self, other):

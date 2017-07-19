@@ -1,5 +1,4 @@
 import abc
-
 import TeRF.Types.Trace as T
 
 
