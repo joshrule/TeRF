@@ -117,4 +117,7 @@ class TRS(collections.MutableMapping):
         self._rules = {}
 
     def add(self, rule):
-        self[len(self)] = rule
+        try:
+            self._rules[rule.lhs].add(rule)
+        except KeyError:
+            self[0] = rule
