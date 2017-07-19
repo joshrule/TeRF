@@ -1,12 +1,10 @@
-from LOTlib.Miscellaneous import attrmem
-from scipy.stats import geom
-
-from TeRF.Types import Signature
+import LOTlib.Miscellaneous as Misc
+import scipy.stats as ss
 
 
 class GenerativePrior(object):
 
-    @attrmem('prior')
+    @Misc.attrmem('prior')
     def compute_prior(self):
         """
         the log prior of the hypothesis
@@ -26,15 +24,13 @@ class GenerativePrior(object):
         Returns: a float, -inf <= x <= 0, log p(self.value)
         """
         trs = self.value
-        n_operators = len(trs.operators)+1
-        total_arity = sum([op.arity+1 for op in trs.operators])
-        n_rules = len(trs.rules)+1
-        p_rules = 0.0
-        for r in self.value.rules:
-            p_rules += Signature(trs.operators).log_p(r.lhs, invent=True)
-            rhs_signature = Signature(trs.operators | r.lhs.variables())
-            p_rules += [rhs_signature.log_p(t, invent=False) for t in r.rhs]
-        return (geom.logpmf(k=n_operators, p=self.p_operators) +
-                geom.logpmf(k=total_arity, p=self.p_arity) +
-                geom.logpmf(k=n_rules, p=self.p_rules) +
+        signature = trs.signature.operators
+        n_operators = len(signature)+1
+        total_arity = sum(op.arity+1 for op in signature)
+        n_rules = trs.num_rules()+1
+        p_rules = sum(signature.log_p_rule(rule, invent=True)
+                      for rule in trs)
+        return (ss.geom.logpmf(k=n_operators, p=self.p_operators) +
+                ss.geom.logpmf(k=total_arity, p=self.p_arity) +
+                ss.geom.logpmf(k=n_rules,     p=self.p_rules) +
                 p_rules) / self.prior_temperature

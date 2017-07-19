@@ -121,3 +121,14 @@ class TRS(collections.MutableMapping):
             self._rules[rule.lhs].add(rule)
         except KeyError:
             self[0] = rule
+
+    def find_insertion(self, other):
+        """if self == other + one more rule, return that rule, else None"""
+        self2 = copy.deepcopy(self)
+        new_rules = {rule for rule in self2.rules() if rule not in other}
+        if len(new_rules) == 1:
+            rule = new_rules.pop()
+            del self2[rule]
+            if self2 == other:
+                return rule
+        return None

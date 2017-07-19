@@ -1,4 +1,4 @@
-from TeRF.Types import Trace
+import TeRF.Types.Trace as T
 
 
 class Likelihood(object):
@@ -21,8 +21,8 @@ class Likelihood(object):
           datum: a rewriteRule representing a single datum
         Returns: a float, -inf <= x <= 0, log p(datum | self.value)
         """
-        p_lhs = Trace(self.value, self.start, p_observe=self.p_observe,
-                      max_steps=10).rewrites_to(datum.lhs)
-        p_rhs = Trace(self.value, datum.lhs, p_observe=self.p_observe,
-                      max_steps=10).rewrites_to(datum.rhs)
+        p_lhs = T.Trace(self.value, self.start, p_observe=self.p_observe,
+                        max_steps=5).rewrites_to(datum.lhs)
+        p_rhs = T.Trace(self.value, datum.lhs, p_observe=self.p_observe,
+                        max_steps=5).rewrites_to(datum.rhs)
         return p_lhs + p_rhs

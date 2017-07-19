@@ -1,14 +1,17 @@
-from copy import deepcopy
+import copy
 from LOTlib.Hypotheses.Hypothesis import Hypothesis
 from LOTlib.Inference.Samplers.StandardSample import standard_sample
+from numpy import exp
 from numpy.random import choice
-from scipy.stats import geom
+from scipy.misc import logsumexp
 
 from TeRF.Learning.GenerativePrior import GenerativePrior
 from TeRF.Learning.Likelihood import Likelihood
 from TeRF.Learning.TestProposer import TestProposer
 from TeRF.Language.parser import load_source
-from TeRF.Types import R, Sig
+from TeRF.Types.TRS import TRS
+from TeRF.Types.Rule import Rule
+from TeRF.Types.Application import App
 
 
 class TRSHypothesis(GenerativePrior, Likelihood, TestProposer, Hypothesis):
@@ -33,43 +36,80 @@ class TRSHypothesis(GenerativePrior, Likelihood, TestProposer, Hypothesis):
         super(TRSHypothesis, self).__init__(**kwargs)
 
 
-def test(n, filename):
+def fix_ps(log_ps):
+    sum_ps = logsumexp(log_ps)
+    return [exp(p-sum_ps) for p in log_ps]
+
+
+def test(n, filename, start_string):
     trs, _ = load_source(filename)
+
+    start = App(trs.signature.find(start_string), [])
 
     print '# Ground Truth:\n{}\n'.format(trs)
 
-    def make_data():
-        data = set()
-        nChanged = 25
-        nTotal = 50
-        while len(data) < nTotal:
-            lhs = Sig(trs.operators).sample_term()
-            ws = [geom.pmf(k=x, p=0.1)/geom.cdf(k=10, p=.1)
-                  for x in range(1, 11)]
-            n_steps = choice(range(1, 11), p=ws)
-            rhs = lhs.rewrite(trs, max_steps=n_steps)
-            rule = R(lhs, [rhs])
-            if len(data) < nChanged and lhs != rhs and rule not in trs.rules:
+    def make_data_maker(nChanged=10, nTotal=20):
+        def make_data():
+            try:
+                input = raw_input
+            except NameError:
+                pass
+
+            data = TRS()
+            temp = copy.deepcopy(trs)
+            data.signature = copy.deepcopy(trs.signature)
+
+            for i, rule in enumerate(list(temp.rules())):
+                print '{:d}: {}'.format(i, rule)
+                use_it = None
+                while use_it not in ['y', '', 'n']:
+                    use_it = input('Include this rule ([y]/n)? ')
+                if use_it == 'n':
+                    del temp[rule]
+
+            print
+            print 'Start symbol:', start.pretty_print()
+            trace = start.rewrite(temp, max_steps=5, type='all', trace=True)
+            states = trace.root.leaves(states=['normal'])
+            terms = [s.term for s in states]
+            log_ps = [s.log_p for s in states]
+            ps = fix_ps(log_ps)
+
+            print 'starting selection with {:d} rules'.format(data.num_rules())
+            tries = 0
+            while data.num_rules() < nTotal:
+                tries += 1
+                lhs = choice(terms, p=ps)  # ignoring ps to speed generation
+                rhs = lhs.rewrite(trs, max_steps=5, type='one')
+                rule = Rule(lhs, rhs)
+                if (rule not in trs) and (((data.num_rules() < nChanged) and
+                                           (lhs != rhs)) or
+                                          data.num_rules() >= nChanged):
+                    data[len(data)] = rule
+            print 'tries:', tries
+
+            for op in {s for s in data.signature.operators if s != start.head}:
+                rule = Rule(start, App(op, [start for _ in xrange(op.arity)]))
+                print 'adding rule:', rule
                 data.add(rule)
-            elif len(data) >= nChanged and rule not in trs.rules:
-                data.add(rule)
-        return data
+            return data
+        return make_data
 
     def make_hypothesis(data):
-        hyp_trs = deepcopy(trs)
-        hyp_trs.rules = list(data)
+        hyp_trs = copy.deepcopy(data)
         return TRSHypothesis(value=hyp_trs,
-                             privileged_ops=hyp_trs.operators,
+                             privileged_ops={s for s in hyp_trs.signature},
                              p_observe=0.1,
                              p_similar=0.99,
                              p_operators=0.5,
                              p_arity=0.9,
                              p_rules=0.5,
+                             start=start,
                              p_r=0.3)
 
-    hyps = standard_sample(make_hypothesis, make_data,
-                           save_top=None, show_skip=99, trace=True, N=10,
-                           steps=n, likelihood_temperature=1.0)
+    hyps = standard_sample(make_hypothesis, make_data_maker(),
+                           save_top=None, show_skip=0, trace=True, N=10,
+                           steps=n)
 
     print '\n\n# The best hypotheses of', n, 'samples:'
     for hyp in hyps.get_all(sorted=True):
@@ -77,4 +117,5 @@ def test(n, filename):
 
 
 if __name__ == '__main__':
-    test(3200, 'library/simple_tree_manipulations/001.terf')
+    test(10, 'library/simple_tree_manipulations/001.terf', 'tree')
+    # test(3200, 'library/simple_tree_manipulations/001.terf', 'tree')
