@@ -80,7 +80,7 @@ class Rule(collections.MutableSet):
     def add(self, item):
         # assume item is a rule
         try:
-            env = self.lhs.unify(item.lhs, type='alpha')
+            env = item.lhs.unify(self.lhs, type='alpha')
 
         # assume item is a term
         except AttributeError:
@@ -93,7 +93,7 @@ class Rule(collections.MutableSet):
     def discard(self, item):
         # assume item is a rule
         try:
-            env = self.lhs.unify(item.lhs, type='alpha')
+            env = item.lhs.unify(self.lhs, type='alpha')
             for rhs in item.rhs:
                 self.rhs.discard(rhs.substitute(env))
         except AttributeError:

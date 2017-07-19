@@ -39,6 +39,8 @@ class Variable(A.Atom, T.Term):
         env = {} if env is None else env
 
         if self is t:
+            if self not in env:
+                env[self] = self
             return env
         if self in env:
             return env[self].unify(t, env, type)
