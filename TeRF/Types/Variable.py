@@ -27,7 +27,7 @@ class Variable(A.Atom, T.Term):
         yield self
 
     def pretty_print(self, verbose=0):
-        return ('' if self.name == str(id(self.identity)) else self.name) + '_'
+        return str(self)
 
     def substitute(self, env):
         try:
