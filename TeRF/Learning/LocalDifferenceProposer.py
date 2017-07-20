@@ -1,49 +1,42 @@
-from copy import deepcopy
-from LOTlib.Hypotheses.Proposers.Proposer import (Proposer,
-                                                  ProposalFailedException)
-from numpy.random import choice
-
-from TeRF.Hypotheses.TRSProposerUtilities import choose_a_rule, make_a_rule
-from TeRF.Miscellaneous import find_difference, log1of, log0
-from TeRF.Utilities import differences
+import copy
+import LOTlib.Hypotheses.Proposers as P
+import numpy as np
+import TeRF.Learning.ProposerUtilities as pu
+import TeRF.Miscellaneous as misc
 
 
 def propose_value(value, **kwargs):
-    new_value = deepcopy(value)
-    rule, idx = choose_a_rule(value.rules)
-    diffs = differences(rule.lhs, rule.rhs)
-    if (rule.lhs, rule.rhs) in diffs:
-        diffs.remove((rule.lhs, rule.rhs))
+    new_value = copy.deepcopy(value)
+    rule = pu.choose_a_rule(new_value)
+    diffs = rule.lhs.differences(rule.rhs0, top=False)
 
     try:
-        new_lhs, new_rhs = diffs[choice(len(diffs))]
+        lhs, rhs = diffs[np.random.choice(len(diffs))]
     except ValueError:
-        raise ProposalFailedException('LocalDifferenceProposer: ' +
-                                      'no suitable differences')
+        raise P.ProposalFailedException('LocalDifference: no good differences')
 
-    new_rule = make_a_rule(new_lhs, new_rhs)
-    # print 'ldp: changing', rule, 'to', new_rule
-    new_value.rules[idx] = new_rule
+    new_rule = pu.make_a_rule(lhs, rhs)
+    print 'ldp: changing', rule, 'to', new_rule
+    del new_value[rule]
+    new_value.add(new_rule)
     return new_value
 
 
 def give_proposal_log_p(old, new, **kwargs):
-    if old.variables == new.variables and old.operators == new.operators:
-        old_rule, new_rule = find_difference(old.rules, new.rules)
+    if old.signature == new.signature:
+        old_rule, new_rule = old.find_difference(new)
         try:
-            p_rule = log1of(old.rules)
-            all_diffs = differences(old_rule.lhs, old_rule.rhs)
-            if (old_rule.lhs, old_rule.rhs) in all_diffs:
-                all_diffs.remove((old_rule.lhs, old_rule.rhs))
-                p_diff = (log0(all_diffs.count((new_rule.lhs, new_rule.rhs))) +
-                          log1of(all_diffs))
-                return p_rule + p_diff
+            p_rule = misc.logNof(list(old.rules()))
+            diffs = old_rule.lhs.differences(old_rule.rhs0, top=False)
+            p_diff = misc.logNof(diffs,
+                                 n=diffs.count((new_rule.lhs, new_rule.rhs0)))
+            return p_rule + p_diff
         except AttributeError:
             pass
-    return log0(0)
+    return -np.inf
 
 
-class LocalDifferenceProposer(Proposer):
+class LocalDifferenceProposer(P.Proposer):
     """
     Proposer for modifying a rule by demoting it and adding a new head
     (NON-ERGODIC FOR TRSs)

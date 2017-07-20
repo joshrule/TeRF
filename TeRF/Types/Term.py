@@ -43,9 +43,8 @@ class Term(object):
     @abc.abstractmethod
     def single_rewrite(self, trs, type='one'): raise NotImplementedError
 
+    @abc.abstractmethod
+    def differences(self, other, top=True): raise NotImplementedError
+
     def rewrite(self, trs, trace=False, **kwargs):
         return T.Trace(trs, self, **kwargs).rewrite(trace)
-
-    # def differences(self, other):
-    #     """all mismatching pairs of corresponding subtrees in self & other"""
-    #     return [] if self == other else self.difference_helper(other)

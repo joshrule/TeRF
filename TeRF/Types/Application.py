@@ -104,12 +104,20 @@ class Application(T.Term):
                         for p in part]
         return None
 
+    def differences(self, other, top=True):
+        # TODO: What if heads have different arity?
+        # TODO: What if other isn't an application?
+        if (self == other):
+            return []
+        diffs = ([(self, other)] if top else [])
+        try:
+            if self.head == other.head:
+                diffs += list(I.chain(*[st1.differences(st2)
+                                        for st1, st2 in I.izip(self.body,
+                                                               other.body)]))
+        except AttributeError:
+            pass
+        return diffs
+
 
 App = Application
-
-#     def difference_helper(self, other):
-#         # TODO: What if heads have different arity?
-#         # TODO: What if other isn't an application?
-#         return [(self, other)] + \
-#             list(I.chain(*[st1.differences(st2)
-#                            for st1, st2 in I.izip(self.body, other.body)]))

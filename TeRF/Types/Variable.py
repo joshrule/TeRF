@@ -52,8 +52,8 @@ class Variable(A.Atom, T.Term):
     def single_rewrite(self, trs, type):
         return None
 
+    def differences(self, other, top=True):
+        return [] if (self == other or not top) else [(self, other)]
+
 
 Var = Variable
-
-#    def difference_helper(self, other):
-#        return [(self, other)]
