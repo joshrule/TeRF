@@ -7,6 +7,7 @@ import TeRF.Miscellaneous as misc
 
 choice = np.random.choice
 
+
 def can_be_promoted(rule, promotion):
     return (promotion == 'rhs' or len(rule.lhs.body) > 0) and \
         (promotion == 'lhs' or len(getattr(rule.rhs, 'body', [])) > 0)
@@ -41,9 +42,7 @@ def give_proposal_log_p(old, new, **kwargs):
             p_method = -misc.log(3)
 
             p_promote_lhs = log_p_is_promotion(old_rule.lhs, new_rule.lhs)
-            p_promote_rhs = sp.misc.logsumexp(
-                [log_p_is_promotion(rhs, new_rule.rhs0)
-                 for rhs in old_rule.rhs])
+            p_promote_rhs = log_p_is_promotion(old_rule.rhs0, new_rule.rhs0)
 
             p_lhs = -np.inf
             if p_promote_rhs == -np.inf:
@@ -53,12 +52,12 @@ def give_proposal_log_p(old, new, **kwargs):
 
             p_rhs = -np.inf
             if p_promote_lhs == -np.inf:
-                rules = [r for r in old.rules() if getattr(r.rhs, 'body', [])]
+                rules = [r for r in old.rules() if getattr(r.rhs0, 'body', [])]
                 p_rule = misc.logNof(rules)
                 p_rhs = p_method + p_promote_rhs + p_rule
 
             rules = [r for r in old.rules()
-                     if getattr(r.rhs, 'body', []) and r.lhs.body]
+                     if getattr(r.rhs0, 'body', []) and r.lhs.body]
             p_rule = misc.logNof(rules)
             p_both = p_method + p_promote_lhs + p_promote_rhs + p_rule
 

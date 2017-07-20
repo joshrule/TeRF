@@ -5,7 +5,7 @@ import TeRF.Learning.DeleteRuleProposer as drp
 import TeRF.Learning.RegenerateRuleProposer as rrp
 import TeRF.Learning.PromoteSubruleProposer as psp
 import TeRF.Learning.SwapSubruleProposer as ssp
-# import TeRF.Learning.DemoteSubruleProposer as dsp
+import TeRF.Learning.DemoteSubruleProposer as dsp
 # import TeRF.Learning.LocalDifferenceProposer as ldp
 
 
@@ -23,8 +23,8 @@ class TestProposer(MixtureProposer):
              psp.give_proposal_log_p),
             (ssp.propose_value,
              ssp.give_proposal_log_p),
-            #            (dsp.propose_value,
-            #             dsp.give_proposal_log_p),
+            (dsp.propose_value,
+             dsp.give_proposal_log_p),
             #            (ldp.propose_value,
             #             ldp.give_proposal_log_p)
         ]
