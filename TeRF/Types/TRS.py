@@ -93,7 +93,7 @@ class TRS(collections.MutableMapping):
         del self._order[key]
 
     def __iter__(self):
-        order = copy.copy(self._order)
+        order = self._order[:]
         for lhs in order:
                 yield self._rules[lhs]
 

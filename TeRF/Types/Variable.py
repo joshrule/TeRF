@@ -7,10 +7,6 @@ class Variable(A.Atom, T.Term):
     def __init__(self, name=None, **kwargs):
         super(Variable, self).__init__(name=name, terminal=True,
                                        head=self, **kwargs)
-        try:
-            self.signature.add(self)
-        except:
-            pass
 
     def __str__(self):
         return self.name + '_'

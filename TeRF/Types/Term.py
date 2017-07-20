@@ -7,9 +7,8 @@ class Term(object):
 
     __metaclass__ = abc.ABCMeta
 
-    def __init__(self, head, signature=None, **kwargs):
+    def __init__(self, head, **kwargs):
         self.head = head
-        self.signature = signature
         super(Term, self).__init__(**kwargs)
 
     def __copy__(self):

@@ -117,5 +117,5 @@ def test(n, filename, start_string):
 
 
 if __name__ == '__main__':
-    test(10, 'library/simple_tree_manipulations/001.terf', 'tree')
+    test(100, 'library/simple_tree_manipulations/001.terf', 'tree')
     # test(3200, 'library/simple_tree_manipulations/001.terf', 'tree')

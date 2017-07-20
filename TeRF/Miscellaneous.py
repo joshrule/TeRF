@@ -1,5 +1,5 @@
 from itertools import repeat, product, izip
-from numpy import inf, log as numpy_log
+import numpy as np
 from numpy.random import choice
 from random import sample
 
@@ -87,7 +87,7 @@ def log1of(xs, empty=0):
 
 
 def log(x):
-    return -inf if x == 0.0 else numpy_log(x)
+    return -np.inf if x == 0.0 else np.log(x)
 
 
 def unique_shuffle(xs):

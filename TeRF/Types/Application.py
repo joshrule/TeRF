@@ -6,22 +6,16 @@ import TeRF.Types.Term as T
 class Application(T.Term):
     """a term applying an operator to arguments"""
 
-    def __init__(self, head, body, **kwargs):
-        try:
-            if head.arity == len(body):
-                self.body = body
-            else:
-                raise ValueError('Application: wrong number of arguments')
-        except AttributeError:
-            raise ValueError('Application: head must be an operator')
-        super(Application, self).__init__(head=head, **kwargs)
+    def __init__(self, head, body):
+        if head.arity == len(body):
+            self.body = body
+            super(Application, self).__init__(head=head)
+        else:
+            raise ValueError('Application: wrong number of arguments')
 
     @property
     def atoms(self):
-        yield self.head
-        for term in self.body:
-            for atom in term.atoms:
-                yield atom
+        return {self.head} | {a for t in self.body for a in t.atoms}
 
     @property
     def subterms(self):
@@ -49,7 +43,9 @@ class Application(T.Term):
         return not self == other
 
     def __hash__(self):
-        return hash((self.head, tuple(self.body)))
+        if not hasattr(self, '_hash'):
+            self._hash = hash((self.head, tuple(hash(b) for b in self.body)))
+        return self._hash
 
     def pretty_print(self, verbose=0):
         if self.head.name == '.' and self.head.arity == 2:
