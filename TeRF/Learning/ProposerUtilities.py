@@ -1,21 +1,18 @@
-from LOTlib.Hypotheses.Proposers.Proposer import ProposalFailedException
-from numpy.random import choice
+import LOTlib.Hypotheses.Proposers as P
+import numpy as np
 
-from TeRF.Types import Rule
+import TeRF.Types.Rule as R
 
 
-def choose_a_rule(xs):
+def choose_a_rule(trs):
     try:
-        idx = choice(len(xs))
-        rule = xs[idx]
-        return rule, idx
+        return np.random.choice(list(trs.rules()))
     except ValueError:
-        raise ProposalFailedException('choose_a_rule: ' +
-                                      'TRS must have rules')
+        raise P.ProposalFailedException('choose_a_rule: TRS has no rules')
 
 
 def make_a_rule(lhs, rhs):
     try:
-        return Rule(lhs, rhs)
+        return R.Rule(lhs, rhs)
     except ValueError:
-        raise ProposalFailedException('make_a_rule: bad rule')
+        raise P.ProposalFailedException('make_a_rule: bad rule')

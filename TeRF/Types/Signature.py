@@ -1,13 +1,10 @@
 import collections
 import copy
 import itertools as I
-import scipy.stats as ss
-# from numpy import exp
-from numpy.random import choice, binomial
-# from scipy.misc import logsumexp
+import scipy as sp
+import numpy as np
 import TeRF.Miscellaneous as M
 import TeRF.Types.Application as A
-import TeRF.Types.Operator as O
 import TeRF.Types.Variable as V
 import TeRF.Types.Rule as R
 
@@ -88,7 +85,8 @@ class Signature(collections.MutableSet):
         return [s for s in self if getattr(s, 'arity', 0) > 1]
 
     def sample_head(self, invent=True):
-        head = choice(list(self._elements) + (['new var'] if invent else []))
+        head = np.random.choice(list(self._elements) +
+                                (['new var'] if invent else []))
         if head == 'new var':
             head = V.Var()
         return head
@@ -139,7 +137,7 @@ class Signature(collections.MutableSet):
         try:
             for t in term.body:
                 p += sig.log_p(t, invent)
-                sig |= t.variables if invent else Signature()
+                sig |= Signature(t.variables)
         except AttributeError:
             pass
         return p
@@ -176,64 +174,65 @@ class Signature(collections.MutableSet):
                 lhs = sig.sample_term(invent)
             sig.replace_vars(lhs.variables)
             rhs = [sig.sample_term(invent=False)
-                   for _ in I.repeat(None, ss.geom.rvs(p_rhs))]
+                   for _ in I.repeat(None, sp.stats.geom.rvs(p_rhs))]
             return R.Rule(lhs, rhs)
 
     def log_p_rule(self, rule, p_rhs=0.5, invent=True):
         p_lhs = self.log_p(rule.lhs, invent=invent)
-        p_n_clauses = ss.geom.logpmf(p=p_rhs, k=len(rule.rhs))
+        p_n_clauses = sp.stats.geom.logpmf(p=p_rhs, k=len(rule.rhs))
         self.replace_vars(rule.lhs.variables)
         p_rhs = sum(self.log_p(case, invent=False) for case in rule.rhs)
         return p_lhs + p_n_clauses + p_rhs
 
-#     def sample_term_t(self, term, p_r, invent=True):
-#         """
-#         generate a term conditioned on an existing term
-# 
-#         Args:
-#           signature: an iterable of TRS Operators and Variables
-#           term: a TRS term
-#           p_r: a float giving the node-wise probability of regeneration
-#         Returns:
-#           a TRS term
-#         """
-#         sig = copy(self)
-#         if binomial(1, p_r):
-#             return sig.sample_term(invent)
-#         try:
-#             body = []
-#             for t in term.body:
-#                 new_t = sig.sample_term_t(t, p_r, invent)
-#                 body.append(new_t)
-#                 sig |= new_t.variables()
-#                 return A.App(term.head, body)
-#         except AttributeError:
-#             return copy(term)
-# 
-#     def log_p_t(self, new, old, p_r, invent=True):
-#         """
-#         compute the probability of sampling a term given a signature and term
-# 
-#         Args:
-#           new: a TRS term
-#           signature: an iterable of TRS Operators and Variables
-#           old: the TRS term upon which new was conditioned during sampling
-#           p_r: a float giving the node-wise probability of regeneration
-#         Returns:
-#           a float representing log(p(new | signature, old))
-#         """
-#         if new.give_head() == old.give_head():
-#             p_make_head = log(p_r) + self.log_p(new, invent)
-#             p_keep_head = log(1-p_r)
-#             try:
-#                 for tn, to in izip(new.body, old.body):
-#                     p_keep_head += self.log_p_t(tn, to, p_r, invent)
-#                     self |= (tn.variables() if invent else set())
-#             except AttributeError:
-#                 pass
-#             return logsumexp([p_keep_head, p_make_head])
-#         return log(p_r) + self.log_p(new, invent)
-# 
+    def sample_term_t(self, term, p_r, invent=True):
+        """
+        generate a term conditioned on an existing term
+
+        Args:
+          signature: an iterable of TRS Operators and Variables
+          term: a TRS term
+          p_r: a float giving the node-wise probability of regeneration
+        Returns:
+          a TRS term
+        """
+        with self as sig:
+            if np.random.binomial(1, p_r):
+                return sig.sample_term(invent)
+            try:
+                body = []
+                for t in term.body:
+                    new_t = sig.sample_term_t(t, p_r, invent)
+                    body.append(new_t)
+                    sig |= Signature(new_t.variables if invent else set())
+                return A.App(term.head, body)
+            except AttributeError:
+                return term
+
+    def log_p_t(self, new, old, p_r, invent=True):
+        """
+        compute the probability of sampling a term given a signature and term
+
+        Args:
+          new: a TRS term
+          signature: an iterable of TRS Operators and Variables
+          old: the TRS term upon which new was conditioned during sampling
+          p_r: a float giving the node-wise probability of regeneration
+        Returns:
+          a float representing log(p(new | signature, old))
+        """
+        with self as sig:
+            p_make_head = M.log(p_r) + sig.log_p(new, invent)
+            if new.head == old.head:
+                p_keep_head = M.log(1-p_r)
+                try:
+                    for tn, to in I.izip(new.body, old.body):
+                        p_keep_head += sig.log_p_t(tn, to, p_r, invent)
+                        sig |= Signature(tn.variables if invent else set())
+                except AttributeError:
+                    pass
+                return sp.misc.logsumexp([p_keep_head, p_make_head])
+            return p_make_head
+
 #     def sample_term_c(self, constraints, invent=True):
 #         """
 #         generate a term conditioned on a set of required symbols
@@ -373,6 +372,7 @@ class Signature(collections.MutableSet):
 #                     p_keep_head = log(1-p_r) + logsumexp(ps_gifts)
 #                     return logsumexp([p_make_head, p_keep_head])
 #                 return p_make_head
+
 
 Sig = Signature
 

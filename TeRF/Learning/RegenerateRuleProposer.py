@@ -1,79 +1,66 @@
-from copy import deepcopy
-from LOTlib.Hypotheses.Proposers.Proposer import (Proposer,
-                                                  ProposalFailedException)
-from numpy import inf
-from numpy.random import choice
-from scipy.misc import logsumexp
-
-from TeRF.TRS import RewriteRule, TRSError
-from TeRF.Miscellaneous import find_difference, log1of, log0
-from TeRF.Utilities import sample_term_t, log_p_t
+import copy
+import LOTlib.Hypotheses.Proposers as P
+import numpy as np
+import scipy.misc as sm
+import TeRF.Learning.ProposerUtilities as pu
+import TeRF.Miscellaneous as misc
 
 
 def propose_value_maker(p_r):
     def propose_value(value, **kwargs):
-        new_value = deepcopy(value)
-        try:
-            idx = choice(len(new_value.rules))
-            rule = new_value.rules[idx]
-        except ValueError:
-            raise ProposalFailedException('RegenerateLHSProposer: ' +
-                                          'TRS must have rules')
-        side = choice(['lhs', 'rhs', 'both'])
-        try:
-            new_lhs = rule.lhs
-            if side != 'rhs':
-                lhs_signature = new_value.operators | new_value.variables
-                while new_lhs == rule.lhs:
-                    new_lhs = sample_term_t(lhs_signature, rule.lhs, p_r)
+        new_value = copy.deepcopy(value)
+        rule = pu.choose_a_rule(new_value)
+        side = np.random.choice(['lhs', 'rhs', 'both'])
 
-            new_rhs = rule.rhs
-            if side != 'lhs':
-                rhs_signature = new_value.operators | new_lhs.variables()
-                while new_rhs == rule.rhs:
-                    new_rhs = sample_term_t(rhs_signature, rule.rhs, p_r)
+        lhs = rule.lhs
+        sig = new_value.signature.operators
+        if side != 'rhs':
+            while lhs == rule.lhs:
+                lhs = sig.sample_term_t(rule.lhs, p_r, invent=True)
 
-            new_rule = RewriteRule(new_lhs, new_rhs)
-        except TRSError:
-            raise ProposalFailedException('RegenerateLHSProposer: bad rule')
-        # print 'rrp: changing', rule, 'to', new_rule
-        new_value.rules[idx] = new_rule
+        old_rhs = np.random.choice(list(rule.rhs))
+        rhs = old_rhs
+        if side != 'lhs':
+            sig.replace_vars(lhs.variables)
+            while rhs == old_rhs:
+                rhs = sig.sample_term_t(rhs, p_r, invent=False)
+
+        new_rule = pu.make_a_rule(lhs, rhs)
+        print 'rrp: changing', rule, 'to', new_rule
+        del new_value[rule]
+        new_value.add(new_rule)
         return new_value
     return propose_value
 
 
 def give_proposal_log_p_maker(p_r):
     def give_proposal_log_p(old, new, **kwargs):
-        if old.variables == new.variables and old.operators == new.operators:
-            old_rule, new_rule = find_difference(old.rules, new.rules)
+        if old.signature == new.signature:
+            new_rule, old_rule = new.find_difference(old)
             try:
-                p_method = -log0(3)
-                p_rule = log1of(new.rules)
-                lhs_signature = new.operators | new.variables
-                p_regen_lhs = log_p_t(new_rule.lhs, lhs_signature,
-                                      old_rule.lhs, p_r)
-                rhs_signature = new.operators | new_rule.lhs.variables()
-                p_regen_rhs = log_p_t(new_rule.rhs, rhs_signature,
-                                      old_rule.rhs, p_r)
+                p_method = -misc.log(3)
+                p_rule = misc.log1of(list(new.rules()))
+                p = p_method + p_rule
+                sig = new.signature.operators
+                p_regen_lhs = sig.log_p_t(new_rule.lhs, old_rule.lhs,
+                                          p_r, invent=True)
+                sig.replace_vars(new_rule.lhs.variables)
+                p_regen_rhs = sig.log_p_t(new_rule.rhs.pop(),
+                                          old_rule.rhs.pop(),
+                                          p_r, invent=False)
 
-                p_lhs = log0(0)
-                if p_regen_rhs == -inf:
-                    p_lhs = p_method + p_rule + p_regen_lhs
+                p_lhs = (p+p_regen_lhs) if p_regen_rhs == -np.inf else -np.inf
+                p_rhs = (p+p_regen_rhs) if p_regen_lhs == -np.inf else -np.inf
+                p_both = p + p_regen_lhs + p_regen_rhs
 
-                p_rhs = log0(0)
-                if p_regen_lhs == -inf:
-                    p_rhs = p_method + p_rule + p_regen_rhs
-
-                p_both = p_method + p_rule + p_regen_lhs + p_regen_rhs
-
-                return logsumexp([p_lhs, p_rhs, p_both])
+                return sm.logsumexp([p_lhs, p_rhs, p_both])
             except AttributeError:
                 pass
-        return log0(0)
+        return -np.inf
     return give_proposal_log_p
 
 
-class RegenerateRuleProposer(Proposer):
+class RegenerateRuleProposer(P.Proposer):
     """
     Proposer for regenerating the LHS of a TRS rule (NON-ERGODIC FOR TRSs)
 

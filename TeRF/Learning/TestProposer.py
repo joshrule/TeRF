@@ -2,8 +2,7 @@ from LOTlib.Hypotheses.Proposers.MixtureProposer import MixtureProposer
 
 import TeRF.Learning.AddRuleProposer as arp
 import TeRF.Learning.DeleteRuleProposer as drp
-
-# import TeRF.Learning.RegenerateRuleProposer as rrp
+import TeRF.Learning.RegenerateRuleProposer as rrp
 # import TeRF.Learning.PromoteSubruleProposer as psp
 # import TeRF.Learning.SwapSubruleProposer as ssp
 # import TeRF.Learning.DemoteSubruleProposer as dsp
@@ -18,8 +17,8 @@ class TestProposer(MixtureProposer):
              arp.give_proposal_log_p),
             (drp.propose_value,
              drp.give_proposal_log_p),
-            #            (rrp.propose_value_maker(p_r),
-            #             rrp.give_proposal_log_p_maker(p_r)),
+            (rrp.propose_value_maker(p_r),
+             rrp.give_proposal_log_p_maker(p_r)),
             #            (psp.propose_value,
             #             psp.give_proposal_log_p),
             #            (ssp.propose_value,

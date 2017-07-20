@@ -15,10 +15,9 @@ def propose_value(value, **kwargs):
     return new_value
 
 
-def give_proposal_log_p(old_value, new_value, **kwargs):
-    if new_value.signature == old_value.signature and \
-       old_value.find_insertion(new_value) is not None:
-        return M.log1of(list(old_value.rules()))
+def give_proposal_log_p(old, new, **kwargs):
+    if new.signature == old.signature and old.find_insertion(new) is not None:
+        return M.log1of(list(old.rules()))
     return M.log(0)
 
 

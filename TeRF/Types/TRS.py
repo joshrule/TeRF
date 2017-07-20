@@ -132,3 +132,10 @@ class TRS(collections.MutableMapping):
             if self2 == other:
                 return rule
         return None
+
+    def find_difference(self, other):
+        s_rules = {rule for rule in self.rules() if rule not in other}
+        o_rules = {rule for rule in other.rules() if rule not in self}
+        if len(s_rules) == len(o_rules) == 1:
+            return s_rules.pop(), o_rules.pop()
+        return (None, None)
