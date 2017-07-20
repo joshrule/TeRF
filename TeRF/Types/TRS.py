@@ -139,3 +139,12 @@ class TRS(collections.MutableMapping):
         if len(s_rules) == len(o_rules) == 1:
             return s_rules.pop(), o_rules.pop()
         return (None, None)
+
+    def swap(self, r1, r2):
+        try:
+            stored_rule = self[r1]
+        except KeyError:
+            raise ValueError('TRS.swap: rule to swap out does not exist')
+        stored_rule.discard(r1)
+        self.add(r2)
+        return self

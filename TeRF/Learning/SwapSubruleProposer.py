@@ -34,10 +34,8 @@ def propose_value(value, **kwargs):
             raise P.ProposalFailedException('SwapSubruleProposer: cannot swap')
 
     new_rule = pu.make_a_rule(lhs, rhs)
-    del new_value[rule]
-    new_value.add(new_rule)
     print 'ssp: changing', rule, 'to', new_rule
-    return new_value
+    return new_value.swap(rule, new_rule)
 
 
 def log_p_is_a_swap(old, new):

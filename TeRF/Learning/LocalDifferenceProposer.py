@@ -17,9 +17,7 @@ def propose_value(value, **kwargs):
 
     new_rule = pu.make_a_rule(lhs, rhs)
     print 'ldp: changing', rule, 'to', new_rule
-    del new_value[rule]
-    new_value.add(new_rule)
-    return new_value
+    return new_value.swap(rule, new_rule)
 
 
 def give_proposal_log_p(old, new, **kwargs):
