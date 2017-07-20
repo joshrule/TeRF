@@ -29,7 +29,7 @@ def propose_value(value, **kwargs):
 
 def log_p_is_promotion(old, new):
     try:
-        return misc.log(old.body.count(new)) + misc.log1of(old.body)
+        return misc.logNof(old.body, n=old.body.count(new))
     except AttributeError:
         return -np.inf
 
@@ -48,18 +48,18 @@ def give_proposal_log_p(old, new, **kwargs):
             p_lhs = -np.inf
             if p_promote_rhs == -np.inf:
                 rules = [r for r in old.rules() if r.lhs.body]
-                p_rule = misc.log1of(rules)
+                p_rule = misc.logNof(rules)
                 p_lhs = p_method + p_promote_lhs + p_rule
 
             p_rhs = -np.inf
             if p_promote_lhs == -np.inf:
                 rules = [r for r in old.rules() if getattr(r.rhs, 'body', [])]
-                p_rule = misc.log1of(rules)
+                p_rule = misc.logNof(rules)
                 p_rhs = p_method + p_promote_rhs + p_rule
 
             rules = [r for r in old.rules()
                      if getattr(r.rhs, 'body', []) and r.lhs.body]
-            p_rule = misc.log1of(rules)
+            p_rule = misc.logNof(rules)
             p_both = p_method + p_promote_lhs + p_promote_rhs + p_rule
 
             return sp.misc.logsumexp([p_lhs, p_rhs, p_both])

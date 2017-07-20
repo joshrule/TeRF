@@ -290,7 +290,7 @@ class Signature(collections.MutableSet):
 #                              for c in set(constraints)-{term.give_head()}]
 #                             for t in term.body]
 #             gifts = list_possible_gifts(who_has_what)
-#             ps_gifts = list(repeat(log1of(gifts), len(gifts)))
+#             ps_gifts = list(repeat(logNof(gifts), len(gifts)))
 #             for i, g in enumerate(gifts):
 #                 new_sig = copy(self)
 #                 for t, cs in izip(term.body, g):
@@ -363,7 +363,7 @@ class Signature(collections.MutableSet):
 #                              for c in set(constraints)-{oh}]
 #                             for t in new.body]
 #             gifts = list_possible_gifts(who_has_what)
-#             ps_gifts = list(repeat(log1of(gifts), len(gifts)))
+#             ps_gifts = list(repeat(logNof(gifts), len(gifts)))
 #             for i, g in enumerate(gifts):
 #                 new_sig = copy(self)
 #                 for n, o, cs in izip(new.body, old.body, g):

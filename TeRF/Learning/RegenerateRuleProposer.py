@@ -39,7 +39,7 @@ def give_proposal_log_p_maker(p_r):
             new_rule, old_rule = new.find_difference(old)
             try:
                 p_method = -misc.log(3)
-                p_rule = misc.log1of(list(new.rules()))
+                p_rule = misc.logNof(list(new.rules()))
                 p = p_method + p_rule
                 sig = new.signature.operators
                 p_regen_lhs = sig.log_p_t(new_rule.lhs, old_rule.lhs,

@@ -82,8 +82,8 @@ def find_difference(xs1, xs2):
     return None, None
 
 
-def log1of(xs, empty=0):
-    return -log(len(xs)) if xs != [] else log(empty)
+def logNof(xs, empty=0, n=1):
+    return (log(n) - log(len(xs))) if xs != [] else log(empty)
 
 
 def log(x):
@@ -91,7 +91,7 @@ def log(x):
 
 
 def unique_shuffle(xs):
-    if len(set(xs)) == 1:
+    if len(set(xs)) <= 1:
         return None
     while True:
         result = sample(xs, len(xs))

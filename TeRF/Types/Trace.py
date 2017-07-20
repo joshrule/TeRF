@@ -67,7 +67,7 @@ class Trace(object):
             state.state = 'normal'
         else:
             for term in rewrites:
-                new_p = M.log1of(rewrites) + state.log_p
+                new_p = M.logNof(rewrites) + state.log_p
                 if state.step < self.max_steps and new_p >= M.log(self.min_p):
                     unobserved = TraceState(term,
                                             state.step+1,

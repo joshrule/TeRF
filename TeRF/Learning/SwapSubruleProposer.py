@@ -1,99 +1,90 @@
-from copy import deepcopy
-from itertools import permutations
-from LOTlib.Hypotheses.Proposers.Proposer import (Proposer,
-                                                  ProposalFailedException)
-from numpy import inf
-from numpy.random import choice
-from random import sample
-from scipy.misc import logsumexp
-
-from TeRF.Hypotheses.TRSProposerUtilities import make_a_rule
-from TeRF.Miscellaneous import find_difference, log1of, log0
-from TeRF.TRS import App
+import copy
+import itertools as iter
+import LOTlib.Hypotheses.Proposers as P
+import numpy as np
+import scipy as sp
+import TeRF.Learning.ProposerUtilities as pu
+import TeRF.Miscellaneous as misc
+import TeRF.Types.Application as A
 
 
 def can_be_swapped(rule, swap):
-    return ((swap == 'rhs' or len(rule.lhs.body) > 1) and
-            (swap == 'lhs' or (hasattr(rule.rhs, 'body') and
-                               len(rule.rhs.body) > 1)))
-
-
-def unique_shuffle(xs):
-    if len(set(xs)) == 1:
-        return None
-    while True:
-        result = sample(xs, len(xs))
-        if xs != result:
-            return result
+    return (swap == 'rhs' or len(rule.lhs.body) > 1) and \
+        (swap == 'lhs' or len(getattr(rule.rhs0, 'body', [])) > 1)
 
 
 def propose_value(value, **kwargs):
-    new_value = deepcopy(value)
-    swap = choice(['lhs', 'rhs', 'both'])
-    idxs = [i for i, r in enumerate(value.rules) if can_be_swapped(r, swap)]
-    try:
-        idx = choice(idxs)
-        rule = value.rules[idx]
-    except ValueError:
-        raise ProposalFailedException('SwapSubruleProposer: no TRS rules')
-    try:
-        new_lhs = App(rule.lhs.head, unique_shuffle(rule.lhs.body)) \
-                  if swap != 'rhs' else rule.lhs
-        new_rhs = App(rule.rhs.head, unique_shuffle(rule.rhs.body)) \
-                  if swap != 'lhs' else rule.rhs
-    except TypeError:
-        raise ProposalFailedException('SwapSubruleProposer: cannot swap')
+    new_value = copy.deepcopy(value)
+    side = np.random.choice(['lhs', 'rhs', 'both'])
+    rule = pu.choose_a_rule(new_value, lambda r: can_be_swapped(r, side))
+    print 'rule to swap', rule, type(rule)
 
-    new_rule = make_a_rule(new_lhs, new_rhs)
-    # print 'ssp: changing', rule, 'to', new_rule
-    new_value.rules[idx] = new_rule
+    lhs = rule.lhs
+    if side != 'rhs':
+        try:
+            lhs = A.App(rule.lhs.head, misc.unique_shuffle(rule.lhs.body))
+        except TypeError:
+            raise P.ProposalFailedException('SwapSubruleProposer: cannot swap')
+
+    rhs = rule.rhs0
+    if side != 'lhs':
+        try:
+            rhs = A.App(rule.rhs0.head, misc.unique_shuffle(rule.rhs0.body))
+        except TypeError:
+            raise P.ProposalFailedException('SwapSubruleProposer: cannot swap')
+
+    new_rule = pu.make_a_rule(lhs, rhs)
+    del new_value[rule]
+    new_value.add(new_rule)
+    print 'ssp: changing', rule, 'to', new_rule
     return new_value
 
 
 def log_p_is_a_swap(old, new):
     try:
         if old.head == new.head and len(old.body) == len(new.body) > 1:
-            options = [x for x in list(permutations(old.body))
+            options = [x for x in iter.permutations(old.body)
                        if x != tuple(old.body)]
-            return log0(options.count(tuple(new.body))) + log1of(options)
+            return misc.logNof(options, n=options.count(tuple(new.body)))
     except (AttributeError, ValueError):
         pass
-    return log0(0)
+    return -np.inf
 
 
 def give_proposal_log_p(old, new, **kwargs):
-    if old.variables == new.variables and old.operators == new.operators:
-        old_rule, new_rule = find_difference(old.rules, new.rules)
+    if old.signature == new.signature:
+        old_rule, new_rule = old.find_difference(new)
         try:
-            p_method = -log0(3)
+            p_method = -misc.log(3)
             p_swap_lhs = log_p_is_a_swap(old_rule.lhs, new_rule.lhs)
-            p_swap_rhs = log_p_is_a_swap(old_rule.rhs, new_rule.rhs)
+            p_swap_rhs = sp.misc.logsumexp(
+                [log_p_is_a_swap(rhs, new_rule.rhs0) for rhs in old_rule.rhs])
 
-            p_lhs = log0(0)
-            if p_swap_rhs == -inf:
-                rules = [r for r in old.rules if len(r.lhs.body) > 1]
-                p_rule = log1of(rules)
+            p_lhs = -np.inf
+            if p_swap_rhs == -np.inf:
+                p_rule = misc.logNof([r for r in old.rules()
+                                      if len(r.lhs.body) > 1])
                 p_lhs = p_method + p_rule + p_swap_lhs
 
-            p_rhs = log0(0)
-            if p_swap_lhs == -inf:
-                rhs_rules = [r for r in old.rules
-                             if hasattr(r.rhs, 'body') and len(r.rhs.body) > 1]
-                p_rhs_rule = log1of(rhs_rules)
+            p_rhs = -np.inf
+            if p_swap_lhs == -np.inf:
+                p_rhs_rule = misc.logNof(
+                    [r for r in old.rules()
+                     if len(getattr(r.rhs0, 'body', [])) > 1])
                 p_rhs = p_method + p_rhs_rule + p_swap_rhs
 
-            both_rules = [r for r in old.rules if len(r.lhs.body) > 1 and
-                          hasattr(r.rhs, 'body') and len(r.rhs.body) > 1]
-            p_both_rule = log1of(both_rules)
+            p_both_rule = misc.logNof(
+                [r for r in old.rules() if len(r.lhs.body) > 1 and
+                 len(getattr(r.rhs0, 'body', [])) > 1])
             p_both = p_method + p_both_rule + p_swap_lhs + p_swap_rhs
 
-            return logsumexp([p_lhs, p_rhs, p_both])
+            return sp.misc.logsumexp([p_lhs, p_rhs, p_both])
         except AttributeError:
             pass
-    return log0(0)
+    return -np.inf
 
 
-class SwapSubruleProposer(Proposer):
+class SwapSubruleProposer(P.Proposer):
     """
     Proposer for modifying a rule by swapping the children of its trees
     (NON-ERGODIC FOR TRSs)
