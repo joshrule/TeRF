@@ -45,8 +45,7 @@ def give_proposal_log_p_maker(p_r):
                 p_regen_lhs = sig.log_p_t(new_rule.lhs, old_rule.lhs,
                                           p_r, invent=True)
                 sig.replace_vars(new_rule.lhs.variables)
-                p_regen_rhs = sig.log_p_t(new_rule.rhs.pop(),
-                                          old_rule.rhs.pop(),
+                p_regen_rhs = sig.log_p_t(new_rule.rhs0, old_rule.rhs0,
                                           p_r, invent=False)
 
                 p_lhs = (p+p_regen_lhs) if p_regen_rhs == -np.inf else -np.inf

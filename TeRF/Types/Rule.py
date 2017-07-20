@@ -115,5 +115,11 @@ class Rule(collections.MutableSet):
         return Rule(self.lhs.substitute(env),
                     [rhs.substitute(env) for rhs in self.rhs])
 
+    @property
+    def rhs0(self):
+        if len(self) == 1:
+            return list(self.rhs)[0]
+        raise ValueError('Rule.lone_rhs: multiple rhss')
+
 
 R = Rule
