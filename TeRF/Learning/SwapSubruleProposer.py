@@ -17,7 +17,6 @@ def propose_value(value, **kwargs):
     new_value = copy.deepcopy(value)
     side = np.random.choice(['lhs', 'rhs', 'both'])
     rule = pu.choose_a_rule(new_value, lambda r: can_be_swapped(r, side))
-    print 'rule to swap', rule, type(rule)
 
     lhs = rule.lhs
     if side != 'rhs':

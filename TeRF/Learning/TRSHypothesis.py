@@ -87,16 +87,15 @@ def test(n, filename, start_string):
                                           data.num_rules() >= nChanged):
                     data[len(data)] = rule
             print 'tries:', tries
-
-            for op in {s for s in data.signature.operators if s != start.head}:
-                rule = Rule(start, App(op, [start for _ in xrange(op.arity)]))
-                print 'adding rule:', rule
-                data.add(rule)
-            return data
+            return list(data.rules())
         return make_data
 
     def make_hypothesis(data):
-        hyp_trs = copy.deepcopy(data)
+        hyp_trs = TRS()
+        for rule in data:
+            for op in rule.operators:
+                hyp_trs.signature.add(op)
+            hyp_trs.add(rule)
         return TRSHypothesis(value=hyp_trs,
                              privileged_ops={s for s in hyp_trs.signature},
                              p_observe=0.1,
@@ -108,7 +107,7 @@ def test(n, filename, start_string):
                              p_r=0.3)
 
     hyps = standard_sample(make_hypothesis, make_data_maker(),
-                           save_top=None, show_skip=0, trace=True, N=10,
+                           save_top=None, show_skip=49, trace=True, N=10,
                            steps=n)
 
     print '\n\n# The best hypotheses of', n, 'samples:'
@@ -117,5 +116,5 @@ def test(n, filename, start_string):
 
 
 if __name__ == '__main__':
-    test(100, 'library/simple_tree_manipulations/001.terf', 'tree')
-    # test(3200, 'library/simple_tree_manipulations/001.terf', 'tree')
+    # test(100, 'library/simple_tree_manipulations/001.terf', 'tree')
+    test(3200, 'library/simple_tree_manipulations/001.terf', 'tree')

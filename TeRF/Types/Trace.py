@@ -1,6 +1,7 @@
 import heapq as hq
 import itertools as I
 import numpy as np
+import scipy as sp
 import numpy.random as random
 import TeRF.Miscellaneous as M
 
@@ -88,8 +89,9 @@ class Trace(object):
     def rewrites_to(self, term):
         # NOTE: we only use tree equality and don't consider tree edit distance
         self.run()
-        return sum(l.log_p + int(l.state != 'normal')*M.log(self.p_observe)
-                   for l in self.root.leaves() if l.term == term)
+        terms = [l.log_p + int(l.state != 'normal')*M.log(self.p_observe)
+                 for l in self.root.leaves() if l.term == term]
+        return sp.misc.logsumexp(terms) if terms else -np.inf
 
 
 class TraceState(object):

@@ -21,8 +21,19 @@ class Likelihood(object):
           datum: a rewriteRule representing a single datum
         Returns: a float, -inf <= x <= 0, log p(datum | self.value)
         """
-        p_lhs = T.Trace(self.value, self.start, p_observe=self.p_observe,
-                        max_steps=5).rewrites_to(datum.lhs)
-        p_rhs = T.Trace(self.value, datum.lhs, p_observe=self.p_observe,
-                        max_steps=5).rewrites_to(datum.rhs)
-        return p_lhs + p_rhs
+#         print 'start', self.start
+#         print 'tree', self.value._order[0]
+#         print 'start is tree?', self.start.head == self.value._order[0].head
+#         lt = T.Trace(self.value, self.start, p_observe=self.p_observe,
+#                      max_steps=5).run()
+#         print [s.term.pretty_print() for s in lt.root.leaves()]
+#         p_lhs = lt.rewrites_to(datum.lhs)
+#         print 'p_lhs:', p_lhs
+#         print 'lhs', datum.lhs.pretty_print()
+#        print 'rhs', datum.rhs0.pretty_print()
+        rt = T.Trace(self.value, datum.lhs, p_observe=self.p_observe,
+                     max_steps=5).run()
+#         print [s.term.pretty_print() for s in rt.root.leaves()]
+        p_rewrite = rt.rewrites_to(datum.rhs0)
+#        print 'p_rewrite:', p_rewrite
+        return p_rewrite
