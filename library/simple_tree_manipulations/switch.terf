@@ -1,0 +1,2 @@
+signature switch/0 nil/0 ./2;
+switch (x_ y_) = y_ x_;
