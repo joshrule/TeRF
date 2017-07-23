@@ -1,0 +1,3 @@
+signature ./2 concat/0 nil/0 x_ cons/0 y_ z_;
+concat nil x_ = x_;
+concat (cons x_ y_) z_ = cons x_ (concat y_ z_);

@@ -1,0 +1,3 @@
+signature cons/0 head/0 nil/0 ./2;
+head (cons x_ y_) = x_;
+head nil = nil;

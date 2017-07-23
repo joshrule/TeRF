@@ -1,0 +1,4 @@
+signature y/0 ./2 last/0 cons/0 x_ nil/0 y_;
+last (cons x_ nil) = x_;
+last (cons x_ y_) = last y_;
+last nil = nil;

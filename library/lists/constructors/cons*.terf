@@ -1,0 +1,7 @@
+signature cons/0 ./2 cons*/0 list1/0 a_ nil/0 x_ y_ list/0;
+list1 (x_ y_) a_ = list1 x_ (cons y_ a_);
+list1 x_ a_ = cons x_ a_;
+list (x_ y_) = list1 (x_ y_) nil;
+list x_ = cons x_ nil;
+cons* (x_ y_) = list1 x_ y_;
+cons* x_ = x_;

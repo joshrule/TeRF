@@ -1,0 +1,4 @@
+signature y_ cons/0 z_ nil/0 x_ filter/0 ./2;
+filter x_ nil = nil;
+filter x_ (cons x_ y_) = filter x_ y_;
+filter x_ (cons y_ z_) = cons y_ (filter x_ z_);

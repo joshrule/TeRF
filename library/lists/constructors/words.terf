@@ -1,0 +1,6 @@
+signature xs_ split/0 b_ z_ nil/0 a_ y_ cons/0 x_ ./2 until/0;
+until x_ (cons x_ y_) a_ = cons a_ (until x_ y_ nil);
+until x_ (cons y_ z_) (cons a_ b_) = until x_ z_ (cons a_ (cons y_ b_));
+until x_ (cons y_ z_) a_ = until x_ z_ (cons y_ a_);
+split x_ xs_ = until x_ xs_ nil;
+until x_ nil a_ = cons a_ nil;

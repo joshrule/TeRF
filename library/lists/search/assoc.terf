@@ -1,0 +1,4 @@
+signature assoc/0 false/0 nil/0 cons/0 ./2 x_ y_ z_ a_;
+assoc x_ (cons (cons x_ y_) z_) = cons x_ y_;
+assoc x_ (cons (cons y_ z_) a_) = assoc x_ a_;
+assoc x_ nil = false;

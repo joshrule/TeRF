@@ -1,0 +1,4 @@
+signature nil/0 b_ a_ y_ x_ cons/0 intercalate/0 ./2;
+intercalate (cons x_ y_) (cons a_ b_) = cons a_ (cons x_ (intercalate y_ b_));
+intercalate x_ nil = nil;
+intercalate nil x_ = x_;

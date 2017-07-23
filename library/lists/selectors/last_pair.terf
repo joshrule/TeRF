@@ -1,0 +1,4 @@
+signature ./2 last_pair/0 cons/0 x_ nil/0 y_;
+last_pair (cons x_ nil) = cons x_ nil;
+last_pair (cons x_ y_) = last_pair y_;
+last_pair nil = nil;

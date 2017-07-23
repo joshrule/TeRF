@@ -1,0 +1,4 @@
+signature 1/0 0/0 2/0 ./2 prev/0 3/0;
+prev 1 = 0;
+prev 2 = 1;
+prev 3 = 2;

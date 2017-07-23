@@ -1,0 +1,3 @@
+signature z_ b_ a_ nil/0 prepend_word/0 ./2 y_ 0/0 cons/0 x_;
+prepend_word (cons x_ y_) z_ = cons x_ (prepend_word y_ z_);
+prepend_word nil z_ = cons 0 z_;
