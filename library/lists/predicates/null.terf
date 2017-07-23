@@ -1,0 +1,3 @@
+signature null/0 ./2 cons/0 nil/0 True/0 False/0;
+null nil = True;
+null (cons x_ y_) = False;

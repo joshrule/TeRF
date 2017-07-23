@@ -1,0 +1,4 @@
+signature false/0 nil/0 ./2 member/0 y_ true/0 x_ cons/0 z_;
+member x_ (cons x_ y_) = true;
+member x_ (cons y_ z_) = member x_ z_;
+member x_ nil = false;

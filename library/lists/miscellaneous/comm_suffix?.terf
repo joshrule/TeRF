@@ -1,0 +1,11 @@
+signature ./2 false/0 cons/0 true/0 comm_prefix?/0 nil/0 x_ y_ b_ a_ reverse/0 rev/0 z_ comm_suffix?/0 xs_ ys_;
+comm_prefix? (cons x_ y_) (cons x_ b_) = true;
+comm_prefix? (cons x_ y_) (cons a_ b_) = false;
+comm_prefix? x_ nil = false;
+comm_prefix? nil x_ = false;
+rev (cons x_ nil) z_ = cons x_ z_;
+rev (cons x_ y_) z_ = rev y_ (cons x_ z_);
+reverse (cons x_ nil) = cons x_ nil;
+reverse (cons x_ y_) = rev y_ (cons x_ nil);
+reverse nil = nil;
+comm_suffix? xs_ ys_ = comm_prefix? (reverse xs_) (reverse ys_);

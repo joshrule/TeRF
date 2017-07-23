@@ -1,0 +1,5 @@
+signature a_ y_ ./2 false/0 cons/0 b_ x_ true/0 comm_prefix?/0 nil/0;
+comm_prefix? (cons x_ y_) (cons x_ b_) = true;
+comm_prefix? (cons x_ y_) (cons a_ b_) = false;
+comm_prefix? x_ nil = false;
+comm_prefix? nil x_ = false;

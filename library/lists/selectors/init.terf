@@ -1,0 +1,4 @@
+signature cons/0 init/0 nil/0 ./2;
+init nil = nil;
+init (cons x_ nil) = nil;
+init (cons x_ y_) = cons x_ (init y_);

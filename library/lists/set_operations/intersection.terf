@@ -1,0 +1,8 @@
+signature check/0 x_ cons/0 a_ y_ intersection/0 z_ true/0 member/0 ./2 nil/0 false/0;
+member x_ (cons x_ y_) = true;
+member x_ (cons y_ z_) = member x_ z_;
+member x_ nil = false;
+intersection (cons x_ y_) a_ = check (member x_ a_ x_) y_ a_;
+check (true x_) y_ a_ = cons x_ (intersection y_ a_);
+check (false x_) y_ a_ = intersection y_ a_;
+intersection nil x_ = nil;

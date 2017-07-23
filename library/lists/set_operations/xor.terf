@@ -1,0 +1,11 @@
+signature member/0 true/0 cons/0 difference/0 check/0 append_list/0 xor/0 x_ y_ z_ a_ concat/0 false/0 nil/0 ./2;
+member x_ (cons x_ y_) = true;
+member x_ (cons y_ z_) = member x_ z_;
+member x_ nil = false;
+difference (cons x_ y_) a_ = check (member x_ a_ x_) y_ a_;
+difference nil x_ = nil;
+check (false x_) y_ a_ = cons x_ (difference y_ a_);
+check (true x_) y_ a_ = difference y_ a_;
+concat nil x_ = x_;
+concat (cons x_ y_) z_ = cons x_ (concat y_ z_);
+xor x_ y_ = concat (difference x_ y_) (difference y_ x_);

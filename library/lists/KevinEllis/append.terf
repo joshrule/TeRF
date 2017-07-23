@@ -1,0 +1,3 @@
+signature cons/0 append/0 ./2 nil/0;
+append z_ nil = cons z_ nil;
+append z_ (cons x_ y_) = cons x_ (append z_ y_);

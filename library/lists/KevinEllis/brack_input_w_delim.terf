@@ -1,0 +1,6 @@
+signature nil/0 ./2 brack_input_w_delim/0 x_ cons/0 y_ f/0 z_;
+brack_input_w_delim x_ (cons x_ y_) = cons x_ (f y_ x_);
+brack_input_w_delim x_ (cons y_ z_) = cons x_ (cons y_ (f z_ x_));
+f (cons x_ nil) x_ = cons x_ nil;
+f (cons x_ nil) y_ = cons x_ (cons y_ nil);
+f (cons x_ y_) z_ = cons x_ (f y_ z_);

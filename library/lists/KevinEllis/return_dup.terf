@@ -1,0 +1,7 @@
+signature z_ nil/0 return_dup/0 b_ a_ y_ cons/0 x_ check_dup/0 ./2;
+check_dup x_ (cons x_ y_) (cons a_ b_) = cons x_ (return_dup (cons a_ y_));
+check_dup x_ nil a_ = return_dup a_;
+check_dup x_ (cons y_ z_) (cons a_ b_) = check_dup x_ z_ (cons a_ (cons y_ b_));
+check_dup x_ (cons y_ z_) a_ = check_dup x_ z_ (cons y_ a_);
+return_dup (cons x_ nil) = nil;
+return_dup (cons x_ y_) = check_dup x_ y_ nil;

@@ -1,0 +1,3 @@
+signature cons/0 tail/0 nil/0 ./2;
+tail (cons x_ y_) = y_;
+tail nil = nil;

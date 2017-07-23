@@ -1,0 +1,5 @@
+signature ./2 split/0 x_ nil/0 cons/0 y_ z_ split_help/0;
+split x_ nil = cons nil nil;
+split x_ (cons x_ y_) = cons nil y_;
+split x_ (cons y_ z_) = split_help y_ (split x_ z_);
+split_help x_ (cons y_ z_) = cons (cons x_ y_) z_;

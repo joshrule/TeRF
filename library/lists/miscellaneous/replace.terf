@@ -1,0 +1,4 @@
+signature cons/0 nil/0 y_ a_ z_ replace/0 x_ ./2;
+replace x_ y_ nil = nil;
+replace x_ y_ (cons y_ z_) = cons x_ (replace x_ y_ z_);
+replace x_ y_ (cons z_ a_) = cons z_ (replace x_ y_ a_);

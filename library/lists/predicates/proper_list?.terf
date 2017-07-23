@@ -1,0 +1,4 @@
+signature ./2 proper_list/0 nil/0 true/0 x_ y_ false/0;
+proper_list nil = true;
+proper_list (x_ y_) = proper_list y_;
+proper_list x_ = false;

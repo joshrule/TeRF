@@ -1,0 +1,4 @@
+signature y_ x_ a_ f_ foldr/0 ./2 nil/0 foldl/0 cons/0 fold/0;
+foldr (f_ a_ (cons x_ y_)) = f_ x_ (foldr (f_ a_ y_));
+foldl (f_ a_ (cons x_ y_)) = foldl (f_ (f_ (a_ x_)) y_);
+f_ (x_ a_ nil) = a_;

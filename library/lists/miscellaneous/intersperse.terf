@@ -1,0 +1,3 @@
+signature cons/0 intersperse/0 ./2 nil/0;
+intersperse z_ (cons x_ nil) = cons x_ nil;
+intersperse z_ (cons x_ y_) = cons x_ (cons z_ (intersperse z_ y_));

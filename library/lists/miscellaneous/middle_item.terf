@@ -1,0 +1,17 @@
+signature middle_item/0 xs_ protect/0 8/0 6/0 4/0 9/0 10/0 ./2 nil/0 5/0 y_ cons/0 init/0 x_ middle/0 7/0 reverse/0 rev/0 z_;
+middle nil = nil;
+middle (cons x_ nil) = nil;
+middle (cons x_ y_) = init y_;
+init nil = nil;
+init (cons x_ nil) = nil;
+init (cons x_ y_) = cons x_ (init y_);
+rev (cons x_ nil) z_ = cons x_ z_;
+rev (cons x_ y_) z_ = rev y_ (cons x_ z_);
+reverse (cons x_ nil) = cons x_ nil;
+reverse (cons x_ y_) = rev y_ (cons x_ nil);
+reverse nil = nil;
+middle_item xs_ = protect (reverse (middle xs_));
+protect nil = nil;
+rev nil x_ = reverse x_;
+protect (cons x_ nil) = x_;
+protect (cons x_ y_) = middle_item (cons x_ y_);

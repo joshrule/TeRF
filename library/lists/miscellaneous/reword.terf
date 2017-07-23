@@ -1,0 +1,6 @@
+signature ./2 reword/0 nil/0 cons/0 x_ reword1/0 y_ 0/0 z_;
+reword nil = nil;
+reword (cons x_ nil) = x_;
+reword1 (cons x_ nil) y_ = cons x_ (cons 0 (reword y_));
+reword1 (cons x_ y_) z_ = cons x_ (reword1 y_ z_);
+reword (cons x_ y_) = reword1 x_ y_;

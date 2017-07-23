@@ -1,0 +1,3 @@
+signature g_ f_ p_ ./2 unfoldl/0 nil/0 seed_ cons/0 unfold/0;
+unfoldl p_ f_ g_ p_ = nil;
+unfoldl p_ f_ g_ seed_ = cons (f_ seed_) (unfold p_ f_ g_ (g_ seed_));

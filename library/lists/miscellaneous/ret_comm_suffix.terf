@@ -1,0 +1,13 @@
+signature nil/0 common_prefix/0 x_ a_ b_ y_ reverse/0 rev/0 z_ ret_comm_suffix/0 xs_ ys_ ./2 cons/0 return_prefix/0;
+return_prefix x_ x_ a_ b_ = cons x_ (common_prefix a_ b_);
+return_prefix x_ y_ a_ b_ = nil;
+common_prefix (cons x_ y_) (cons a_ b_) = return_prefix x_ a_ y_ b_;
+common_prefix nil a_ = nil;
+common_prefix a_ nil = nil;
+rev (cons x_ nil) z_ = cons x_ z_;
+rev (cons x_ y_) z_ = rev y_ (cons x_ z_);
+reverse (cons x_ nil) = cons x_ nil;
+reverse (cons x_ y_) = rev y_ (cons x_ nil);
+reverse nil = nil;
+ret_comm_suffix xs_ ys_ = reverse (common_prefix (reverse xs_) (reverse ys_));
+rev nil x_ = x_;
