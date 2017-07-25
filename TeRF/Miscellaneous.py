@@ -90,6 +90,10 @@ def log(x):
     return -np.inf if x == 0.0 else np.log(x)
 
 
+def log1mexp(x):
+    return np.log1p(-np.exp(x)) if (x < log(.5)) else log(-np.expm1(x))
+
+
 def unique_shuffle(xs):
     if len(set(xs)) <= 1:
         return None

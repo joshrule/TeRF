@@ -68,7 +68,8 @@ class Trace(object):
             state.state = 'normal'
         else:
             for term in rewrites:
-                new_p = M.logNof(rewrites) + state.log_p
+                new_p = M.logNof(rewrites) + state.log_p + \
+                        M.log(1-self.p_observe)
                 if state.step < self.max_steps and new_p >= M.log(self.min_p):
                     unobserved = TraceState(term,
                                             state.step+1,
@@ -77,6 +78,7 @@ class Trace(object):
                                             state='unobserved')
                     hq.heappush(self.unobserved, unobserved)
                     state.children.append(unobserved)
+            state.log_p += M.log(self.p_observe)
 
         # if only exploring a single path, kill the other paths
         if self.type == 'one' and state.children != []:
@@ -89,8 +91,7 @@ class Trace(object):
     def rewrites_to(self, term):
         # NOTE: we only use tree equality and don't consider tree edit distance
         self.run()
-        terms = [l.log_p + int(l.state != 'normal')*M.log(self.p_observe)
-                 for l in self.root.leaves() if l.term == term]
+        terms = [l.log_p for l in self.root.leaves() if l.term == term]
         return sp.misc.logsumexp(terms) if terms else -np.inf
 
 

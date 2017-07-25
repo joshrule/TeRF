@@ -29,24 +29,20 @@ class Variable(A.Atom, T.Term):
         try:
             return env[self]
         except KeyError:
-            raise ValueError('Variable.substitute: not part of environment!')
+            return self
 
     def unify(self, t, env=None, type='simple'):
+        # see wikipedia.org/wiki/Unification_(computer_science)
         env = {} if env is None else env
 
         if self is t:
-            if self not in env:
-                env[self] = self
             return env
-        if self in env:
-            return env[self].unify(t, env, type)
-        if t in env:
-            return self.unify(env[t], env, type)
-        if type is not 'alpha' or not hasattr(t, 'body'):
+        if type is not 'alpha' or not hasattr(t, 'body') and\
+           self not in t.variables and self not in env:
+            for var in env:
+                env[var] = env[var].substitute({self: t})
             env[self] = t
             return env
-        if type is 'simple':
-            return t.unify(self, env, type)
         return None
 
     def single_rewrite(self, trs, type):

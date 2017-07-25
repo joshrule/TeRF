@@ -47,13 +47,11 @@ class TRS(collections.MutableMapping):
             raise ValueError('TRS.__setitem__: inconsistent signature')
 
     def __getitem__(self, key):
-        # assume key is a rule -- not a common case, probably
-        # does it make sense to return only part of the rule?
         try:
             rule = self._rules[key.lhs]
-            if key in rule:
-                env = rule.lhs.unify(key.lhs, type='alpha')
-                return key.substitute(env)
+            for r in rule:
+                if key in r:
+                    return r
         except (AttributeError, KeyError, ValueError):
             pass
 
@@ -142,9 +140,11 @@ class TRS(collections.MutableMapping):
 
     def swap(self, r1, r2):
         try:
-            stored_rule = self[r1]
+            stored_rule = self[r1.lhs]
         except KeyError:
             raise ValueError('TRS.swap: rule to swap out does not exist')
         stored_rule.discard(r1)
         self.add(r2)
+        if len(stored_rule) == 0:
+            del self[stored_rule]
         return self

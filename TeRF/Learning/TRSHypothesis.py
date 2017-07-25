@@ -95,7 +95,8 @@ def test(n, filename, start_string):
         for rule in data:
             for op in rule.operators:
                 hyp_trs.signature.add(op)
-            hyp_trs.add(rule)
+            if rule.lhs not in rule.rhs:
+                hyp_trs.add(rule)
         return TRSHypothesis(value=hyp_trs,
                              privileged_ops={s for s in hyp_trs.signature},
                              p_observe=0.1,

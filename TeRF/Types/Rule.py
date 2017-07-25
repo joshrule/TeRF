@@ -94,7 +94,8 @@ class Rule(collections.MutableSet):
         # assume item is a rule
         try:
             env = item.lhs.unify(self.lhs, type='alpha')
-            for rhs in item.rhs:
+            rhss = item.rhs.copy()
+            for rhs in rhss:
                 self.rhs.discard(rhs.substitute(env))
         except AttributeError:
             pass
