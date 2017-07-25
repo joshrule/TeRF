@@ -9,7 +9,7 @@ import TeRF.Types.Application as A
 
 def demote(t, signature, invent):
     try:
-        head = np.random.choice(signature.possible_roots({t}))
+        head = np.random.choice(signature.operators.possible_roots({t}))
     except ValueError:
         raise P.ProposalFailedException('DemoteSubrule: no valid heads')
     body = [signature.sample_term(invent=invent) for _ in xrange(head.arity-1)]

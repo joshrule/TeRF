@@ -138,6 +138,19 @@ class TRS(collections.MutableMapping):
             return s_rules.pop(), o_rules.pop()
         return (None, None)
 
+    def find_move(self, other):
+        if len(self) == len(other):
+            s_rules = {rule for rule in self.rules() if rule not in other}
+            o_rules = {rule for rule in other.rules() if rule not in self}
+            if s_rules == o_rules == set():
+                moves = [(self._order.index(other._order[i]), i)
+                         for i, key in enumerate(self._order)
+                         if i != self._order.index(other._order[i]) and
+                         i < self._order.index(other._order[i])]
+                if len(moves) == 1:
+                    return moves[0]
+        return (None, None)
+
     def swap(self, r1, r2):
         try:
             stored_rule = self[r1.lhs]
@@ -148,3 +161,8 @@ class TRS(collections.MutableMapping):
         if len(stored_rule) == 0:
             del self[stored_rule]
         return self
+
+    def move(self, i1, i2):
+        key = self._order[i1]
+        del self._order[i1]
+        self._order.insert(i2 + (0 if i2 < i1 else 1), key)

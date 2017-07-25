@@ -82,6 +82,8 @@ class Signature(collections.MutableSet):
         if len(must_haves) == 1:
             return [s for s in self
                     if s in must_haves or getattr(s, 'arity', 0) > 0]
+        # technically not correct you could let S/1 be head if
+        # must_haves = {S/1, 0/0}
         return [s for s in self if getattr(s, 'arity', 0) > 1]
 
     def sample_head(self, invent=True):
@@ -178,11 +180,12 @@ class Signature(collections.MutableSet):
             return R.Rule(lhs, rhs)
 
     def log_p_rule(self, rule, p_rhs=0.5, invent=True):
-        p_lhs = self.log_p(rule.lhs, invent=invent)
-        p_n_clauses = sp.stats.geom.logpmf(p=p_rhs, k=len(rule.rhs))
-        self.replace_vars(rule.lhs.variables)
-        p_rhs = sum(self.log_p(case, invent=False) for case in rule.rhs)
-        return p_lhs + p_n_clauses + p_rhs
+        with self as sig:
+            p_lhs = sig.log_p(rule.lhs, invent=invent)
+            p_n_clauses = sp.stats.geom.logpmf(p=p_rhs, k=len(rule.rhs))
+            sig.replace_vars(rule.lhs.variables)
+            p_rhs = sum(sig.log_p(case, invent=False) for case in rule.rhs)
+            return p_lhs + p_n_clauses + p_rhs
 
     def sample_term_t(self, term, p_r, invent=True):
         """
