@@ -8,6 +8,7 @@ import TeRF.Learning.SwapSubruleProposer as ssp
 import TeRF.Learning.DemoteSubruleProposer as dsp
 import TeRF.Learning.LocalDifferenceProposer as ldp
 import TeRF.Learning.MoveRuleProposer as mrp
+import TeRF.Learning.NewTRSProposer as ntp
 
 
 class TestProposer(MixtureProposer):
@@ -29,7 +30,9 @@ class TestProposer(MixtureProposer):
             (ldp.propose_value,
              ldp.give_proposal_log_p),
             (mrp.propose_value,
-             mrp.give_proposal_log_p)
+             mrp.give_proposal_log_p),
+            (ntp.propose_value_maker(p_rules),
+             ntp.give_proposal_log_p_maker(p_rules))
         ]
 
         weights = [1.0/len(proposal_fns)]*len(proposal_fns)
