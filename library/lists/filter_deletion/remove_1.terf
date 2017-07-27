@@ -2,3 +2,9 @@ signature ./2 remove_1/0 x_ nil/0 cons/0 y_ z_;
 remove_1 x_ nil = nil;
 remove_1 x_ (cons x_ y_) = y_;
 remove_1 x_ (cons y_ z_) = cons y_ (remove_1 x_ z_);
+
+# remove_1 takes in an item and a list, and removes only the first instance of that item from the list.
+
+# Examples
+# remove_1 4 (cons 4 (cons 4 nil)) = cons 4 nil
+# remove_1 7 (cons 5 (cons 7 (cons 8 nil))) = cons 5 (cons 8 nil)

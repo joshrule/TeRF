@@ -1,4 +1,8 @@
-signature cons/0 init/0 nil/0 ./2;
+signature cons/0 init/0 nil/0 init1/0 ./2;
+assume 'library/lists/constructors/list_items';
 init nil = nil;
 init (cons x_ nil) = nil;
-init (cons x_ y_) = cons x_ (init y_);
+init xs_ = init1 xs_ nil;
+init1 (cons x_ nil) y_ = list y_;
+init1 (cons x_ y_) nil = init1 y_ x_;
+init1 (cons x_ y_) z_ = init1 y_ (z_ x_);

@@ -1,3 +1,8 @@
 signature g_ f_ p_ ./2 unfoldl/0 nil/0 seed_ cons/0 unfold/0;
 unfoldl p_ f_ g_ p_ = nil;
 unfoldl p_ f_ g_ seed_ = cons (f_ seed_) (unfold p_ f_ g_ (g_ seed_));
+
+# unfoldl (unfold left) takes in an initial item, 'seed_', applies a function 'f_' to 'seed_', concats the result of 'f_ seed_' to the current list, and repeats the process on a new 'seed_' (the result of a different function, 'g_', applied to the previous 'seed_'). unfoldl stops and returns the current list once 'p_' matches 'seed_'.  
+
+# Example
+# unfold 0 (i.d.) (seed - 1) 3 = cons 3 (cons 2 (cons 1 nil))

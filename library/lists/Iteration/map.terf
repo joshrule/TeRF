@@ -1,3 +1,8 @@
 signature null/0 ./2 cons/0 nil/0 True/0 map/0 False/0;
 map f_ nil = nil;
 map f_ (cons x_ y_) = cons (f_ x_) (map f_ y_);
+
+# map takes in a function, 'f_' and a list, and applies that function to each element of the list.
+
+# Example
+# map fxn (cons 4 (cons 5 (cons 6 nil))) = cons (fxn 4) (cons (fxn 5) (cons (fxn 6) nil))

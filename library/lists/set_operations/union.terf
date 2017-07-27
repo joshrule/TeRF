@@ -1,14 +1,5 @@
 signature filter_dup/0 filter/0 false/0 member/0 true/0 difference/0 check/0 union/0 cons/0 nil/0 concat/0 ./2 x_ y_ z_ a_;
-filter x_ nil = nil;
-filter x_ (cons x_ y_) = filter x_ y_;
-filter x_ (cons y_ z_) = cons y_ (filter x_ z_);
-filter_dup nil = nil;
-filter_dup (cons x_ y_) = cons x_ (filter_dup (filter x_ y_));
-member x_ (cons x_ y_) = true;
-member x_ (cons y_ z_) = member x_ z_;
-member x_ nil = false;
-difference (cons x_ y_) a_ = check (member x_ a_ x_) y_ a_;
-check (false x_) y_ a_ = cons x_ (difference y_ a_);
-check (true x_) y_ a_ = difference y_ a_;
-union x_ y_ = difference (filter_dup y_) x_;
+assume 'library/lists/filter_deletion/filter_dup';
 difference nil x_ = x_;
+assume 'library/lists/set_operations/difference';
+union x_ y_ = difference (filter_dup y_) x_;
