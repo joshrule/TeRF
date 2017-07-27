@@ -1,14 +1,5 @@
 signature cons/0 nil/0 until/0 ./2 x_ y_ z_ after/0 1/0 0/0 2/0 prev/0 3/0 protect/0 return/0 xs_;
-until x_ nil = nil;
-until x_ (cons x_ y_) = nil;
-until x_ (cons y_ z_) = cons y_ (until x_ z_);
-after x_ nil = nil;
-after x_ (cons x_ y_) = y_;
-after x_ (cons y_ z_) = after x_ z_;
-prev 1 = 0;
-prev 2 = 1;
-prev 3 = 2;
-protect x_ nil = nil;
-protect x_ (cons y_ z_) = return x_ (cons y_ z_);
-return 1 xs_ = until 0 xs_;
-return x_ xs_ = protect (prev x_) (after 0 xs_);
+assume 'library/lists/miscellaneous/until';
+assume 'library/lists/miscellaneous/after';
+return S[0] xs_ = until 0 xs_;
+return S[x_] xs_ = return x_ (after 0 xs_);

@@ -1,14 +1,8 @@
 signature ./2 switch_fb/0 nil/0 cons/0 last/0 concat/0 init/0 head/0 y/0 x_ y_ z_;
+assume 'library/lists/selectors/head';
+assume 'library/lists/selectors/init';
+assume 'library/lists/selectors/last';
+assume 'library/lists/miscellaneous/concat';
 switch_fb nil = nil;
 switch_fb (cons x_ nil) = cons x_ nil;
-last (cons x_ nil) = x_;
-last (cons x_ y_) = last y_;
-last nil = nil;
-concat nil x_ = x_;
-concat (cons x_ y_) z_ = cons x_ (concat y_ z_);
-init nil = nil;
-init (cons x_ nil) = nil;
-init (cons x_ y_) = cons x_ (init y_);
-head (cons x_ y_) = x_;
-head nil = nil;
 switch_fb (cons x_ y_) = cons (last (cons x_ y_)) (concat (init y_) (cons (head (cons x_ y_)) nil));

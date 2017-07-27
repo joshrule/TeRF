@@ -2,3 +2,9 @@ signature y_ x_ a_ f_ foldr/0 ./2 nil/0 foldl/0 cons/0 fold/0;
 foldr (f_ a_ (cons x_ y_)) = f_ x_ (foldr (f_ a_ y_));
 foldl (f_ a_ (cons x_ y_)) = foldl (f_ (f_ (a_ x_)) y_);
 f_ (x_ a_ nil) = a_;
+
+# fold takes in a function, 'f_', an accumulator, 'a_', and a list. It reduces the list by applying 'f_' recursively to the accumulator and each successive item of the list. foldl (fold left) differs from foldr (fold right) in that foldl is tail recursive while foldr is not XXX.
+
+# Examples
+# foldl (fxn 0 (cons 4 (cons 5 (cons 6 nil)))) = fxn (fxn (fxn (0 4) 5) 6)
+# foldr (fxn 0 (cons 4 (cons 5 (cons 6 nil)))) = fxn 4 (fxn 5 (fxn 6 0))

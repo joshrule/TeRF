@@ -1,6 +1,4 @@
 signature x_ cons/0 ./2 append_word/0 nil/0 0/0 z_ y_ prepend_word/0 prepend_append_word/0;
-append_word z_ nil = cons 0 z_;
-append_word z_ (cons x_ y_) = cons x_ (append_word z_ y_);
-prepend_word (cons x_ y_) z_ = cons x_ (prepend_word y_ z_);
-prepend_word nil z_ = cons 0 z_;
+assume 'library/lists/KevinEllis/prepend_word';
+assume 'library/lists/KevinEllis/append_word';
 prepend_append_word x_ y_ z_ = prepend_word x_ (append_word y_ z_);

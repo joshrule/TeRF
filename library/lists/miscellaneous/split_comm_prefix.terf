@@ -1,12 +1,4 @@
 signature drop_comm_prefix/0 comm_prefix/0 split_comm_prefix/0 ./2 nil/0 return_prefix/0 cons/0 common_prefix/0 x_ a_ b_ y_;
-return_prefix x_ x_ a_ b_ = cons x_ (common_prefix a_ b_);
-return_prefix x_ y_ a_ b_ = nil;
-common_prefix (cons x_ y_) (cons a_ b_) = return_prefix x_ a_ y_ b_;
-common_prefix nil a_ = nil;
-common_prefix a_ nil = nil;
-drop_comm_prefix (cons x_ y_) (cons a_ b_) = comm_prefix x_ a_ y_ b_;
-drop_comm_prefix nil x_ = cons nil x_;
-drop_comm_prefix x_ nil = cons x_ nil;
-comm_prefix x_ x_ a_ b_ = drop_comm_prefix a_ b_;
-comm_prefix x_ y_ a_ b_ = cons (cons x_ a_) (cons y_ b_);
+assume 'library/lists/miscellaneous/ret_comm_prefix';
+assume 'library/lists/miscellaneous/drop_common_prefix';
 split_comm_prefix x_ y_ = cons (common_prefix x_ y_) (drop_comm_prefix x_ y_);

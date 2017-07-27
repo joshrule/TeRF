@@ -1,7 +1,5 @@
 signature false/0 nil/0 ./2 member/0 true/0 cons/0 x_ y_ z_ difference/0 a_ check/0;
-member x_ (cons x_ y_) = true;
-member x_ (cons y_ z_) = member x_ z_;
-member x_ nil = false;
+assume 'library/lists/search/member?';
 difference (cons x_ y_) a_ = check (member x_ a_ x_) y_ a_;
 difference nil x_ = nil;
 check (false x_) y_ a_ = cons x_ (difference y_ a_);

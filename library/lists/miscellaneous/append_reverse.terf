@@ -1,7 +1,4 @@
 signature cons/0 nil/0 x_ z_ y_ append_reverse/0 reverse/0 rev/0 ./2;
-rev (cons x_ nil) z_ = cons x_ z_;
-rev (cons x_ y_) z_ = rev y_ (cons x_ z_);
-reverse (cons x_ nil) = cons x_ nil;
-reverse (cons x_ y_) = rev y_ (cons x_ nil);
+assume 'library/lists/miscellaneous/reverse';
 append_reverse z_ (cons x_ y_) = cons x_ (append_reverse z_ y_);
 append_reverse z_ nil = reverse z_;

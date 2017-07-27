@@ -1,0 +1,14 @@
+signature z_ nil/0 return_dup/0 b_ a_ y_ cons/0 x_ check_dup/0 ./2;
+check_dup x_ (cons x_ y_) (cons a_ b_) = cons x_ (return_dup (cons a_ y_));
+check_dup x_ (cons x_ y_) z_ = cons x_ (return_dup y_);
+check_dup x_ nil a_ = return_dup a_;
+check_dup x_ (cons y_ z_) (cons a_ b_) = check_dup x_ z_ (cons a_ (cons y_ b_));
+check_dup x_ (cons y_ z_) a_ = check_dup x_ z_ (cons y_ a_);
+return_dup nil = nil;
+return_dup (cons x_ y_) = check_dup x_ y_ nil;
+
+# return_dup takes in a list, checks for any duplicates, and returns a list of single instances of those duplicate items.
+
+# Examples
+# return_dup (cons 4 (cons 4 nil)) = cons 4 nil
+# return_dup (cons 5 (cons 6 (cons 5 (cons 7 (cons 8 (cons 7 nil)))))) = cons 5 (cons 7 nil)

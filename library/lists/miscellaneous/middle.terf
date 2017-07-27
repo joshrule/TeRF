@@ -1,7 +1,5 @@
 signature cons/0 ./2 nil/0 x_ middle/0 y_ init/0;
+assume 'library/lists/selectors/init';
 middle nil = nil;
 middle (cons x_ nil) = nil;
 middle (cons x_ y_) = init y_;
-init nil = nil;
-init (cons x_ nil) = nil;
-init (cons x_ y_) = cons x_ (init y_);

@@ -1,3 +1,9 @@
 signature uncons/0 ./2 nil/0 cons/0 x_ y_ ,/0;
 uncons nil = nil;
 uncons (cons x_ y_) = x_ , y_;
+
+# uncons decomposes a list into its head and tail.
+
+# Examples
+# uncons (cons 4 nil) = 4 , nil
+# uncons (cons 4 (cons 5 (cons 6 nil))) = 4 , (cons 5 (cons 6 nil))
