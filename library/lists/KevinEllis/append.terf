@@ -1,3 +1,9 @@
 signature cons/0 append/0 ./2 nil/0;
 append z_ nil = cons z_ nil;
 append z_ (cons x_ y_) = cons x_ (append z_ y_);
+
+# append takes a specified item, 'z_' and a list, and returns a list with that 'z_' as the last item of the list.
+
+# Examples
+# append 4 (cons 5 (cons 6 nil)) = cons 5 (cons 6 (cons 4 nil))
+# append 5 nil = cons 5 nil 
