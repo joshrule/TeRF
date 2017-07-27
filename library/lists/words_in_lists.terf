@@ -1,0 +1,6 @@
+# Words in a list are separated by '0', such that all the items following and preceding a '0' make a word. A list can have no words, 1 word, or multiple words.
+
+# Example
+# Words in (nil) --> no words
+# Words in (cons 4 nil) --> 1 word: (cons 4 nil)
+# Words in (cons 4 (cons 5 (cons 0 (cons 6 nil)))) --> 2 words: (cons 4 (cons 5 nil)) , (cons 6 nil)

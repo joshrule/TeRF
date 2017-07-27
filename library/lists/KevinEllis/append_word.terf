@@ -1,3 +1,9 @@
 signature cons/0 0/0 nil/0 ./2 append_word/0;
 append_word z_ nil = cons 0 z_;
 append_word z_ (cons x_ y_) = cons x_ (append_word z_ y_);
+
+# Here, as in library/lists/constructors/words, we assume words in a list are separated by the item '0'. append_word takes in two lists, 'z_' and 'cons x_ y_', and returns the first list as a word on the end of the second list.
+
+# Examples
+# append_word (cons 4 nil) (cons 5 (cons 6 nil)) = cons 5 (cons 6 (cons 0 (cons 4 nil)))
+# append_word (cons 7 (cons 8 nil)) nil = cons 0 (cons 7 (cons 8 nil))
