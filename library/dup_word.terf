@@ -1,0 +1,5 @@
+assume 'list';
+assume 'concat';
+
+dup_word nil = nil;
+dup_word (cons x_ y_) = concat (cons x_ y_) (cons 0 (cons x_ y_));

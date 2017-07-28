@@ -1,3 +1,2 @@
-tree = A | B | C | tree tree;
+assume 'library/simple_tree_manipulations/simple_tree';
 A = B;
-signature A/0 B/0 C/0 ./2;

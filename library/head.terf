@@ -1,0 +1,4 @@
+# The head of a cons cell is just the first element
+assume 'list';
+
+head (cons x_ y_) = x_;

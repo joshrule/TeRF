@@ -1,0 +1,6 @@
+assume 'library/booleans/not';
+assume 'library/booleans/and';
+
+nand x_ y_ = not (and x_ y_);
+
+boolean = nand boolean boolean;

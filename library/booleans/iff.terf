@@ -1,0 +1,6 @@
+assume 'library/booleans/and';
+assume 'library/booleans/implies';
+
+iff x_ y_ = and (implies x_ y_) (implies y_ x_);
+
+boolean = iff boolean boolean;

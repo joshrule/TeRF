@@ -1,0 +1,8 @@
+signature or/0 false/0 true/0 ./2;
+
+or true true = true;
+or true false = true;
+or false true = true;
+or false false = false;
+
+boolean = or boolean boolean;

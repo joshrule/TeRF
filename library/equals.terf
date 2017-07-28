@@ -1,0 +1,4 @@
+equals x_ x_ = true;
+equals x_ y_ = false;
+
+boolean = equals thing thing;

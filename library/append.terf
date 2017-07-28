@@ -1,0 +1,6 @@
+assume 'list';
+
+signature append/0;
+
+append z_ nil = cons z_ nil;
+append z_ (cons x_ y_) = cons x_ (append z_ y_);

@@ -1,0 +1,3 @@
+until x_ nil = nil;
+until x_ (cons x_ y_) = nil;
+until x_ (cons y_ z_) = cons y_ (until x_ z_);

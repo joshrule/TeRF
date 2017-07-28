@@ -1,0 +1,6 @@
+assume 'list';
+
+concat nil nil = nil;
+concat nil (cons x_ y_) = (cons x_ y_);
+concat (cons x_ y_) nil = (cons x_ y_);
+concat (cons x_ y_) (cons a_ b_) = (cons x_ (concat y_ (cons a_ b_)));
