@@ -3,3 +3,9 @@ assume 'library/lists/selectors/head';
 assume 'library/lists/miscellaneous/reverse';
 assume 'library/lists/constructors/words';
 keep_last_word x_ = head (reverse (split 0 x_));
+
+# keep_last_word takes in a list, 'x_', and returns only the final word of that initial list.
+
+# Examples 
+# keep_last_word (cons 4 nil) = nil
+# keep_last_word (cons 5 (cons 6 (cons 0 (cons 9 (cons 0 (cons 7 (cons 8 nil))))))) = cons 7 (cons 8 nil)

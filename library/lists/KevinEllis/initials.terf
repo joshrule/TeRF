@@ -5,3 +5,9 @@ initials nil = nil;
 initials x_ = initials1 (split 0 x_);
 initials1 nil = nil;
 initials1 (cons x_ y_) = cons (head x_) (initials1 y_);
+
+# initials takes in a list and returns each first item of all the words in the list as a new list.
+
+# Examples
+# initials (cons 4 nil) = (cons 4 nil)
+# initials (cons 5 (cons 0 (cons 9 (cons 8 (cons 0 (cons 10 (cons 11 nil))))))) = (cons 5 (cons 9 (cons 10 nil)))

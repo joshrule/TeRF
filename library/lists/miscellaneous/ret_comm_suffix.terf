@@ -3,3 +3,9 @@ assume 'library/lists/miscellaneous/ret_comm_prefix';
 rev nil x_ = x_;
 assume 'library/lists/miscellaneous/reverse';
 ret_comm_suffix xs_ ys_ = reverse (common_prefix (reverse xs_) (reverse ys_));
+
+# ret_comm_suffix takes in two lists and returns their common suffix as a list.
+
+# Examples
+# ret_comm_suffix (cons 5 nil) (cons 4 nil) = nil
+# ret_comm_suffix (cons 4 (cons 6 (cons 7 nil))) (cons 5 (cons 6 (cons 7 nil))) = cons 6 (cons 7 nil)

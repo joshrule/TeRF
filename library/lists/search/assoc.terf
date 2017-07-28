@@ -2,3 +2,9 @@ signature assoc/0 false/0 nil/0 cons/0 ./2 x_ y_ z_ a_;
 assoc x_ (cons (cons x_ y_) z_) = cons x_ y_;
 assoc x_ (cons (cons y_ z_) a_) = assoc x_ a_;
 assoc x_ nil = false;
+
+# assoc takes in a key value, 'x_', and a list of cons pairs. It returns the first pair whose car matches the key value. If none of the pair's cars match the key, assoc returns false.
+
+# Examples
+# assoc 3 (cons (cons 1 a) (cons (cons 2 b) (cons (cons 3 c) (cons (cons 4 d) nil)))) = cons 3 c
+# assoc 5 (cons (cons 1 a) (cons (cons 2 b) (cons (cons 3 c) (cons (cons 4 d) nil)))) = false

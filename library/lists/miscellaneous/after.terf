@@ -2,3 +2,9 @@ signature z_ y_ cons/0 nil/0 x_ after/0 ./2;
 after x_ nil = nil;
 after x_ (cons x_ y_) = y_;
 after x_ (cons y_ z_) = after x_ z_;
+
+# after takes in an item, 'x_', and a list, and returns the remainder of the list following the first instance of 'x_'.
+
+# Examples
+# after 3 (cons 4 (cons 5 nil)) = nil
+# after 5 (cons 4 (cons 5 (cons 6 (cons 7 nil)))) = cons 6 (cons 7 nil)

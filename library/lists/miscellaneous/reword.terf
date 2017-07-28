@@ -4,3 +4,9 @@ reword (cons x_ nil) = x_;
 reword1 (cons x_ nil) y_ = cons x_ (cons 0 (reword y_));
 reword1 (cons x_ y_) z_ = cons x_ (reword1 y_ z_);
 reword (cons x_ y_) = reword1 x_ y_;
+
+# reword takes in cons pairs of words, most likely assembled by our 'words' concept, and returns a list of words (separated by item '0').
+
+# Examples
+# reword (cons (cons 4 (cons 5 nil)) (cons (cons 6 nil) nil)) = (cons 4 (cons 5 (cons 0 (cons 6 nil))))
+# reword (cons (cons 4 nil) nil) = (cons 4 nil)

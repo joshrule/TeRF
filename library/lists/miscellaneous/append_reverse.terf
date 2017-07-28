@@ -2,3 +2,9 @@ signature cons/0 nil/0 x_ z_ y_ append_reverse/0 reverse/0 rev/0 ./2;
 assume 'library/lists/miscellaneous/reverse';
 append_reverse z_ (cons x_ y_) = cons x_ (append_reverse z_ y_);
 append_reverse z_ nil = reverse z_;
+
+# append_reverse takes in two lists, and appends the reverse of the first list, 'z_', onto the back of the second list.
+
+# Examples
+# append_reverse (cons 4 (cons 5 nil)) (cons 6 (cons 7 nil)) = cons 6 (cons 7 (cons 5 (cons 4 nil)))
+# append_reverse (cons 7 (cons 8 (cons 9 nil))) nil = cons 9 (cons 8 (cons 7 nil))

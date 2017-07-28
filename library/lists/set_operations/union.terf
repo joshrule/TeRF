@@ -1,5 +1,11 @@
 signature filter_dup/0 filter/0 false/0 member/0 true/0 difference/0 check/0 union/0 cons/0 nil/0 concat/0 ./2 x_ y_ z_ a_;
 assume 'library/lists/filter_deletion/filter_dup';
-difference nil x_ = x_;
+difference nil (cons x_ y_) = cons x_ y_;
 assume 'library/lists/set_operations/difference';
 union x_ y_ = difference (filter_dup y_) x_;
+
+# union returns the union of two lists, with duplicates from list 1 included in the final list.
+
+# Examples
+# union (cons 1 (cons 2 nil)) (cons 3 (cons 4 nil)) = (cons 1 (cons 2 (cons 3 (cons 4 nil))))
+# union (cons 1 (cons 2 (cons 1 nil))) (cons 2 (cons 1 (cons 2 (cons 3 nil)))) = (cons 1 (cons 2 (cons 1 (cons 3 nil))))

@@ -6,3 +6,9 @@ init xs_ = init1 xs_ nil;
 init1 (cons x_ nil) y_ = list y_;
 init1 (cons x_ y_) nil = init1 y_ x_;
 init1 (cons x_ y_) z_ = init1 y_ (z_ x_);
+
+# in a non-empty list, init returns all the elements of the list except for the last one. in an empty list, init returns nil (the empty list).
+
+# Examples
+# init (cons 4 (cons 5 nil)) = cons 4 nil
+# init (cons 4 nil) = nil

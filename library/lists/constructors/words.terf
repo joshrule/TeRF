@@ -1,4 +1,4 @@
-signature xs_/0 list/0 split/0 b_ z_ nil/0 a_ y_ cons/0 x_ ./2 until/0;
+signature list/0 split/0 b_ z_ nil/0 a_ y_ xs_ cons/0 x_ ./2 until/0;
 assume 'library/lists/constructors/list_items';
 split x_ nil = nil;
 until x_ (cons x_ y_) a_ = cons (list a_) (until x_ y_ nil);

@@ -6,3 +6,9 @@ assume 'library/lists/miscellaneous/concat';
 switch_fb nil = nil;
 switch_fb (cons x_ nil) = cons x_ nil;
 switch_fb (cons x_ y_) = cons (last (cons x_ y_)) (concat (init y_) (cons (head (cons x_ y_)) nil));
+
+# switch_fb takes in a list and returns a list with the first and last element of the initial list switched.
+
+# Examples
+# switch_fb (cons 4 nil) = cons 4 nil
+# switch_fb (cons 5 (cons 6 (cons 7 (cons 8 nil)))) = cons 8 (cons 6 (cons 7 (cons 5 nil)))

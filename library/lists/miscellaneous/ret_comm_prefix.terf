@@ -4,3 +4,9 @@ return_prefix x_ y_ a_ b_ = nil;
 common_prefix (cons x_ y_) (cons a_ b_) = return_prefix x_ a_ y_ b_;
 common_prefix nil a_ = nil;
 common_prefix a_ nil = nil;
+
+# common_prefix takes in two lists and returns their common prefix as a list.
+
+# Examples
+# common_prefix nil (cons 4 nil) = nil
+# common_prefix (cons 5 (cons 6 (cons 7 nil))) (cons 5 (cons 6 (cons 8 nil))) = cons 5 (cons 6 nil)

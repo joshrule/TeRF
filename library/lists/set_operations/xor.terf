@@ -2,3 +2,9 @@ signature member/0 true/0 cons/0 difference/0 check/0 append_list/0 xor/0 x_ y_ 
 assume 'library/lists/set_operations/difference';
 assume 'library/lists/miscellaneous/concat';
 xor x_ y_ = concat (difference x_ y_) (difference y_ x_);
+
+# xor takes in two lists and returns one list consisting of all the elements of list 1 not included in list 2 and vice versa.
+
+# Examples
+# xor (cons)
+#

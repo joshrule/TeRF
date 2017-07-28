@@ -1,3 +1,9 @@
 signature cons/0 prepend/0 nil/0 ./2 z_ x_ y_;
 prepend z_ (cons x_ y_) = cons z_ (cons x_ y_);
 prepend z_ nil = cons z_ nil;
+
+# prepend takes a specified item, 'z_' and a list, and returns a list with 'z_' prepended to the front of the list.
+
+# Examples
+# prepend 4 nil = cons 4 nil
+# prepend 5 (cons 9 (cons 1 nil)) = (cons 5 (cons 9 (cons 1 nil)))

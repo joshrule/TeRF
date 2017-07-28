@@ -2,3 +2,10 @@ signature y/0 ./2 last/0 cons/0 x_ nil/0 y_;
 last (cons x_ nil) = x_;
 last (cons x_ y_) = last y_;
 last nil = nil;
+
+# last returns the last item of a non-empty, finite list.
+
+# Examples
+# last (cons 4 (cons 5 nil)) = 5
+# last (cons 4 nil) = 4
+# last nil = nil

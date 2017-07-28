@@ -4,3 +4,8 @@ rev nil x_ = x_;
 ret_comm_suffix xs_ ys_ = reverse (common_prefix (reverse xs_) (reverse ys_));
 assume 'library/lists/miscellaneous/drop_common_suffix';
 split_comm_suffix xs_ ys_ = cons (ret_comm_suffix xs_ ys_) (drop_comm_suffix xs_ ys_);
+
+# split_comm_suffix takes in two lists and returns a cons pair whose first item is the lists' common suffix. The second item is another cons pair whose two items are the remainders of the two lists after their common suffixes are dropped.
+
+# Example
+# split_comm_suffix (cons 4 (cons 5 nil)) (cons 4 (cons 6 (cons 5 nil))) = cons (cons 5 nil) (cons (cons 4 nil) (cons 4 (cons 6 nil)))

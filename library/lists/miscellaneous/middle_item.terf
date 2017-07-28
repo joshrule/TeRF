@@ -3,3 +3,10 @@ assume 'library/lists/miscellaneous/middle';
 middle_item nil = nil;
 middle_item (cons x_ nil) = cons x_ nil;
 middle_item (cons x_ y_) = middle_item (middle (cons x_ y_));
+
+# middle_item returns the middle most item of a list as a list. If there is no definite middle, (the list contains an even number of items), nil is returned.
+
+# Examples
+# middle_item (cons 4 nil) = cons 4 nil
+# middle_item (cons 4 (cons 5 (cons 6 (cons 7 nil)))) = nil
+# middle_item (cons 4 (cons 5 (cons 6 (cons 7 (cons 8 nil))))) = cons 6 nil

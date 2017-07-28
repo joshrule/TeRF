@@ -1,3 +1,9 @@
 signature cons/0 head/0 nil/0 ./2;
 head (cons x_ y_) = x_;
 head nil = nil;
+
+# head returns the first item in a list, or an empty list if the list is empty.
+
+# Examples
+# head (cons 4 (cons 5 nil)) = 4
+# head nil = nil

@@ -2,3 +2,9 @@ signature false/0 nil/0 ./2 member/0 y_ true/0 x_ cons/0 z_;
 member x_ (cons x_ y_) = true;
 member x_ (cons y_ z_) = member x_ z_;
 member x_ nil = false;
+
+# member takes in an item, 'x_', and a list, and returns true if x_ is the list, and false otherwise.
+
+# Examples
+# member 4 (cons 5 (cons 4 nil)) = true
+# member 6 (cons 5 (cons 4 nil)) = false

@@ -4,7 +4,7 @@ list1 x_ a_ = cons x_ a_;
 list (x_ y_) = list1 (x_ y_) nil;
 list x_ = cons x_ nil;
 
-# list_items takes in items of any type and converts them into a list.
+# list takes in items of any type and converts them into a list.
 
 # Examples
 # list (1 2) = cons 1 (cons 2 nil)

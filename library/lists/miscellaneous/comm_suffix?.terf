@@ -2,3 +2,9 @@ signature ./2 false/0 cons/0 true/0 comm_prefix?/0 nil/0 x_ y_ b_ a_ reverse/0 r
 assume 'library/lists/miscellaneous/comm_prefix?';
 assume 'library/lists/miscellaneous/reverse';
 comm_suffix? xs_ ys_ = comm_prefix? (reverse xs_) (reverse ys_);
+
+# comm_suffix? takes in two lists, and returns true if the lists have any common suffix, and false otherwise.
+
+# Examples
+# comm_suffix? (cons 4 nil) (cons 4 (cons 5 nil)) = false
+# comm_suffix? (cons 4 (cons 5 (cons 7 nil))) (cons 6 (cons 7 nil)) = true

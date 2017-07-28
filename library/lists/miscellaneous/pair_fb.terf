@@ -4,3 +4,9 @@ assume 'library/lists/selectors/last';
 pair_fb nil = nil;
 pair_fb (cons x_ nil) = cons x_ nil;
 pair_fb x_ = cons (head x_) (cons (last x_) nil);
+
+# pair_fb takes in a list, 'x_', and returns a list consisting of the first and last item of 'x_'.
+
+# Examples
+# pair_fb (cons 4 nil) = cons 4 nil
+# pair_fb (cons 5 (cons 6 (cons 7 nil))) = cons 5 (cons 7 nil)

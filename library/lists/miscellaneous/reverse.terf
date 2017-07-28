@@ -4,3 +4,9 @@ rev (cons x_ y_) z_ = rev y_ (cons x_ z_);
 reverse (cons x_ nil) = cons x_ nil;
 reverse (cons x_ y_) = rev y_ (cons x_ nil);
 reverse nil = nil;
+
+# reverse takes in a list and reverses it.
+
+# Examples
+# reverse (cons 4 nil) = cons 4 nil
+# reverse (cons 5 (cons 6 (cons 7 nil))) = (cons 7 (cons 6 (cons 5 nil)))

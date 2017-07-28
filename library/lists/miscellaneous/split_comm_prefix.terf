@@ -2,3 +2,8 @@ signature drop_comm_prefix/0 comm_prefix/0 split_comm_prefix/0 ./2 nil/0 return_
 assume 'library/lists/miscellaneous/ret_comm_prefix';
 assume 'library/lists/miscellaneous/drop_common_prefix';
 split_comm_prefix x_ y_ = cons (common_prefix x_ y_) (drop_comm_prefix x_ y_);
+
+# split_comm_prefix takes in two lists and returns a cons pair whose first item is the lists' common prefix. The second item is another cons pair whose two items are the remainders of the two lists after their common prefixes are dropped.
+
+# Example
+# split_comm_prefix (cons 4 (cons 5 nil)) (cons 4 (cons 6 (cons 7 nil))) = cons (cons 4 nil) (cons (cons 5 nil) (cons 6 (cons 7 nil)))
