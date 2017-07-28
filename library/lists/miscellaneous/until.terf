@@ -1,0 +1,10 @@
+signature z_ y_ cons/0 nil/0 x_ until/0 ./2;
+until x_ nil = nil;
+until x_ (cons x_ y_) = nil;
+until x_ (cons y_ z_) = cons y_ (until x_ z_);
+
+# until takes in an item, 'x_', and a list, and returns everything before the first instance of 'x_' as a list.
+
+# Examples
+# until 3 (cons 4 (cons 5 nil)) = cons 4 (cons 5 nil)
+# until 5 (cons 4 (cons 5 (cons 6 (cons 7 nil)))) = cons 4 nil

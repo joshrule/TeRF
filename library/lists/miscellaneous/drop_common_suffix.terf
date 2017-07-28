@@ -1,0 +1,11 @@
+signature drop_comm_prefix/0 ./2 comm_prefix/0 nil/0 reverse/0 rev/0 special_rev/0 drop_comm_suffix/0 cons/0 x_ y_ a_ b_ z_ xs_ ys_ last_rev/0 4/0 5/0 6/0 9/0;
+assume 'library/lists/miscellaneous/drop_common_prefix';
+assume 'library/lists/miscellaneous/reverse';
+drop_comm_suffix xs_ ys_ = last_rev (drop_comm_prefix (reverse xs_) (reverse ys_));
+last_rev (cons x_ y_) = cons (reverse x_) (reverse y_);
+
+# drop_comm_suffix takes in two lists and returns a cons pair consisting of both of the lists with the common suffix removed from each.
+
+# Examples
+# drop_comm_suffix (cons 4 nil) (cons 5 (cons 4 nil)) = cons nil (cons 5 nil)
+# drop_comm_suffix (cons 7 (cons 8 (cons 9 nil)) (cons 6 (cons 8 (cons 9 nil))) = cons (cons 7 nil) (cons 6 nil)

@@ -1,0 +1,11 @@
+signature cons/0 nil/0 prepend_word/0 dup_word/0 z_ y_ x_ ./2 0/0;
+assume 'library/lists/KevinEllis/prepend_word';
+dup_word nil = nil;
+dup_word x_ = prepend_word x_ x_;
+
+# dup_word takes in a list and concats a duplicate of the list to the initial list as a word.
+
+# Examples
+# dup_word nil = nil
+# dup_word (cons 4 nil) = cons 4 (cons 0 (cons 4 nil))
+# dup_word (cons 5 (cons 0 (cons 6 (cons 0 (cons 7 nil))))) = cons 5 (cons 0 (cons 6 (cons 0 (cons 7 (cons 0 (cons 5 (cons 0 (cons 6 (cons 0 (cons 7 nil))))))))))

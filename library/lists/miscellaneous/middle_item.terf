@@ -1,0 +1,12 @@
+signature middle_item/0 xs_ protect/0 8/0 6/0 4/0 9/0 10/0 ./2 nil/0 5/0 y_ cons/0 init/0 x_ middle/0 7/0 reverse/0 rev/0 z_;
+assume 'library/lists/miscellaneous/middle';
+middle_item nil = nil;
+middle_item (cons x_ nil) = cons x_ nil;
+middle_item (cons x_ y_) = middle_item (middle (cons x_ y_));
+
+# middle_item returns the middle most item of a list as a list. If there is no definite middle, (the list contains an even number of items), nil is returned.
+
+# Examples
+# middle_item (cons 4 nil) = cons 4 nil
+# middle_item (cons 4 (cons 5 (cons 6 (cons 7 nil)))) = nil
+# middle_item (cons 4 (cons 5 (cons 6 (cons 7 (cons 8 nil))))) = cons 6 nil

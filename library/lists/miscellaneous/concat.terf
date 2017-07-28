@@ -1,0 +1,9 @@
+signature ./2 concat/0 nil/0 x_ cons/0 y_ z_;
+concat nil x_ = x_;
+concat (cons x_ y_) z_ = cons x_ (concat y_ z_);
+
+# concat takes in two lists and combines their elements to form a single list.
+
+# Examples
+# concat (cons 4 (cons 5 nil)) (cons 6 (cons 7 nil)) = cons 4 (cons 5 (cons 6 (cons 7 nil)))
+# concat (cons 3 nil) nil = cons 3 nil

@@ -1,0 +1,10 @@
+signature cons/0 ./2 cons*/0 list1/0 a_ nil/0 x_ y_ list/0;
+assume 'library/lists/constructors/list_items';
+cons* (x_ y_) = list1 x_ y_;
+cons* x_ = x_;
+
+# cons* takes in items of any type and groups them into cons pairs.
+
+# Examples
+# cons* (4 5 6) = cons 4 (cons 5 6)
+# cons* (A B C D E) = cons A (cons B (cons C (cons D E)))

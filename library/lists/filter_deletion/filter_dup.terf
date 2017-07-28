@@ -1,0 +1,10 @@
+signature cons/0 filter_dup/0 x_ y_ z_ ./2 filter/0 nil/0;
+assume 'library/lists/filter_deletion/filter';
+filter_dup nil = nil;
+filter_dup (cons x_ y_) = cons x_ (filter_dup (filter x_ y_));
+
+# filter_dup takes in a list, and returns a list with all item duplicates removed.
+
+# Examples
+# filter_dup (cons 5 (cons 6 nil)) = cons 5 (cons 6 nil)
+#filter_dup (cons 4 (cons 9 (cons 4 (cons 9 (cons 8 nil))))) = (cons 4 (cons 9 (cons 8 nil)))

@@ -1,0 +1,13 @@
+signature check/0 x_ cons/0 a_ y_ intersection/0 z_ true/0 member/0 ./2 nil/0 false/0;
+assume 'library/lists/search/member?';
+intersection (cons x_ y_) a_ = check (member x_ a_ x_) y_ a_;
+check (true x_) y_ a_ = cons x_ (intersection y_ a_);
+check (false x_) y_ a_ = intersection y_ a_;
+intersection nil x_ = nil;
+
+# intersection takes in two lists and returns a list of the items included in both lists. Note: if there are duplicate items in list 1 and only instance of that item in list 2, the duplicates are included in the returned list. Converseley however, duplicate items in list 2 that appear only once in list 1 are only included once in the returned list.
+
+# Examples
+# intersection (cons 1 (cons 2 nil)) (cons 1 (cons 2 nil)) = cons 1 (cons 2 nil)
+# intersection (cons 1 (cons 2 (cons 3 (cons 4 nil)))) (cons 1 (cons 4 (cons 5 (cons 2 nil)))) = cons 1 (cons 2 nil)
+# intersection (cons 1 (cons 2 (cons 3 (cons 1 nil)))) (cons 3 (cons 1 (cons 3 (cons 4 nil)))) = cons 1 (cons 3 (cons 1 nil))

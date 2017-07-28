@@ -1,0 +1,12 @@
+signature x_ y_ cons/0 drop_comm_prefix/0 ./2 a_ b_ comm_prefix/0 nil/0;
+drop_comm_prefix (cons x_ y_) (cons a_ b_) = comm_prefix x_ a_ y_ b_;
+drop_comm_prefix nil x_ = cons nil x_;
+drop_comm_prefix x_ nil = cons x_ nil;
+comm_prefix x_ x_ a_ b_ = drop_comm_prefix a_ b_;
+comm_prefix x_ y_ a_ b_ = cons (cons x_ a_) (cons y_ b_);
+
+# drop_comm_prefix takes in two lists and returns a cons pair consisting of both of the lists with the common prefix removed from each.
+
+# Examples
+# drop_comm_prefix (cons 4 nil) (cons 5 (cons 6 nil)) = cons (cons 4 nil) (cons 5 (cons 6 nil))
+# drop_comm_prefix (cons 7 (cons 8 nil)) (cons 7 (cons 8 (cons 9 nil))) = cons nil (cons 9 nil)

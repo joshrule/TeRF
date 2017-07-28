@@ -1,0 +1,10 @@
+signature nil/0 b_ a_ y_ x_ cons/0 intercalate/0 ./2;
+intercalate (cons x_ y_) (cons a_ b_) = cons a_ (cons x_ (intercalate y_ b_));
+intercalate x_ nil = nil;
+intercalate nil x_ = x_;
+
+# intercalate takes in two lists and returns a list with each successive item of list 1 following each item from list 2. Items from list 1 are only added to the final list if they can follow an item from list 2, otherwise the list is returned as is.
+
+# Examples
+# intercalate (cons 7 (cons 8 (cons 9 nil))) (cons 6 (cons 10 (cons 11 nil))) = cons 7 (cons 6 (cons 8 (cons 10 (cons 11 (cons 9 nil)))))
+# intercalate (cons 7 (cons 8 (cons 9 (cons 11 nil)))) (cons 3 (cons 4 (cons 5 nil))) = cons 3 (cons 7 (cons 4 (cons 8 (cons 5 (cons 9 nil)))))

@@ -1,0 +1,11 @@
+signature ./2 split/0 x_ nil/0 cons/0 y_ z_ split_help/0;
+split x_ nil = cons nil nil;
+split x_ (cons x_ y_) = cons nil y_;
+split x_ (cons y_ z_) = split_help y_ (split x_ z_);
+split_help x_ (cons y_ z_) = cons (cons x_ y_) z_;
+
+# split takes in an item, 'x_', and a list, and returns a cons pair whose first item is a list of all the elements before 'x_' in the initial list, and the second item is a list of all the elements following 'x_'.
+
+# Examples
+# split 0 (cons 4 (cons 0 (cons 5 (cons 6 nil)))) = cons (cons 4 nil) (cons 5 (cons 6 nil))
+# split a (cons a (cons b (cons a (cons b nil)))) = cons nil (cons b (cons a (cons b nil)))

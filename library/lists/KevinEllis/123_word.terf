@@ -1,0 +1,5 @@
+signature cons/0 nil/0 until/0 ./2 x_ y_ z_ after/0 1/0 0/0 2/0 prev/0 3/0 protect/0 return/0 xs_;
+assume 'library/lists/miscellaneous/until';
+assume 'library/lists/miscellaneous/after';
+return S[0] xs_ = until 0 xs_;
+return S[x_] xs_ = return x_ (after 0 xs_);

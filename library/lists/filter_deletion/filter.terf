@@ -1,0 +1,10 @@
+signature y_ cons/0 z_ nil/0 x_ filter/0 ./2;
+filter x_ nil = nil;
+filter x_ (cons x_ y_) = filter x_ y_;
+filter x_ (cons y_ z_) = cons y_ (filter x_ z_);
+
+# filter takes in a specific item and a list, and removes all instances of that item within the list.
+
+# Examples
+# filter 4 (cons 4 nil) = nil
+# filter 5 (cons 9 (cons 6 (cons 5 (cons 6 (cons 5 nil))))) = cons 9 (cons 6 (cons 6 nil))

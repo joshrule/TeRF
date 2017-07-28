@@ -1,0 +1,9 @@
+signature ./2 r/0 x_ y_ l/0;
+r (x_ y_) = y_;
+l (x_ y_) = x_;
+
+# r takes in a tree and returns the right branch, while l takes in a tree and returns the left branch.
+
+# Examples
+# r (A (B D (C A))) = (B D (C A))
+# l (A (B D (C A))) = A

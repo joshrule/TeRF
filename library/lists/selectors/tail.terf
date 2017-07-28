@@ -1,0 +1,9 @@
+signature cons/0 tail/0 nil/0 ./2 x_ y_;
+tail (cons x_ y_) = y_;
+tail nil = nil;
+
+# tail returns the remainder of a list after removing its head.
+
+# Examples
+# tail (cons 4 nil) = nil
+# tail (cons 5 (cons 6 (cons 7 nil))) = (cons 6 (cons 7 nil))
