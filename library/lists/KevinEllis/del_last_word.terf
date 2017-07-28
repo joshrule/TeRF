@@ -1,4 +1,4 @@
-signature tail/0 z_ x_ rev/0 cons/0 nil/0 reverse/0 ./2 split/0 a_ del_last_word/0 until/0 0/0 xs_ y_ b_ reword1/0 reword/0;
+signature tail/0 z_ x_ rev/0 cons/0 nil/0 reverse/0 ./2 split/0 a_ del_last_word/0 until/0 0/0 y_ b_ reword1/0 reword/0;
 assume 'library/lists/selectors/tail';
 assume 'library/lists/miscellaneous/reverse';
 assume 'library/lists/constructors/words';
@@ -10,3 +10,4 @@ del_last_word x_ = reword (reverse (tail (reverse (split 0 x_))));
 # Examples
 # del_last_word (cons 4 nil) = nil
 # del_last_word (cons 4 (cons 5 (cons 0 (cons 7 (cons 0 (cons 8 nil)))))) = cons 4 (cons 5 (cons 0 (cons 7 nil)))
+# del_last_word (cons 4 (cons 5 (cons 0 (cons 7 (cons 0 (cons 8 nil))))))

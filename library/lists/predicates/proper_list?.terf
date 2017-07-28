@@ -2,6 +2,7 @@ signature ./2 proper_list/0 nil/0 true/0 x_ y_ false/0;
 proper_list nil = true;
 proper_list (x_ y_) = proper_list y_;
 proper_list x_ = false;
+<<<<<<< HEAD
 
 # proper_list goes through an input to check if it is a proper list (finite, nil-terminated list). It returns true if it is a proper list, and false if it is not.
 
@@ -9,3 +10,5 @@ proper_list x_ = false;
 # proper_list (cons 5 (cons 6 7)) = false
 # proper_list (cons 4 nil) = true
 # proper_list nil = true
+=======
+>>>>>>> 2ef13a36fc56f988fda85d2b15ee007d218b1f91

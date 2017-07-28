@@ -6,5 +6,4 @@ xor x_ y_ = concat (difference x_ y_) (difference y_ x_);
 # xor takes in two lists and returns one list consisting of all the elements of list 1 not included in list 2 and vice versa.
 
 # Examples
-# xor (cons)
-#
+# 

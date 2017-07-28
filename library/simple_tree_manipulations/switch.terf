@@ -1,2 +1,7 @@
 signature switch/0 nil/0 ./2;
 switch (x_ y_) = y_ x_;
+
+# switch takes in a tree and returns a tree with the top branches switched.
+
+# Example
+# switch (A (B D (C A))) = ((B D (C A)) A)
