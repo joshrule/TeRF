@@ -68,6 +68,7 @@ class Application(T.Term):
         return App(self.head, [t.substitute(sub) for t in self.body])
 
     def unify(self, t, env=None, type='simple'):
+        # see wikipedia.org/wiki/Unification_(computer_science)
         env = {} if env is None else env
 
         try:

@@ -37,12 +37,15 @@ class Variable(A.Atom, T.Term):
 
         if self is t:
             return env
-        if type is not 'alpha' or not hasattr(t, 'body') and\
-           self not in t.variables and self not in env:
-            for var in env:
-                env[var] = env[var].substitute({self: t})
-            env[self] = t
-            return env
+        if (type is not 'alpha' or not hasattr(t, 'body')) and\
+           self not in t.variables:
+            if self not in env:
+                for var in env:
+                    env[var] = env[var].substitute({self: t})
+                env[self] = t
+                return env
+            if env[self] == t:
+                return env
         return None
 
     def single_rewrite(self, trs, type):
