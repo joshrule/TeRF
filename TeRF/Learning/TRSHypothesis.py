@@ -23,6 +23,7 @@ class TRSHypothesis(GenerativePrior, Likelihood, TestProposer, Hypothesis):
     has: value, prior_temperature, likelihood_temperature, & display.
 
     Args:
+      data: a list of Rules to explain
       p_observe: rate of observation (in timesteps)
       p_similar: rate of noisiness in evaluation (in timesteps)
       p_operators: probability of adding a new operator
@@ -106,9 +107,8 @@ def test(n, filename, start_string):
         for rule in data:
             for op in rule.operators:
                 hyp_trs.signature.add(op)
-            if rule.lhs not in rule.rhs:
-                hyp_trs.add(rule)
         return TRSHypothesis(value=hyp_trs,
+                             data=data,
                              privileged_ops={s for s in hyp_trs.signature},
                              p_observe=0.1,
                              p_similar=0.99,

@@ -9,11 +9,12 @@ import TeRF.Learning.DemoteSubruleProposer as dsp
 import TeRF.Learning.LocalDifferenceProposer as ldp
 import TeRF.Learning.MoveRuleProposer as mrp
 import TeRF.Learning.ReplaceWithVariableProposer as rvp
+import TeRF.Learning.AddExceptionProposer as aep
 # import TeRF.Learning.NewTRSProposer as ntp
 
 
 class TestProposer(MixtureProposer):
-    def __init__(self, p_arity=0.0, gensym=None, p_r=0.0,
+    def __init__(self, p_arity=0.0, data=None, p_r=0.0,
                  privileged_ops=None, p_rules=0.0, **kwargs):
         proposal_fns = [
             (arp.propose_value,
@@ -33,7 +34,9 @@ class TestProposer(MixtureProposer):
             (mrp.propose_value,
              mrp.give_proposal_log_p),
             (rvp.propose_value,
-             rvp.give_proposal_log_p)
+             rvp.give_proposal_log_p),
+            (aep.propose_value_maker(data),
+             aep.give_proposal_log_p_maker(data))
             # (ntp.propose_value_maker(p_rules),
             #  ntp.give_proposal_log_p_maker(p_rules))
         ]
