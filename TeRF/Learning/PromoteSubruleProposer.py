@@ -22,7 +22,7 @@ def propose_value(value, **kwargs):
     rhs = (choice(rule.rhs0.body) if side in ['rhs', 'both'] else rule.rhs0)
 
     new_rule = pu.make_a_rule(lhs, rhs)
-    print 'psp: changing', rule, 'to', new_rule
+    print '# psp: changing', rule, 'to', new_rule
     return new_value.swap(rule, new_rule)
 
 

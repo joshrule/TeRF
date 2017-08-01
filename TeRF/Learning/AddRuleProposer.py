@@ -8,7 +8,7 @@ def propose_value(value, **kwargs):
     rule = new_value.signature.operators.sample_rule(p_rhs=1.0, invent=True)
     if rule in new_value:
         raise P.ProposalFailedException('rule already exists')
-    print 'arp: adding rule', rule
+    print '# arp: adding rule', rule
     new_value.add(rule)
     return new_value
 

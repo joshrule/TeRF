@@ -13,7 +13,7 @@ def propose_value_maker(p_rules):
         while new_value.num_rules() < n_rules:
             rule = new_value.signature.sample_rule(p_rhs=1.0, invent=True)
             new_value.add(rule)
-        print 'ntp: generating a new TRS'
+        print '# ntp: generating a new TRS'
         return new_value
     return propose_value
 

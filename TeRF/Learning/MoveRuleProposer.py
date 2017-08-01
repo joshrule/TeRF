@@ -10,7 +10,7 @@ def propose_value(value, **kwargs):
     new_value = copy.deepcopy(value)
     old_idx = np.random.choice(len(value))
     new_idx = np.random.choice(len(value)-1)
-    print 'mrp: moving rule', old_idx, 'to', new_idx
+    print '# mrp: moving rule', old_idx, 'to', new_idx
     new_value.move(old_idx, new_idx)
     return new_value
 

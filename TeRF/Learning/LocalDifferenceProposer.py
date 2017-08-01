@@ -16,7 +16,7 @@ def propose_value(value, **kwargs):
         raise P.ProposalFailedException('LocalDifference: no good differences')
 
     new_rule = pu.make_a_rule(lhs, rhs)
-    print 'ldp: changing', rule, 'to', new_rule
+    print '# ldp: changing', rule, 'to', new_rule
     return new_value.swap(rule, new_rule)
 
 

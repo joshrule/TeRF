@@ -26,7 +26,7 @@ def propose_value_maker(p_r):
                 rhs = sig.sample_term_t(rhs, p_r, invent=False)
 
         new_rule = pu.make_a_rule(lhs, rhs)
-        print 'rrp: changing', rule, 'to', new_rule
+        print '# rrp: changing', rule, 'to', new_rule
         return new_value.swap(rule, new_rule)
     return propose_value
 

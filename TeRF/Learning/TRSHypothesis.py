@@ -46,7 +46,7 @@ def test(n, filename, start_string):
 
     start = App(trs.signature.find(start_string), [])
 
-    print '# Ground Truth:\n{}\n'.format(trs)
+    print '# Ground Truth:\n# {}\n#'.format(str(trs).replace('\n', '\n# '))
 
     def make_data_maker(nChanged=10, nTotal=20):
         def make_data():
@@ -60,22 +60,21 @@ def test(n, filename, start_string):
             data.signature = copy.deepcopy(trs.signature)
 
             for i, rule in enumerate(list(temp.rules())):
-                print '{:d}: {}'.format(i, rule)
+                print '# {:d}: {}'.format(i, rule)
                 use_it = None
                 while use_it not in ['y', '', 'n']:
-                    use_it = input('Include this rule ([y]/n)? ')
+                    use_it = input('# Include this rule ([y]/n)? ')
                 if use_it == 'n':
                     del temp[rule]
 
-            print
-            print 'Start symbol:', start.pretty_print()
-            trace = start.rewrite(temp, max_steps=5, type='all', trace=True)
+            print '#'
+            print '# Start symbol:', start.pretty_print()
+            trace = start.rewrite(temp, max_steps=11, type='all', trace=True)
             states = trace.root.leaves(states=['normal'])
             terms = [s.term for s in states]
             log_ps = [s.log_p for s in states]
             ps = fix_ps(log_ps)
 
-            print 'starting selection with {:d} rules'.format(data.num_rules())
             tries = 0
             while data.num_rules() < nTotal:
                 tries += 1
@@ -113,9 +112,15 @@ def test(n, filename, start_string):
 
     print '\n\n# The best hypotheses of', n, 'samples:'
     for hyp in hyps.get_all(sorted=True):
-        print hyp.prior, hyp.likelihood, hyp.posterior_score, hyp
+        print '#'
+        print '#', hyp.prior, hyp.likelihood, hyp.posterior_score
+        print '# ' + str(hyp).replace('\n', '\n# ')
 
 
 if __name__ == '__main__':
-    # test(100, 'library/simple_tree_manipulations/001.terf', 'tree')
-    test(3200, 'library/simple_tree_manipulations/001.terf', 'tree')
+    import sys
+    n = 1600 if len(sys.argv) < 2 else int(sys.argv[1])
+    default_filename = 'library/simple_tree_manipulations/001.terf'
+    filename = default_filename if len(sys.argv) < 3 else sys.argv[2]
+    start = 'tree' if len(sys.argv) < 4 else sys.argv[3]
+    test(n, filename, start)

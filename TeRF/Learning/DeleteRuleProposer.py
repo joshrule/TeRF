@@ -10,7 +10,7 @@ def propose_value(value, **kwargs):
         rule = random.choice(list(new_value.rules()))
     except ValueError:
         raise P.ProposalFailedException('DeleteRuleProposer: TRS has no rules')
-    print 'drp: deleting', rule
+    print '# drp: deleting', rule
     del new_value[rule]
     return new_value
 
