@@ -23,7 +23,7 @@ class Likelihood(object):
         Returns: a float, -inf <= x <= 0, log p(datum | self.value)
         """
         rt = T.Trace(self.value, datum.lhs, p_observe=self.p_observe,
-                     max_steps=5).run()
+                     max_steps=7).run()
         p_eval = rt.rewrites_to(datum.rhs0)
         p_gen = self.value.signature.log_p(datum.rhs0, invent=False)
         return sp.misc.logsumexp([np.log(self.p_similar) + p_eval,

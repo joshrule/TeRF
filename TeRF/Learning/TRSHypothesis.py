@@ -4,6 +4,7 @@ from LOTlib.Inference.Samplers.StandardSample import standard_sample
 from numpy import exp
 from numpy.random import choice
 from scipy.misc import logsumexp
+import time
 
 from TeRF.Learning.GenerativePrior import GenerativePrior
 from TeRF.Learning.Likelihood import Likelihood
@@ -69,24 +70,35 @@ def test(n, filename, start_string):
 
             print '#'
             print '# Start symbol:', start.pretty_print()
+            lhs_start = time.time()
             trace = start.rewrite(temp, max_steps=11, type='all', trace=True)
+            lhs_end = time.time()
             states = trace.root.leaves(states=['normal'])
             terms = [s.term for s in states]
-            log_ps = [s.log_p for s in states]
+            log_ps = [s.log_p*0.5 for s in states]
             ps = fix_ps(log_ps)
+            print '# {:d} LHSs generated in {:.2f}s'.format(
+                len(terms),
+                lhs_end-lhs_start)
 
+            rhs_start = time.time()
             tries = 0
             while data.num_rules() < nTotal:
                 tries += 1
-                lhs = choice(terms, p=ps)  # ignoring ps to speed generation
-                rhs = lhs.rewrite(trs, max_steps=5, type='one')
+                lhs = choice(terms, p=ps)
+                rhs = lhs.rewrite(trs, max_steps=7, type='one')
                 rule = Rule(lhs, rhs)
-                if (rule not in trs) and (((data.num_rules() < nChanged) and
-                                           (lhs != rhs)) or
-                                          data.num_rules() >= nChanged):
+                if (rule not in trs) and \
+                   ((data.num_rules() < nChanged and lhs != rhs) or
+                   (data.num_rules() >= nChanged) and (lhs == rhs)):
                     data[len(data)] = rule
-            print 'tries:', tries
+            rhs_end = time.time()
+            print '# {:d} rules selected in {:.2f}s and {:d} tries'.format(
+                data.num_rules(),
+                rhs_end-rhs_start,
+                tries)
             return list(data.rules())
+
         return make_data
 
     def make_hypothesis(data):
@@ -106,15 +118,20 @@ def test(n, filename, start_string):
                              start=start,
                              p_r=0.3)
 
-    hyps = standard_sample(make_hypothesis, make_data_maker(),
-                           save_top=None, show_skip=49, trace=True, N=10,
-                           steps=n)
+    hyps_start = time.time()
+    hyps = standard_sample(make_hypothesis,
+                           make_data_maker(nChanged=20, nTotal=40),
+                           save_top=None, show_skip=0, trace=False, N=10,
+                           steps=n, clean=False, likelihood_temperature=0.5)
+    hyps_end = time.time()
 
     print '\n\n# The best hypotheses of', n, 'samples:'
     for hyp in hyps.get_all(sorted=True):
         print '#'
         print '#', hyp.prior, hyp.likelihood, hyp.posterior_score
         print '# ' + str(hyp).replace('\n', '\n# ')
+
+    print 'samples were generated in {:.2f}s'.format(hyps_end-hyps_start)
 
 
 if __name__ == '__main__':
