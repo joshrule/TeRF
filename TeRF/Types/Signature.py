@@ -42,13 +42,6 @@ class Signature(collections.MutableSet):
         for x in self._elements:
             yield x
 
-    def __enter__(self):
-        return copy.deepcopy(self)
-
-    def __exit__(self, type, value, tb):
-        if type is not None:
-            return False
-
     def __str__(self):
         return '{' + ', '.join(str(s) for s in self._elements) + '}'
 
@@ -110,18 +103,18 @@ class Signature(collections.MutableSet):
         """
         if not (self.terminals or invent):
             raise ValueError('sample_term: no terminals!')
-        with self as sig:
-            head = sig.sample_head(invent)
-            sig.add(head)
-            try:
-                body = []
-                for _ in I.repeat(None, head.arity):
-                    t = sig.sample_term(invent)
-                    body.append(t)
-                    sig |= Signature(t.variables)
-                return A.App(head, body)
-            except AttributeError:
-                return head
+        sig = copy.deepcopy(self)
+        head = sig.sample_head(invent)
+        sig.add(head)
+        try:
+            body = []
+            for _ in I.repeat(None, head.arity):
+                t = sig.sample_term(invent)
+                body.append(t)
+                sig |= Signature(t.variables)
+            return A.App(head, body)
+        except AttributeError:
+            return head
 
     def log_p(self, term, invent=True):
         """
@@ -134,7 +127,7 @@ class Signature(collections.MutableSet):
         Returns:
           a float representing log(p(term | signature))
         """
-        sig = copy.copy(self)
+        sig = copy.deepcopy(self)
         p = sig.log_p_head(term.head, invent)
         try:
             for t in term.body:
@@ -170,22 +163,22 @@ class Signature(collections.MutableSet):
 #         raise SignatureError('sample_rule: constraints must be in signature')
 
     def sample_rule(self, p_rhs=0.5, invent=True):
-        with self as sig:
-            lhs = None
-            while not isinstance(lhs, A.Application):
-                lhs = sig.sample_term(invent)
-            sig.replace_vars(lhs.variables)
-            rhs = [sig.sample_term(invent=False)
-                   for _ in I.repeat(None, sp.stats.geom.rvs(p_rhs))]
-            return R.Rule(lhs, rhs)
+        sig = copy.deepcopy(self)
+        lhs = None
+        while not isinstance(lhs, A.Application):
+            lhs = sig.sample_term(invent)
+        sig.replace_vars(lhs.variables)
+        rhs = [sig.sample_term(invent=False)
+               for _ in I.repeat(None, sp.stats.geom.rvs(p_rhs))]
+        return R.Rule(lhs, rhs)
 
     def log_p_rule(self, rule, p_rhs=0.5, invent=True):
-        with self as sig:
-            p_lhs = sig.log_p(rule.lhs, invent=invent)
-            p_n_clauses = sp.stats.geom.logpmf(p=p_rhs, k=len(rule.rhs))
-            sig.replace_vars(rule.lhs.variables)
-            p_rhs = sum(sig.log_p(case, invent=False) for case in rule.rhs)
-            return p_lhs + p_n_clauses + p_rhs
+        sig = copy.deepcopy(self)
+        p_lhs = sig.log_p(rule.lhs, invent=invent)
+        p_n_clauses = sp.stats.geom.logpmf(p=p_rhs, k=len(rule.rhs))
+        sig.replace_vars(rule.lhs.variables)
+        p_rhs = sum(sig.log_p(case, invent=False) for case in rule.rhs)
+        return p_lhs + p_n_clauses + p_rhs
 
     def sample_term_t(self, term, p_r, invent=True):
         """
@@ -198,18 +191,18 @@ class Signature(collections.MutableSet):
         Returns:
           a TRS term
         """
-        with self as sig:
-            if np.random.binomial(1, p_r):
-                return sig.sample_term(invent)
-            try:
-                body = []
-                for t in term.body:
-                    new_t = sig.sample_term_t(t, p_r, invent)
-                    body.append(new_t)
-                    sig |= Signature(new_t.variables if invent else set())
-                return A.App(term.head, body)
-            except AttributeError:
-                return term
+        sig = copy.deepcopy(self)
+        if np.random.binomial(1, p_r):
+            return sig.sample_term(invent)
+        try:
+            body = []
+            for t in term.body:
+                new_t = sig.sample_term_t(t, p_r, invent)
+                body.append(new_t)
+                sig |= Signature(new_t.variables if invent else set())
+            return A.App(term.head, body)
+        except AttributeError:
+            return term
 
     def log_p_t(self, new, old, p_r, invent=True):
         """
@@ -223,18 +216,18 @@ class Signature(collections.MutableSet):
         Returns:
           a float representing log(p(new | signature, old))
         """
-        with self as sig:
-            p_make_head = M.log(p_r) + sig.log_p(new, invent)
-            if new.head == old.head:
-                p_keep_head = M.log(1-p_r)
-                try:
-                    for tn, to in I.izip(new.body, old.body):
-                        p_keep_head += sig.log_p_t(tn, to, p_r, invent)
-                        sig |= Signature(tn.variables if invent else set())
-                except AttributeError:
-                    pass
-                return sp.misc.logsumexp([p_keep_head, p_make_head])
-            return p_make_head
+        sig = copy.deepcopy(self)
+        p_make_head = M.log(p_r) + sig.log_p(new, invent)
+        if new.head == old.head:
+            p_keep_head = M.log(1-p_r)
+            try:
+                for tn, to in I.izip(new.body, old.body):
+                    p_keep_head += sig.log_p_t(tn, to, p_r, invent)
+                    sig |= Signature(tn.variables if invent else set())
+            except AttributeError:
+                pass
+            return sp.misc.logsumexp([p_keep_head, p_make_head])
+        return p_make_head
 
 #     def sample_term_c(self, constraints, invent=True):
 #         """
