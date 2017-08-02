@@ -1,0 +1,12 @@
+signature false/0 nil/0 ./2 member/0 true/0 cons/0 x_ y_ z_ difference/0 a_ check/0;
+assume 'library/lists/search/member?';
+difference (cons x_ y_) a_ = check (member x_ a_ x_) y_ a_;
+difference nil x_ = nil;
+check (false x_) y_ a_ = cons x_ (difference y_ a_);
+check (true x_) y_ a_ = difference y_ a_;
+
+# difference takes in two lists, and returns the items in list 1 that are not in list 2 as a list.
+
+# Examples
+# difference (cons 4 (cons 5 nil)) (cons 4 (cons 5 nil)) = nil
+# difference (cons 5 (cons 6 (cons 8 nil))) (cons 5 (cons 4 nil)) = (cons 6 (cons 8 nil))

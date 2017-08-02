@@ -1,0 +1,13 @@
+signature nil/0 cons/0 ./2 until/0 x_ y_ a_ z_ b_ xs_ head/0 initials/0 initials1/0 0/0 split/0;
+assume 'library/lists/constructors/words';
+assume 'library/lists/selectors/head';
+initials nil = nil;
+initials x_ = initials1 (split 0 x_);
+initials1 nil = nil;
+initials1 (cons x_ y_) = cons (head x_) (initials1 y_);
+
+# initials takes in a list and returns each first item of all the words in the list as a new list.
+
+# Examples
+# initials (cons 4 nil) = (cons 4 nil)
+# initials (cons 5 (cons 0 (cons 9 (cons 8 (cons 0 (cons 10 (cons 11 nil))))))) = (cons 5 (cons 9 (cons 10 nil)))

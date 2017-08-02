@@ -1,0 +1,10 @@
+signature x_ cons/0 ./2 append_word/0 nil/0 0/0 z_ y_ prepend_word/0 prepend_append_word/0;
+assume 'library/lists/KevinEllis/prepend_word';
+assume 'library/lists/KevinEllis/append_word';
+prepend_append_word x_ y_ z_ = prepend_word x_ (append_word y_ z_);
+
+# prepend_append_word takes in three lists, where list 3 is the initial list on which list 1 and list 2 are prepended and appended as words respectively.
+
+# Examples
+# prepend_append_word (cons 4 nil) (cons 5 nil) (cons 6 nil) = cons 4 (cons 0 (cons 6 (cons 0 (cons 5 nil))))
+# prepend_append_word nil (cons 5 nil) (cons 6 nil) = cons 0 (cons 6 (cons 0 (cons 5 nil)))

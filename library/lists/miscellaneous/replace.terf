@@ -1,0 +1,10 @@
+signature cons/0 nil/0 y_ a_ z_ replace/0 x_ ./2;
+replace x_ y_ nil = nil;
+replace x_ y_ (cons y_ z_) = cons x_ (replace x_ y_ z_);
+replace x_ y_ (cons z_ a_) = cons z_ (replace x_ y_ a_);
+
+# replace takes in two items and one list. It goes through the list and replaces each instance of the second item, 'y_', with the first item, 'x_'.
+
+# Examples
+# replace 4 5 (cons 5 (cons 6 (cons 5 nil))) = cons 4 (cons 6 (cons 4 nil))
+# replace 4 5 (cons 4 (cons 7 nil)) = cons 4 (cons 7 nil)

@@ -1,0 +1,8 @@
+signature cons/0 intersperse/0 ./2 nil/0;
+intersperse z_ (cons x_ nil) = cons x_ nil;
+intersperse z_ (cons x_ y_) = cons x_ (cons z_ (intersperse z_ y_));
+
+# intersperse takes in an item, 'z_', and a list, and returns a list with z_ in between each item of the list.
+
+# Example
+# intersperse a (cons 1 (cons 2 (cons 3 nil))) = cons 1 (cons a (cons 2 (cons a (cons 3 nil))))

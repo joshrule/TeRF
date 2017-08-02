@@ -1,0 +1,9 @@
+signature z_ b_ a_ nil/0 prepend_word/0 ./2 y_ 0/0 cons/0 x_;
+prepend_word (cons x_ y_) z_ = cons x_ (prepend_word y_ z_);
+prepend_word nil z_ = cons 0 z_;
+
+# prepend_word takes in two lists, 'cons x_ y_' and 'z', and returns a list with the first list added as a word to the front of the second list.
+
+# Examples
+# prepend_word (cons 4 nil) nil = cons 4 (cons 0 nil)
+# prepend_word (cons 7 (cons 8 nil)) (cons 5 (cons 0 (cons 6 nil))) = cons 7 (cons 8 (cons 0 (cons 5 (cons 0 (cons 6 nil))))) 

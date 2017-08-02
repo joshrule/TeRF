@@ -1,0 +1,12 @@
+signature cons/0 ./2 nil/0 x_ middle/0 y_ init/0;
+assume 'library/lists/selectors/init';
+middle nil = nil;
+middle (cons x_ nil) = nil;
+middle (cons x_ y_) = init y_;
+
+# middle returns the middle list of some larger list, so that the first item and last item are dropped.
+
+# Examples
+# middle (cons 4 nil) = nil
+# middle (cons 4 (cons 5 nil)) = nil
+# middle (cons 4 (cons 5 (cons 6 (cons 7 nil)))) = cons 5 (cons 6 nil)

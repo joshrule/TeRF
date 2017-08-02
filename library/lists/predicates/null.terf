@@ -1,0 +1,9 @@
+signature null/0 ./2 cons/0 nil/0 True/0 False/0;
+null nil = true;
+null (cons x_ y_) = false;
+
+# null checks if a structure (a list in this implementation) is empty, and returns True if it is, False if it is not.
+
+# Examples
+# null nil = true
+# null (cons 4 nil) = false

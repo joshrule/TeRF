@@ -1,0 +1,11 @@
+signature a_ y_ list/0 cons/0 x_ list1/0 nil/0 ./2;
+list1 (x_ y_) a_ = list1 x_ (cons y_ a_);
+list1 x_ a_ = cons x_ a_;
+list (x_ y_) = list1 (x_ y_) nil;
+list x_ = cons x_ nil;
+
+# list takes in items of any type and converts them into a list.
+
+# Examples
+# list (1 2) = cons 1 (cons 2 nil)
+# list (the cat is big) = cons the (cons cat (cons is (cons big nil)))
