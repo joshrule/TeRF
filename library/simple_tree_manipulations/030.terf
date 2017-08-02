@@ -1,12 +1,4 @@
-# A (C x_ y_) = x_
-# B (C x_ y_) = y_
-# A D = D
-# B D = D
-tree = head list | tail list;
-list = nil | cons item list;
-item = A | B | C | D;
-head (cons x_ y_) = x_;
-tail (cons x_ y_) = y_;
-head nil = nil;
-tail nil = nil;
-
+tree = S | K | I | tree tree;
+S x_ y_ z_ = x_ z_ (y_ z_);
+K x_ y_ = y_;
+I x_ = x_;

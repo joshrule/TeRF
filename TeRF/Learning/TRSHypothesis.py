@@ -52,21 +52,13 @@ def test(n, filename, start_string):
 
     def make_data_maker(nChanged=10, nTotal=20):
         def make_data():
-            try:
-                input = raw_input
-            except NameError:
-                pass
-
             data = TRS()
             temp = copy.deepcopy(trs)
             data.signature = copy.deepcopy(trs.signature)
 
             for i, rule in enumerate(list(temp.rules())):
-                print '# {:d}: {}'.format(i, rule)
-                use_it = None
-                while use_it not in ['y', '', 'n']:
-                    use_it = input('# Include this rule ([y]/n)? ')
-                if use_it == 'n':
+                if i > 3:
+                    print '# deleting', rule
                     del temp[rule]
 
             print '#'
