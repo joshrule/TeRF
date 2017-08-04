@@ -1,0 +1,10 @@
+signature ./2 flatten/0 cons/0 x_ y_ z_ concat/0 nil/0 a_ b_ 4/0 5/0 6/0 10/0;
+assume 'library/lists/miscellaneous/concat';
+flatten nil = nil;
+flatten (cons (cons x_ y_) z_) = concat (flatten (cons x_ y_)) (flatten z_);
+flatten (cons x_ y_) = cons x_ (flatten y_);
+
+# flatten takes in a list and returns a list of all the leaf elements of that original list represented in the appropriate order.
+
+# Example
+# flatten (cons 4 (cons (cons 5 (cons 6 (cons (cons 9 nil) nil))) nil)) = cons 4 (cons 5 (cons 6 (cons 9 nil)))

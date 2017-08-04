@@ -1,0 +1,10 @@
+signature z_ false/0 ./2 flattened?/0 nil/0 true/0 cons/0 x_ y_;
+flattened? nil = true;
+flattened? (cons (cons x_ y_) z_) = false;
+flattened? (cons x_ y_) = flattened? y_;
+
+# flattened? takes a list and returns true if every item of a list is in its leaf representation, and false otherwise.
+
+# Examples
+# flattened? (cons 4 (cons (cons 5 (cons 6 (cons (cons 9 nil) nil))) nil))) = false
+# flattened? (cons 4 (cons 5 nil)) = true

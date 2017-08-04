@@ -1,0 +1,15 @@
+signature 5/0 4/0 nil/0 middle_item/0 protect/0 6/0 ./2 10/0 9/0 8/0 cons/0 init/0 middle/0 7/0 reverse/0 rev/0 init1/0 list/0 list1/0 x_ y_ a_ xs_ z_ same_middle?/0 ys_ check/0 true/0 b_ false/0;
+assume 'library/lists/miscellaneous/middle_item';
+same_middle? xs_ ys_ = check (middle_item xs_) (middle_item ys_);
+check (cons x_ y_) (cons x_ y_) = true;
+check (cons x_ y_) (cons a_ b_) = false;
+check nil nil = true;
+check (cons x_ y_) nil = false;
+check nil (cons x_ y_) = false;
+
+# same_middle? takes in two lists, 'xs_' and 'ys_' and returns true if their middle item is the same and false if not.
+
+# Examples
+# same_middle? (cons 4 nil) (cons 5 (cons 4 (cons 6 nil))) = true
+# same_middle? (cons 4 (cons 5 (cons 6 nil))) (cons 5 (cons 4 (cons 6 nil))) = false
+# same_middle? (cons 4 (cons 5 nil)) (cons 9 (cons 10 nil)) = true
