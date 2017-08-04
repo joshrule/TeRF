@@ -1,5 +1,4 @@
 import abc
-
 import TeRF.Types.Trace as T
 
 
@@ -8,9 +7,8 @@ class Term(object):
 
     __metaclass__ = abc.ABCMeta
 
-    def __init__(self, head, signature=None, **kwargs):
+    def __init__(self, head, **kwargs):
         self.head = head
-        self.signature = signature
         super(Term, self).__init__(**kwargs)
 
     def __copy__(self):
@@ -45,9 +43,8 @@ class Term(object):
     @abc.abstractmethod
     def single_rewrite(self, trs, type='one'): raise NotImplementedError
 
+    @abc.abstractmethod
+    def differences(self, other, top=True): raise NotImplementedError
+
     def rewrite(self, trs, trace=False, **kwargs):
         return T.Trace(trs, self, **kwargs).rewrite(trace)
-
-    # def differences(self, other):
-    #     """all mismatching pairs of corresponding subtrees in self & other"""
-    #     return [] if self == other else self.difference_helper(other)

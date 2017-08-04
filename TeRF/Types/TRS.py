@@ -1,10 +1,9 @@
-import collections as C
+import collections
 import copy
-
 import TeRF.Types.Signature as S
 
 
-class TRS(C.MutableMapping):
+class TRS(collections.MutableMapping):
     def __init__(self):
         self.signature = S.Signature(parent=self)
         self._order = []
@@ -48,13 +47,11 @@ class TRS(C.MutableMapping):
             raise ValueError('TRS.__setitem__: inconsistent signature')
 
     def __getitem__(self, key):
-        # assume key is a rule -- not a common case, probably
-        # does it make sense to return only part of the rule?
         try:
             rule = self._rules[key.lhs]
-            if key in rule:
-                env = rule.lhs.unify(key.lhs, type='alpha')
-                return key.substitute(env)
+            for r in rule:
+                if key in r:
+                    return r
         except (AttributeError, KeyError, ValueError):
             pass
 
@@ -94,7 +91,7 @@ class TRS(C.MutableMapping):
         del self._order[key]
 
     def __iter__(self):
-        order = copy.copy(self._order)
+        order = self._order[:]
         for lhs in order:
                 yield self._rules[lhs]
 
@@ -118,4 +115,54 @@ class TRS(C.MutableMapping):
         self._rules = {}
 
     def add(self, rule):
-        self[len(self)] = rule
+        try:
+            self._rules[rule.lhs].add(rule)
+        except KeyError:
+            self[0] = rule
+
+    def find_insertion(self, other):
+        """if self == other + one more rule, return that rule, else None"""
+        self2 = copy.deepcopy(self)
+        new_rules = {rule for rule in self2.rules() if rule not in other}
+        if len(new_rules) == 1:
+            rule = new_rules.pop()
+            del self2[rule]
+            if self2 == other:
+                return rule
+        return None
+
+    def find_difference(self, other):
+        s_rules = {rule for rule in self.rules() if rule not in other}
+        o_rules = {rule for rule in other.rules() if rule not in self}
+        if len(s_rules) == len(o_rules) == 1:
+            return s_rules.pop(), o_rules.pop()
+        return (None, None)
+
+    def find_move(self, other):
+        if len(self) == len(other):
+            s_rules = {rule for rule in self.rules() if rule not in other}
+            o_rules = {rule for rule in other.rules() if rule not in self}
+            if s_rules == o_rules == set():
+                moves = [(self._order.index(other._order[i]), i)
+                         for i, key in enumerate(self._order)
+                         if i != self._order.index(other._order[i]) and
+                         i < self._order.index(other._order[i])]
+                if len(moves) == 1:
+                    return moves[0]
+        return (None, None)
+
+    def swap(self, r1, r2):
+        try:
+            stored_rule = self[r1.lhs]
+        except KeyError:
+            raise ValueError('TRS.swap: rule to swap out does not exist')
+        stored_rule.discard(r1)
+        self.add(r2)
+        if len(stored_rule) == 0:
+            del self[stored_rule]
+        return self
+
+    def move(self, i1, i2):
+        key = self._order[i1]
+        del self._order[i1]
+        self._order.insert(i2 + (0 if i2 < i1 else 1), key)

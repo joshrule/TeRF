@@ -1,32 +1,31 @@
-from copy import deepcopy
-from LOTlib.Hypotheses.Proposers.Proposer import (Proposer,
-                                                  ProposalFailedException)
-from numpy.random import choice
-
-from TeRF.Miscellaneous import find_insertion, log1of, log
+import copy
+import LOTlib.Hypotheses.Proposers as P
+import numpy.random as random
+import TeRF.Miscellaneous as M
 
 
-def propose_value(old_value, **kwargs):
+def propose_value(value, **kwargs):
+    new_value = copy.deepcopy(value)
     try:
-        chosen_rule = choice(old_value.rules)
-        print 'drp: deleting', chosen_rule
-        return deepcopy(old_value).del_rule(chosen_rule)
+        rule = random.choice(list(new_value.rules()))
     except ValueError:
-        raise ProposalFailedException('DeleteRuleProposer: TRS has no rules')
+        raise P.ProposalFailedException('DeleteRuleProposer: TRS has no rules')
+    print '# drp: deleting', rule
+    del new_value[rule]
+    return new_value
 
 
-def give_proposal_log_p(old_value, new_value, **kwargs):
-    if new_value.operators == old_value.operators and \
-       find_insertion(old_value.rules, new_value.rules) is not None:
-        return log1of(old_value.rules)
-    return log(0)
+def give_proposal_log_p(old, new, **kwargs):
+    if new.signature == old.signature and old.find_insertion(new) is not None:
+        return M.logNof(list(old.rules()))
+    return M.log(0)
 
 
-class DeleteRuleProposer(Proposer):
+class DeleteRuleProposer(P.Proposer):
     """
-    Proposer for removing a rule from a TRS (NON-ERGODIC FOR TRSs)
+    Proposer for removing a Rule from a TRS (NON-ERGODIC FOR TRSs)
 
-    Given a TRS (S, R U {r}), where r is a rule, give a new TRS (S, R).
+    Given a TRS (S, R U {r}), where r is a Rule, give a new TRS (S, R).
     """
     def __init__(self, **kwargs):
         """Create a DeleteRuleProposer"""

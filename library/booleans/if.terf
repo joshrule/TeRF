@@ -1,0 +1,4 @@
+if true y_ z_ = y_;
+if false y_ z_ = z_;
+
+# x_ = if boolean x_ x_;

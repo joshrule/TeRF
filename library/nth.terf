@@ -1,0 +1,13 @@
+assume 'library/until';
+assume 'library/after';
+assume 'library/combinators/I';
+
+prevc 1 k_ = k_ 0;
+prevc 2 k_ = k_ 1;
+prevc 3 k_ = k_ 2;
+prevc 4 k_ = k_ 3;
+prevc 5 k_ = k_ 4;
+ret n_ xs_ = retc n_ xs_ I;
+retc 0 xs_ k_ = k_ (until 0 xs_);
+retc n_ xs_ k_ = prevc n_ (G retc (after 0 xs_) k_);
+G w_ x_ y_ z_ = w_ z_ x_ y_;

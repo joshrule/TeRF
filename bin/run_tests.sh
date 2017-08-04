@@ -1,13 +1,6 @@
 #!/bin/bash
 
-import="import TeRF.Hypotheses.TRSHypothesis as t ; "
-nSamps="1600"
-
-for i in `seq -w 1 33`;
+for i in `seq -f %03g 1 32`;
 do
-    logfile="test_log_$nSamps\_0$i\_25_50_3"
-    testfile="'./tests/0$i.terf'"
-    cmd="{ time python -c \"$import t.test($nSamps, $testfile)\" ; } &> $logfile"
-    eval $cmd
-    echo $i
+    bin/test.sh $i $1 $2 $3
 done

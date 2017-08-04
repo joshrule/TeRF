@@ -1,0 +1,6 @@
+# Assume count
+tree = chit list;
+list = nil | cons item list;
+item = A | B | C | D;
+chit nil = 0;
+chit (cons x_ y_) = count x_ y_;

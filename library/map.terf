@@ -1,0 +1,8 @@
+assume 'list';
+
+# map applies f_ to every item in a list
+map f_ nil = nil
+map f_ (cons x_ y_) = cons (f_ x_) (map f_ y_)
+
+# Do we want to add this?
+# list = map function list;

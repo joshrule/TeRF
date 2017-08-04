@@ -1,4 +1,4 @@
-from copy import copy
+import copy
 import ply.yacc as yacc
 
 from TeRF.Language.lexer import tokens
@@ -169,7 +169,7 @@ def add_signature(trs, s):
 
 
 def add_rule(trs, lhst, rhsts):
-    sig = copy(trs.signature)
+    sig = copy.copy(trs.signature)
     lhs = make_term(lhst[1], signature=sig)
     rhs = [make_term(t[1], signature=sig) for t in rhsts]
     trs.signature |= sig.operators
@@ -206,7 +206,7 @@ def load_source(filename, path=None):
     with open(filename) as file:
         ss = parser.parse(file.read())
         trs = make_trs(ss, path=path)
-        terms = [make_term(s[1], signature=copy(trs.signature))
+        terms = [make_term(s[1], signature=copy.copy(trs.signature))
                  for s in ss if s[0] == 'term']
         return trs, terms
 

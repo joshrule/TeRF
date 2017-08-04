@@ -1,0 +1,3 @@
+after x_ nil = nil;
+after x_ (cons x_ y_) = y_;
+after x_ (cons y_ z_) = after x_ z_;

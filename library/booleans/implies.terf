@@ -1,0 +1,6 @@
+assume 'library/booleans/not';
+assume 'library/booleans/or';
+
+implies x_ y_ = or (not x_) y_;
+
+boolean = implies boolean boolean;

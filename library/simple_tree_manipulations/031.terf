@@ -1,7 +1,8 @@
-# A x (B x y) = + 1 (A x y)
-# A x (B y z) = (A x y)
-# A x C = 0
-count x_ (cons x_ y_) = S[count x_ y_];
-count x_ (cons y_ z_) = count x_ y_;
-count x_ nil = 0;
-signature count/0 nil/0 cons/0 S/1 ./2 x_ y_ z_;
+tree = S | K | I | H | C | B | W | tree tree;
+S x_ y_ z_ = x_ z_ (y_ z_);
+K x_ y_ = y_;
+I x_ = x_;
+H x_ y_ = y_;
+C x_ y_ z_ = x_ z_ y_;
+B x_ y_ z_ = x_ (y_ z_);
+W x_ y_ z_ = x_ y_ z_ z_;

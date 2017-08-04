@@ -22,7 +22,9 @@ class Atom(object):
         return not self == other
 
     def __hash__(self):
-        return hash(self.identity)
+        if not hasattr(self, '_hash'):
+            self._hash = hash(self.identity)
+        return self._hash
 
     def __copy__(self):
         # I'm immutable

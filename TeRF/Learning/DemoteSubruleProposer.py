@@ -1,106 +1,79 @@
-from copy import copy, deepcopy
-from LOTlib.Hypotheses.Proposers.Proposer import (Proposer,
-                                                  ProposalFailedException)
-from numpy import inf
-from numpy.random import choice
-from scipy.misc import logsumexp
-
-from TeRF.TRS import RR, App, TRSError
-from TeRF.Miscellaneous import find_difference, log1of, log0
-from TeRF.Utilities import sample_term, log_p
+import copy
+import LOTlib.Hypotheses.Proposers as P
+import numpy as np
+import scipy as sp
+import TeRF.Learning.ProposerUtilities as pu
+import TeRF.Miscellaneous as misc
+import TeRF.Types.Application as A
 
 
-def demote(t, signature):
-    operators = [o for o in signature
-                 if hasattr(o, 'arity') and o.arity > 0]
-    head = choice(operators)
-    body = [sample_term(signature) for _ in xrange(head.arity-1)]
-    idx = choice(head.arity)
-    body.insert(idx, t)
-    return App(head, body)
+def demote(t, signature, invent):
+    try:
+        head = np.random.choice(signature.operators.possible_roots({t}))
+    except ValueError:
+        raise P.ProposalFailedException('DemoteSubrule: no valid heads')
+    body = [signature.sample_term(invent=invent) for _ in xrange(head.arity-1)]
+    body.insert(np.random.choice(head.arity), t)
+    return A.App(head, body)
 
 
 def propose_value(value, **kwargs):
-    new_value = deepcopy(value)
-    try:
-        idx = choice(len(new_value.rules))
-        rule = new_value.rules[idx]
-    except ValueError:
-        raise ProposalFailedException('DemoteSubruleProposer: ' +
-                                      'TRS must have rules')
+    new_value = copy.deepcopy(value)
+    rule = pu.choose_a_rule(new_value)
+    side = np.random.choice(['lhs', 'rhs', 'both'])
 
-    sides = choice(['lhs', 'rhs', 'both'])
-    lhs_signature = value.operators | value.variables
-    try:
-        new_lhs = rule.lhs if sides == 'rhs' else demote(rule.lhs,
-                                                         lhs_signature)
-    except ValueError:
-        raise ProposalFailedException('DemoteSubruleProposer: ' +
-                                      'TRS must have suitable heads')
+    sig = value.signature.operators
+    lhs = rule.lhs if side == 'rhs' else demote(rule.lhs, sig, True)
 
-    rhs_signature = value.operators | new_lhs.variables()
-    try:
-        new_rhs = rule.rhs if sides == 'lhs' else demote(rule.rhs,
-                                                         rhs_signature)
-    except ValueError:
-        raise ProposalFailedException('DemoteSubruleProposer: ' +
-                                      'TRS must have suitable heads')
+    sig.replace_vars(lhs.variables)
+    rhs = rule.rhs0 if side == 'lhs' else demote(rule.rhs0, sig, True)
 
-    try:
-        new_rule = RR(new_lhs, new_rhs)
-    except TRSError:
-        raise ProposalFailedException('DemoteSubruleProposer: bad rule')
-
-    # print 'dsp: changing', rule, 'to', new_rule
-    new_value.rules[idx] = new_rule
-    return new_value
+    new_rule = pu.make_a_rule(lhs, rhs)
+    print '# dsp: changing', rule, 'to', new_rule
+    return new_value.swap(rule, new_rule)
 
 
-def log_p_is_demotion(r1, r2, signature):
-    if r1 != r2 and hasattr(r2, 'body') and r1 in r2.body:
-        operators = [a for a in signature
-                     if hasattr(a, 'arity') and a.arity > 0]
-        p_op = -log0(len(operators)) if r2.head in operators else log0(0)
+def log_p_is_demotion(r1, r2, signature, invent):
+    if r1 != r2 and r1 in getattr(r2, 'body', []):
+        operators = signature.operators
+        p_op = misc.logNof(operators) if r2.head in operators else -np.inf
 
-        branches = copy(r2.body)
+        branches = r2.body[:]
         branches.remove(r1)
-        p_branches = sum([log_p(b, signature) for b in branches])
+        p_branches = sum([signature.log_p(b, invent=invent) for b in branches])
 
-        p_index = log1of(r2.body)
+        p_index = misc.logNof(r2.body)
 
         return p_op + p_branches + p_index
-    return log0(0)
+    return -np.inf
 
 
 def give_proposal_log_p(old, new, **kwargs):
-    if old.variables == new.variables and old.operators == new.operators:
-        old_rule, new_rule = find_difference(old.rules, new.rules)
+    if old.signature == new.signature:
+        old_rule, new_rule = old.find_difference(new)
         try:
-            p_method = -log0(3)
-            p_rule = log1of(old.rules)
+            p_method = -misc.log(3)
+            p_rule = misc.logNof(list(old.rules()))
+            p = p_method + p_rule
+
             p_demote_lhs = log_p_is_demotion(old_rule.lhs, new_rule.lhs,
-                                             new.operators | new.variables)
-            p_demote_rhs = log_p_is_demotion(old_rule.rhs, new_rule.rhs,
-                                             new.operators |
-                                             new_rule.lhs.variables())
+                                             new.signature, True)
 
-            p_lhs = log0(0)
-            if p_demote_rhs == -inf:
-                p_lhs = p_method + p_rule + p_demote_lhs
+            sig = new.signature.operators.replace_vars(new_rule.lhs.variables)
+            p_demote_rhs = log_p_is_demotion(old_rule.rhs0, new_rule.rhs0,
+                                             sig, False)
 
-            p_rhs = log0(0)
-            if p_demote_lhs == -inf:
-                p_rhs = p_method + p_rule + p_demote_rhs
+            p_lhs = (p + p_demote_lhs) if p_demote_rhs == -np.inf else -np.inf
+            p_rhs = (p + p_demote_rhs) if p_demote_lhs == -np.inf else -np.inf
+            p_both = p + p_demote_lhs + p_demote_rhs
 
-            p_both = p_method + p_rule + p_demote_lhs + p_demote_rhs
-
-            return logsumexp([p_lhs, p_rhs, p_both])
+            return sp.misc.logsumexp([p_lhs, p_rhs, p_both])
         except AttributeError:
             pass
-    return log0(0)
+    return -np.inf
 
 
-class DemoteSubruleProposer(Proposer):
+class DemoteSubruleProposer(P.Proposer):
     """
     Proposer for modifying a rule by demoting it and adding a new head
     (NON-ERGODIC FOR TRSs)

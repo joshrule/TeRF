@@ -1,0 +1,3 @@
+signature boolean/0 true/0 false/0;
+boolean = true | false;
+thing = boolean;

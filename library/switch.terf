@@ -1,0 +1,4 @@
+signature switch/0 ./2;
+
+# switch flips the branches of a binary tree
+switch (x_ y_) = y_ x_;

@@ -1,0 +1,9 @@
+# A x (B x y) = + 1 (A x y)
+# A x (B y z) = (A x y)
+# A x C = 0
+tree = count item list;
+item = A | B | C | D;
+list = nil | cons item list;
+count x_ (cons x_ y_) = S[count x_ y_];
+count x_ (cons y_ z_) = count x_ y_;
+count x_ nil = 0;

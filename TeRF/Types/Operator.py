@@ -7,7 +7,7 @@ class Operator(A.Atom):
     def __init__(self, name=None, arity=0):
         self.arity = arity
         super(Operator, self).__init__(name=name,
-                                       terminal=(self.arity == 0))
+                                       terminal=(arity == 0))
 
     def __str__(self):
         return '{}/{:d}'.format(self.name, self.arity)

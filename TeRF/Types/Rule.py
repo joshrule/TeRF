@@ -1,11 +1,10 @@
-import collections as C
+import collections
 import itertools as I
-
 import TeRF.Types.Term as T
 import TeRF.Types.Application as A
 
 
-class Rule(C.MutableSet):
+class Rule(collections.MutableSet):
     def __init__(self, lhs, rhs):
         if isinstance(lhs, A.Application):
             self.lhs = lhs
@@ -81,7 +80,7 @@ class Rule(C.MutableSet):
     def add(self, item):
         # assume item is a rule
         try:
-            env = self.lhs.unify(item.lhs, type='alpha')
+            env = item.lhs.unify(self.lhs, type='alpha')
 
         # assume item is a term
         except AttributeError:
@@ -94,8 +93,9 @@ class Rule(C.MutableSet):
     def discard(self, item):
         # assume item is a rule
         try:
-            env = self.lhs.unify(item.lhs, type='alpha')
-            for rhs in item.rhs:
+            env = item.lhs.unify(self.lhs, type='alpha')
+            rhss = item.rhs.copy()
+            for rhs in rhss:
                 self.rhs.discard(rhs.substitute(env))
         except AttributeError:
             pass
@@ -115,6 +115,12 @@ class Rule(C.MutableSet):
     def substitute(self, env):
         return Rule(self.lhs.substitute(env),
                     [rhs.substitute(env) for rhs in self.rhs])
+
+    @property
+    def rhs0(self):
+        if len(self) == 1:
+            return list(self.rhs)[0]
+        raise ValueError('Rule.lone_rhs: multiple rhss')
 
 
 R = Rule

@@ -1,0 +1,8 @@
+assume 'list'
+
+# The head of a cons cell is just the first element
+tail (cons x_ y_) = y_;
+
+# Do we want to add this?
+# list = tail list;
+

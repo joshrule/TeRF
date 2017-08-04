@@ -1,0 +1,4 @@
+assume 'list';
+
+prepend z_ nil = cons z_ nil;
+prepend z_ (cons x_ y_) = (cons z_ (cons x_ y_));

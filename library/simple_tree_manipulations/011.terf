@@ -1,2 +1,2 @@
+assume 'library/simple_tree_manipulations/simple_tree';
 x_ y_ z_ = x_ z_;
-signature A/0 B/0 C/0 ./2 x_ y_ z_;

@@ -1,4 +1,6 @@
-from TeRF.Types import Trace
+import numpy as np
+import scipy as sp
+import TeRF.Types.Trace as T
 
 
 class Likelihood(object):
@@ -6,12 +8,11 @@ class Likelihood(object):
         """
         the log likelihood of the hypothesis for a single datum
 
-        This likelihood is generative. It asks how likely datum.lhs is to be
-        generated from self.start and how likely datum.rhs is to be generated
-        from datum.lhs given the rules and our assumptions about observation
-        frequency.
+        This likelihood is semi-generative. It assumes the existence of
+        datum.lhs and then asks how likely datum.rhs0 is to be generated
+        from datum.lhs given the rules and assumed observation frequency.
 
-        It ignores self.likelihood_temperature; compute_likelihood manages it.
+        compute_likelihood manages likelihood_temperature. It's ignored here.
 
         Assumes:
           self.value: from LOTlib.Hypotheses.Hypothesis
@@ -21,8 +22,9 @@ class Likelihood(object):
           datum: a rewriteRule representing a single datum
         Returns: a float, -inf <= x <= 0, log p(datum | self.value)
         """
-        p_lhs = Trace(self.value, self.start, p_observe=self.p_observe,
-                      max_steps=10).rewrites_to(datum.lhs)
-        p_rhs = Trace(self.value, datum.lhs, p_observe=self.p_observe,
-                      max_steps=10).rewrites_to(datum.rhs)
-        return p_lhs + p_rhs
+        rt = T.Trace(self.value, datum.lhs, p_observe=self.p_observe,
+                     max_steps=7).run()
+        p_eval = rt.rewrites_to(datum.rhs0)
+        p_gen = self.value.signature.log_p(datum.rhs0, invent=False)
+        return sp.misc.logsumexp([np.log(self.p_similar) + p_eval,
+                                  np.log(1-self.p_similar) + p_gen])

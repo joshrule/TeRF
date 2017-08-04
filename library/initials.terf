@@ -1,0 +1,9 @@
+assume 'list';
+
+signature 0/0 initials/0;
+
+# list = initials list;
+initials (cons 0 (cons 0 y_)) = initials (cons 0 y_);
+initials (cons 0 (cons x_ y_)) = cons x_ (initials y_);
+initials (cons x_ y_) = initials y_;
+initials nil = nil;

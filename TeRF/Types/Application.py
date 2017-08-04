@@ -1,28 +1,21 @@
 import itertools as I
 import numpy.random as random
-
 import TeRF.Types.Term as T
 
 
 class Application(T.Term):
     """a term applying an operator to arguments"""
 
-    def __init__(self, head, body, **kwargs):
-        try:
-            if head.arity == len(body):
-                self.body = body
-            else:
-                raise ValueError('Application: wrong number of arguments')
-        except AttributeError:
-            raise ValueError('Application: head must be an operator')
-        super(Application, self).__init__(head=head, **kwargs)
+    def __init__(self, head, body):
+        if head.arity == len(body):
+            self.body = body
+            super(Application, self).__init__(head=head)
+        else:
+            raise ValueError('Application: wrong number of arguments')
 
     @property
     def atoms(self):
-        yield self.head
-        for term in self.body:
-            for atom in term.atoms:
-                yield atom
+        return {self.head} | {a for t in self.body for a in t.atoms}
 
     @property
     def subterms(self):
@@ -50,7 +43,9 @@ class Application(T.Term):
         return not self == other
 
     def __hash__(self):
-        return hash((self.head, tuple(self.body)))
+        if not hasattr(self, '_hash'):
+            self._hash = hash((self.head, tuple(hash(b) for b in self.body)))
+        return self._hash
 
     def pretty_print(self, verbose=0):
         if self.head.name == '.' and self.head.arity == 2:
@@ -73,6 +68,7 @@ class Application(T.Term):
         return App(self.head, [t.substitute(sub) for t in self.body])
 
     def unify(self, t, env=None, type='simple'):
+        # see wikipedia.org/wiki/Unification_(computer_science)
         env = {} if env is None else env
 
         try:
@@ -109,12 +105,20 @@ class Application(T.Term):
                         for p in part]
         return None
 
+    def differences(self, other, top=True):
+        # TODO: What if heads have different arity?
+        # TODO: What if other isn't an application?
+        if (self == other):
+            return []
+        diffs = ([(self, other)] if top else [])
+        try:
+            if self.head == other.head:
+                diffs += list(I.chain(*[st1.differences(st2)
+                                        for st1, st2 in I.izip(self.body,
+                                                               other.body)]))
+        except AttributeError:
+            pass
+        return diffs
+
 
 App = Application
-
-#     def difference_helper(self, other):
-#         # TODO: What if heads have different arity?
-#         # TODO: What if other isn't an application?
-#         return [(self, other)] + \
-#             list(I.chain(*[st1.differences(st2)
-#                            for st1, st2 in I.izip(self.body, other.body)]))
