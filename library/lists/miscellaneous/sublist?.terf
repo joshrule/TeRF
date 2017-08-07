@@ -1,0 +1,16 @@
+signature nil/0 7/0 ./2 6/0 5/0 y_ 8/0 12/0 a_ z_ c_ b_ 10/0 9/0 x_ true/0 cons/0 sublist?/0 check/0 4/0 false/0 11/0;
+sublist? (cons x_ y_) (cons x_ z_) = check y_ z_ (sublist? (cons x_ y_) z_);
+sublist? (cons x_ y_) (cons a_ b_) = sublist? (cons x_ y_) b_;
+check (cons x_ nil) (cons x_ y_) a_ = true;
+sublist? (cons x_ y_) nil = false;
+check (cons x_ y_) (cons x_ z_) a_ = check y_ z_ a_;
+check (cons x_ y_) (cons a_ b_) c_ = c_;
+check (cons x_ y_) nil a_ = a_;
+check nil (cons x_ y_) a_ = true;
+
+# sublist? takes in two lists and returns true if the first list is expressed in leaf representation in the appropriate order anywhere throughout the second list, and false otherwise. 
+
+# Examples
+# sublist? (cons 9 nil) (cons 10 (cons 9 (cons 8 nil))) = true
+# sublist? (cons 7 nil) (cons 10 (cons 9 (cons 8 nil))) = false
+# sublist? (cons 10 (cons 9 (cons 8 nil))) (cons 11 (cons 12 (cons 10 (cons 9 (cons 8 (cons 7 nil)))))) = true

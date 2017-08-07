@@ -1,0 +1,10 @@
+signature ./2 nested_list?/0 nil/0 false/0 cons/0 x_ y_ nested_list/0 true/0 4/0 6/0 5/0 9/0 10/0 z_;
+nested_list? nil = false;
+nested_list? (cons (cons x_ y_) z_) = true;
+nested_list? (cons x_ y_) = nested_list? y_;
+
+# nested_list? takes in a list and returns true if any of the items in the list are a list and false otherwise. 
+
+# Examples
+# nested_list? (cons 4 (cons (cons 5 (cons 6 (cons (cons 9 nil) nil))) nil))) = true
+# nested_list? (cons 4 (cons 5 nil)) = false

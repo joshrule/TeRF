@@ -1,0 +1,18 @@
+signature z_ b_ a_ 9/0 pair_fb/0 ys_ same_fb2?/0 7/0 true/0 check/0 ./2 xs_ same_fb1?/0 false/0 nil/0 cons/0 head/0 last/0 y/0 x_ y_ last_pair/0 4/0 5/0 6/0;
+assume 'library/lists/miscellaneous/pair_fb';
+same_fb2? nil nil = true;
+same_fb2? nil xs_ = false;
+same_fb2? xs_ nil = false;
+same_fb2? xs_ ys_ = check (pair_fb xs_) (pair_fb ys_);
+check (cons x_ nil) (cons x_ nil) = true;
+check (cons x_ nil) (cons y_ nil) = false;
+check (cons x_ (cons y_ nil)) (cons x_ (cons y_ nil)) = true;
+check (cons x_ (cons y_ nil)) (cons a_ (cons b_ nil)) = false;
+check (cons x_ nil) (cons y_ (cons z_ nil)) = false;
+check (cons x_ (cons y_ nil)) (cons z_ nil) = false;
+
+# same_fb2? takes in two lists, and returns true if the first and last items of each list are the same.
+
+# same_fb2? (cons 4 nil) (cons 4 (cons 5 (cons 4 nil))) = true
+# same_fb2? (cons 5 (cons 6 (cons 7 nil))) (cons 5 (cons 7 nil)) = true
+# same_fb2? (cons 5 (cons 6 (cons 7 nil))) (cons 5 (cons 9 nil)) = false

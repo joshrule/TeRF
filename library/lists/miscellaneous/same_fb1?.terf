@@ -1,0 +1,14 @@
+signature last/0 y/0 x_ y_ last_pair/0 4/0 5/0 6/0 pair_fb/0 true/0 check/0 ./2 xs_ same_fb1?/0 false/0 nil/0 cons/0 head/0;
+assume 'library/lists/miscellaneous/pair_fb';
+same_fb1? nil = false;
+same_fb1? xs_ = check (pair_fb xs_);
+check (cons x_ nil) = true;
+check (cons x_ (cons x_ nil)) = true;
+check (cons x_ (cons y_ nil)) = false;
+
+# same_fb1? takes in one list, 'xs_', and returns true if the first and last elements of 'xs_' are the same, and false otherwise.
+
+# Examples
+# same_fb1? (cons 4 (cons 5 nil)) = false
+# same_fb1? (cons 4 nil) = true
+# same_fb1? (cons 5 (cons 4 (cons 6 (cons 5 nil)))) = true

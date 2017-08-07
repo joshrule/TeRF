@@ -1,0 +1,13 @@
+signature false/0 nil/0 ./2 member/0 true/0 cons/0 difference/0 check/0 x_ y_ z_ a_ same_items?/0 xs_ ys_ 4/0 5/0 6/0 9/0 check1/0 b_ 8/0 7/0;
+assume 'library/lists/set_operations/difference';
+check1 nil nil = true;
+check1 nil (cons x_ y_) = false;
+check1 (cons x_ y_) nil = false;
+check1 (cons x_ y_) (cons a_ b_) = false;
+same_items? xs_ ys_ = check1 (difference xs_ ys_) (difference ys_ xs_);
+
+# same_items? takes in two lists, 'xs_' and 'ys_', and returns true if they contain all of the same items, and false if not.
+
+# Examples
+# same_items? (cons 4 (cons 5 (cons 6 nil))) (cons 6 (cons 4 nil)) = false
+# same_items? (cons 4 (cons 5 (cons 6 nil))) (cons 6 (cons 4 (cons 5 nil))) = true

@@ -1,0 +1,8 @@
+signature ./2 enlist/0 cons/0 x_ y_ nil/0;
+enlist (cons x_ y_) = cons (cons x_ nil) (enlist y_);
+enlist nil = nil;
+
+# enlist takes in a list and enlists each item of that list once.
+
+# Example
+# enlist (cons 4 (cons 5 nil)) = cons (cons 4 nil) (cons (cons 5 nil) nil)
