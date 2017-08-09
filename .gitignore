@@ -7,3 +7,4 @@ parser.out
 
 # project detritus
 test_logs/
+test_log*

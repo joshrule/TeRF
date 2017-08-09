@@ -83,7 +83,7 @@ lexer = lex.lex()
 
 
 if __name__ == "__main__":
-    with open('library/README.terf') as f:
+    with open('lib/README.terf') as f:
         lexer.input(f.read())
         for token in lexer:
             print token

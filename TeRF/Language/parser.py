@@ -212,7 +212,7 @@ def load_source(filename, path=None):
 
 
 if __name__ == '__main__':
-    with open('library/README.terf') as file:
+    with open('lib/README.terf') as file:
         ss = [s for s in parser.parse(file.read())]
         for statement in ss:
             print statement
