@@ -121,7 +121,7 @@ def repl_eval(trs, statement, verbosity, count, trace, path):
                         delete.match(statement).group('obj'))
         return None, []
     if save.match(statement):
-        save_trs(trs, save.match(statement).group('filename'))
+        trs.save(save.match(statement).group('filename'))
         return None, []
     if canon.match(statement):
         return print_term(canon.match(statement).group('term'), 'canon'), []
@@ -170,13 +170,6 @@ def delete_from_trs(trs, type, obj):
     return trs
 
 
-def save_trs(trs, filename):
-    with open(filename, 'w') as f:
-        f.write('signature ')
-        f.write(' '.join(str(op) for op in trs.signature) + ';\n')
-        f.write(';\n'.join([str(rule) for rule in trs])+';\n')
-
-
 def load_file(filename):
     statements = []
     try:
@@ -204,7 +197,10 @@ def print_term(term, how):
 
 
 def process_statement(trs, statement, verbosity, count, trace, path=None):
-    s = p.parser.parse(statement + ';')[0]
+    try:
+        s = p.parser.parse(statement + ';')[0]
+    except IndexError:
+        return ''
     if s[0] == 'rule':
         p.add_rule(trs, s[1], s[2])
         return ''
