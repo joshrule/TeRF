@@ -1,0 +1,10 @@
+signature not_member?/0 ./2 x_ nil/0 true/0 cons/0 y_ false/0 z_ not_member/0 5/0 6/0 4/0;
+not_member? x_ nil = true;
+not_member? x_ (cons x_ y_) = false;
+not_member? x_ (cons y_ z_) = not_member? x_ z_;
+
+# not_member? takes in an item, 'x', and a list and returns true if 'x_'is not in the list, and false if it is.
+
+# Examples
+# not_member? 4 (cons 5 (cons 6 nil)) = true
+# not_member? 4 (cons 5 (cons 4 nil)) = false

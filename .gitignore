@@ -7,4 +7,7 @@ parser.out
 
 # project detritus
 test_logs/
-test_log*
+test_*
+
+# silly OS X files
+.DS_Store
