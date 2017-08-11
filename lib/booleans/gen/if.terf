@@ -1,0 +1,3 @@
+# TeRF can't currently handle this statement. It breaks our rules against
+# free variables and variables as LHSs.
+x_ = if true x_ y_;

@@ -1,2 +1,0 @@
-tree = A | B | C | tree tree;
-signature A/0 B/0 C/0 ./2;

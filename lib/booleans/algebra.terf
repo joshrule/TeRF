@@ -1,0 +1,17 @@
+# De Morgan's Laws
+not (and x_ y_) = or (not x_) (not y_);
+not (or x_ y_) = and (not x_) (not y_);
+
+# double negation
+not (not x_) = x_;
+
+# Distributivity
+and x_ (or y_ z_) = or (and x_ y_) (and x_ z_);
+and (or x_ y_) z_ = or (and x_ z_) (and y_ z_);
+
+# Associativity
+and x_ (and y_ z_) = and (and x_ y_) z_;
+or x_ (or y_ z_) = or (or x_ y_) z_;
+
+# You could also include things like:
+# nand x_ x_ = not x_;

@@ -1,0 +1,4 @@
+assume 'combinators/B';
+assume 'combinators/C';
+assume 'combinators/K';
+assume 'combinators/W';

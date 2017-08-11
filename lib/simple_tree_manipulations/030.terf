@@ -1,4 +1,0 @@
-tree = S | K | I | tree tree;
-S x_ y_ z_ = x_ z_ (y_ z_);
-K x_ y_ = y_;
-I x_ = x_;

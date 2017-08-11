@@ -1,8 +1,0 @@
-tree = S | K | I | H | C | B | W | tree tree;
-S x_ y_ z_ = x_ z_ (y_ z_);
-K x_ y_ = y_;
-I x_ = x_;
-H x_ y_ = y_;
-C x_ y_ z_ = x_ z_ y_;
-B x_ y_ z_ = x_ (y_ z_);
-W x_ y_ z_ = x_ y_ z_ z_;

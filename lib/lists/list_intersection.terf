@@ -1,0 +1,9 @@
+# list_intersection: Given two lists, return the items, in order, which are
+# identical and have identical indexes in both lists. If a list is a set
+# of (index, element) pairs, return the intersection of the set.
+
+list_intersection nil nil = nil;
+list_intersection nil (cons x_ y_) = nil;
+list_intersection (cons x_ y_) nil = nil;
+list_intersection (cons x_ y_) (cons x_ z_) = cons x_ (list_intersection y_ z_);
+list_intersection (cons w_ x_) (cons y_ z_) = list_intersection x_ z_;

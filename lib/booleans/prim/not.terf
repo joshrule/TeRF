@@ -1,0 +1,4 @@
+not_prim true = false;
+not_prim false = true;
+
+boolean = not_prim boolean;

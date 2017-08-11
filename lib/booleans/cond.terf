@@ -1,0 +1,4 @@
+cond x_ y_ = if x_ y_ true
+           | or (not x_) y_
+           | nand x_ (nand y_ y_)
+           | cond_prim x_ y_;

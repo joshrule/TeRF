@@ -1,0 +1,10 @@
+# eq: are two items identical?
+#
+# Examples:
+# eq A A = true
+# eq A B = false
+
+eq x_ x_ = true;
+eq x_ y_ = false;
+
+boolean = eq item item;

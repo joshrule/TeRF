@@ -1,0 +1,4 @@
+bicond x_ y_ = and (cond x_ y_) (cond y_ x_)
+             | if x_ y_ (if y_ false true)
+             | nand (nand (nand x_ (nand y_ y_)) (nand y_ (nand x_ x_))) (nand (nand x_ (nand y_ y_)) (nand y_ (nand x_ x_)))
+             | bicond_prim x_ y_;

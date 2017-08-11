@@ -1,0 +1,6 @@
+bicond_prim false false = true;
+bicond_prim false true = false;
+bicond_prim true false = false;
+bicond_prim true true = true;
+
+boolean = bicond_prim boolean boolean;

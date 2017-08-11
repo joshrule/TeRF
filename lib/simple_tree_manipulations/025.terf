@@ -1,3 +1,0 @@
-assume 'library/simple_tree_manipulations/simple_tree';
-A x_ = x_ B;
-B x_ = C x_;

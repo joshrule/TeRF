@@ -1,0 +1,3 @@
+xor x_ y_ = if x_ (if y_ false true) y_
+          | nand (nand x_ (nand y_ y_)) (nand (nand x_ x_) y_)
+          | xor_prim x_ y_;

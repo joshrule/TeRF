@@ -1,6 +1,3 @@
-signature not/0 ./2 true/0 false/0;
-
-not true = false;
-not false = true;
-
-boolean = not boolean;
+not x_ = if x_ false true
+       | nand x_ x_
+       | not_prim x_;

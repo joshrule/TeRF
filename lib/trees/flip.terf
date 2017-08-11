@@ -1,0 +1,9 @@
+# flip: swap the branches of a binary tree.
+#
+# Example:
+# flip (A B) = (B A)
+# flip ((A (B B)) (B D (C A))) = ((B D (C A)) (A (B B)))
+
+signature flip/0 ./2;
+
+flip (x_ y_) = y_ x_;

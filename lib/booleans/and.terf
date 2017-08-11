@@ -1,6 +1,3 @@
-signature true/0 false/0 ./2 and/0;
-and true true = true;
-and true false = false;
-and false true = false;
-and false false = false;
-boolean = and boolean boolean;
+and x_ y_ = if x_ y_ false
+          | nand (nand x_ y_) (nand x_ y_)
+          | and_prim x_ y_;

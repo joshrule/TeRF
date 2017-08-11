@@ -1,0 +1,9 @@
+# l takes in a binary tree and returns the left branch.
+#
+# Examples:
+# l (A B) = A
+# l ((A (B B)) (B D (C A))) = (A (B B))
+
+signature ./2 l/0;
+
+l (x_ y_) = x_;

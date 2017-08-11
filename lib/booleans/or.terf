@@ -1,8 +1,3 @@
-signature or/0 false/0 true/0 ./2;
-
-or true true = true;
-or true false = true;
-or false true = true;
-or false false = false;
-
-boolean = or boolean boolean;
+or x_ y_ = if x_ true y_
+         | nand (nand x_ x_) (nand y_ y_)
+         | or_prim x_ y_;

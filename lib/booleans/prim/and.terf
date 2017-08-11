@@ -1,0 +1,6 @@
+and_prim true true = true;
+and_prim true false = false;
+and_prim false true = false;
+and_prim false false = false;
+
+boolean = and_prim boolean boolean;

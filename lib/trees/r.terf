@@ -1,0 +1,9 @@
+# r takes in a binary tree and returns the right branch.
+#
+# Examples:
+# r (A B) = B
+# r (A (B D (C A))) = (B D (C A))
+
+signature ./2 r/0;
+
+r (x_ y_) = y_;

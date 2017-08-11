@@ -1,0 +1,6 @@
+or_prim true true = true;
+or_prim true false = true;
+or_prim false true = true;
+or_prim false false = false;
+
+boolean = or_prim boolean boolean;

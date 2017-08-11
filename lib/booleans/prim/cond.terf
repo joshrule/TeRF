@@ -1,0 +1,6 @@
+cond_prim false false = true;
+cond_prim false true = true;
+cond_prim true false = false;
+cond_prim true true = true;
+
+boolean = cond_prim boolean boolean;
