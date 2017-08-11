@@ -112,6 +112,16 @@ class Rule(collections.MutableSet):
             return env
         return None
 
+    def parity(self, other, env=None):
+        env = self.lhs.parity(other.lhs, env)
+        if len(self.rhs) == len(other.rhs):
+            for srhs, orhs in I.izip(self.rhs, other.rhs):
+                if env is None:
+                    break
+                env = srhs.parity(orhs, env)
+            return env
+        return None
+
     def substitute(self, env):
         return Rule(self.lhs.substitute(env),
                     [rhs.substitute(env) for rhs in self.rhs])

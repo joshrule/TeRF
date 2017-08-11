@@ -1,5 +1,6 @@
 import collections
 import copy
+import itertools as it
 import TeRF.Types.Signature as S
 
 
@@ -10,10 +11,10 @@ class TRS(collections.MutableMapping):
         self._rules = {}
 
     def __str__(self):
-        return '[\n  Signature: ' + \
+        return 'Signature: ' + \
             ', '.join(str(s) for s in self.signature) + \
-            '\n  Rules:\n    ' + \
-            ',\n    '.join(str(rule) for rule in self) + '\n]'
+            '\nRules:\n  ' + \
+            ',\n  '.join(str(rule) for rule in self)
 
     def __eq__(self, other):
         return self._order == other._order and \
@@ -44,6 +45,8 @@ class TRS(collections.MutableMapping):
                 self._order.remove(value.lhs)
             self._order.insert(index, value.lhs)
         else:
+            print self.signature.operators
+            print value.operators
             raise ValueError('TRS.__setitem__: inconsistent signature')
 
     def __getitem__(self, key):
@@ -166,3 +169,18 @@ class TRS(collections.MutableMapping):
         key = self._order[i1]
         del self._order[i1]
         self._order.insert(i2 + (0 if i2 < i1 else 1), key)
+
+    def save(self, filename):
+        with open(filename, 'w') as f:
+            f.write('signature ')
+            f.write(' '.join(str(op) for op in self.signature) + ';\n')
+            f.write(';\n'.join([str(rule) for rule in self])+';\n')
+
+    def unifies(self, other, env=None, type='alpha'):
+        if self.signature == other.signature and \
+           self.num_rules() == other.num_rules():
+            for r_self, r_other in it.izip(self, other):
+                if r_self.unify(r_other, env=env, type=type) is None:
+                    return False
+            return True
+        return False

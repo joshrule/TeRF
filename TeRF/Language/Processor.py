@@ -35,7 +35,6 @@ REPL mode:
    >> generate                      # generate a new term and assign it a name
 """
 
-import copy
 import docopt
 import re
 import TeRF.Language.parser as p
@@ -205,7 +204,7 @@ def process_statement(trs, statement, verbosity, count, trace, path=None):
         p.add_rule(trs, s[1], s[2])
         return ''
     elif s[0] == 'term':
-        term = p.make_term(s[1], signature=copy.copy(trs.signature))
+        term = p.make_term(s[1], signature=trs.signature.copy())
         evaled = term.rewrite(trs, max_steps=count, type='one', trace=trace)
         if verbosity >= 0:
             if trace:

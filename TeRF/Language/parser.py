@@ -135,19 +135,19 @@ def p_error(p):
 parser = yacc.yacc()
 
 
-def make_trs(ss, trs=None, path=None):
+def make_trs(ss, trs=None, path=None, signature=None):
     trs = TRS() if trs is None else trs
     for s in ss:
         if s[0] == 'rule':
-            add_rule(trs, s[1], s[2])
+            add_rule(trs, s[1], s[2], signature=signature)
         elif s[0] == 'signature':
-            add_signature(trs, s[1])
+            add_signature(trs, s[1], signature=signature)
         elif s[0] == 'assumption':
-            add_assumption(trs, s[1], path=path)
+            add_assumption(trs, s[1], path=path, signature=signature)
     return trs
 
 
-def add_assumption(trs, s, path=None):
+def add_assumption(trs, s, path=None, signature=None):
     s += '.terf' if len(s) <= 5 or s[-5:] != '.terf' else ''
     if path is None:
         path = ['./']
@@ -156,57 +156,74 @@ def add_assumption(trs, s, path=None):
             filename = lib + s
             with open(filename) as file:
                 ss = parser.parse(file.read())
-                return make_trs(ss, trs=trs, path=path)
+                return make_trs(ss, trs=trs, path=path, signature=signature)
         except IOError:
             pass
     print 'Can\'t find {}'.format(s)
 
 
-def add_signature(trs, s):
+def add_signature(trs, s, signature=None):
+    # print 'adding signature'
     for t in s:
         if t[0] == 'operator' and trs.signature.find(t[1], int(t[2])) is None:
-            trs.signature.add(Op(t[1], int(t[2])))
+            if signature is not None and signature.find(t[1], int(t[2])):
+                # print 'building signature by adding', t[1], int(t[2])
+                trs.signature.add(signature.find(t[1], int(t[2])))
+            else:
+                trs.signature.add(Op(t[1], int(t[2])))
 
 
-def add_rule(trs, lhst, rhsts):
-    sig = copy.copy(trs.signature)
-    lhs = make_term(lhst[1], signature=sig)
-    rhs = [make_term(t[1], signature=sig) for t in rhsts]
-    trs.signature |= sig.operators
+def add_rule(trs, lhst, rhsts, signature=None):
+    vars = trs.signature.variables
+    lhs = make_term(lhst[1], trs=trs, signature=signature)
+    rhs = [make_term(t[1], trs=trs, signature=signature) for t in rhsts]
+    trs.signature.replace_vars(vars)
     trs[len(trs)] = R(lhs, rhs)
 
 
-def make_term(t, signature=None):
-    if signature is None:
-        signature = Signature()
-
+def make_term(t, trs=None, signature=None):
     if t[0] == 'variable':
         name = t[1][:-1]
-        for v in signature.variables:
-            if v.name == name:
-                return v
+        if trs is not None:
+            for v in trs.signature.variables:
+                if v.name == name:
+                    return v
+        if signature is not None:
+            for v in signature.variables:
+                if v.name == name:
+                    return v
         var = Var(name) if name != '' else Var()
-        signature.add(var)
+        if trs is not None:
+            trs.signature.add(var)
         return var
 
     if t[0] == 'application':
-        head = Op(t[1], len(t[2]))
-        for o in signature.operators:
-            if o.name == t[1] and o.arity == len(t[2]):
-                head = o
-        signature.add(head)
+        # print 'looking for', t[1], len(t[2])
+        if trs is not None and trs.signature.find(t[1], len(t[2])):
+            # print 'checking trs,', trs.signature
+            head = trs.signature.find(t[1], len(t[2]))
+        elif signature is not None and signature.find(t[1], len(t[2])):
+            # print 'checking signature,', signature
+            head = signature.find(t[1], len(t[2]))
+        else:
+            # print 'did not find it'
+            head = Op(t[1], len(t[2]))
+        if trs is not None:
+            trs.signature.add(head)
+        elif signature is not None:
+            signature.add(head)
         body = []
         for part in t[2]:
-            term = make_term(part[1], signature=signature)
+            term = make_term(part[1], trs, signature)
             body.append(term)
         return App(head, body)
 
 
-def load_source(filename, path=None):
+def load_source(filename, path=None, signature=None):
     with open(filename) as file:
         ss = parser.parse(file.read())
-        trs = make_trs(ss, path=path)
-        terms = [make_term(s[1], signature=copy.copy(trs.signature))
+        trs = make_trs(ss, path=path, signature=signature)
+        terms = [make_term(s[1], signature=trs.signature.copy())
                  for s in ss if s[0] == 'term']
         return trs, terms
 

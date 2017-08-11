@@ -83,6 +83,31 @@ class Application(T.Term):
                 return t.unify(self, env, type)
         return None
 
+    def parity(self, t, env=None):
+        env = {} if env is None else env
+
+        try:
+            if self.head.arity is t.head.arity:
+                if t.head not in env.values() and self.head not in env:
+                    env[self.head] = t.head
+                    for (st1, st2) in I.izip(self.body, t.body):
+                        env = st1.parity(st2, env)
+                        if env is None:
+                            break
+                    return env
+                try:
+                    if env[self.head] is t.head:
+                        for (st1, st2) in I.izip(self.body, t.body):
+                            env = st1.parity(st2, env)
+                            if env is None:
+                                break
+                        return env
+                except KeyError:
+                    pass
+        except AttributeError:
+            pass
+        return None
+
     def single_rewrite(self, trs, type):
         for rule in trs:
             sub = rule.lhs.unify(self, type='match')

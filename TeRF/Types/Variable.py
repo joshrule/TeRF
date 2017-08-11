@@ -48,6 +48,18 @@ class Variable(A.Atom, T.Term):
                 return env
         return None
 
+    def parity(self, t, env=None):
+        env = {} if env is None else env
+
+        if hasattr(t, 'body'):
+            return None
+        if self in env and env[self] is t:
+            return env
+        if t not in env.values() and self not in env:
+            env[self] = t
+            return env
+        return None
+    
     def single_rewrite(self, trs, type):
         return None
 

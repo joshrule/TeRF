@@ -1,12 +1,24 @@
 import collections
-import copy
 import itertools as I
 import scipy as sp
 import numpy as np
 import TeRF.Miscellaneous as M
 import TeRF.Types.Application as A
-import TeRF.Types.Variable as V
 import TeRF.Types.Rule as R
+import TeRF.Types.Variable as V
+
+
+def distribute_lengths(length, arity):
+    true_length = length - arity
+    distribution = [np.ones(arity)]
+    for _ in xrange(true_length):
+        new_distribution = set()
+        for arr in set(I.permutations([1] + list(I.repeat(0, arity-1)))):
+            for item in distribution:
+                new_distribution.add(tuple(np.array(item, dtype=int) +
+                                           np.array(arr, dtype=int)))
+        distribution = list(new_distribution)
+    return [list(x) for x in distribution]
 
 
 class SignatureError(Exception):
@@ -42,8 +54,20 @@ class Signature(collections.MutableSet):
         for x in self._elements:
             yield x
 
+    def __eq__(self, other):
+        try:
+            return self._elements == other._elements
+        except AttributeError:
+            return False
+
+    def __ne__(self, other):
+        return not self == other
+
     def __str__(self):
         return '{' + ', '.join(str(s) for s in self._elements) + '}'
+
+    def copy(self):
+        return Signature(self._elements, self.parent)
 
     def add(self, item):
         self._elements.add(item)
@@ -52,7 +76,7 @@ class Signature(collections.MutableSet):
         self._elements.discard(item)
         if self.parent is not None:
             for rule in self.parent:
-                if item in rule.signature:
+                if item in rule.variables or item in rule.operators:
                     del self.parent[rule]
 
     def replace_vars(self, new_vars):
@@ -103,7 +127,7 @@ class Signature(collections.MutableSet):
         """
         if not (self.terminals or invent):
             raise ValueError('sample_term: no terminals!')
-        sig = copy.deepcopy(self)
+        sig = self.copy()
         head = sig.sample_head(invent)
         sig.add(head)
         try:
@@ -127,7 +151,7 @@ class Signature(collections.MutableSet):
         Returns:
           a float representing log(p(term | signature))
         """
-        sig = copy.deepcopy(self)
+        sig = self.copy()
         p = sig.log_p_head(term.head, invent)
         try:
             for t in term.body:
@@ -137,33 +161,53 @@ class Signature(collections.MutableSet):
             pass
         return p
 
-#     def sample_rule(self, constraints=None, p_rhs=0.5, invent=True):
-#         if constraints is None or len(constraints) == 0:
-#             lhs = None
-#             while not hasattr(lhs, 'head'):
-#                 lhs = self.sample_term(invent)
-#             self.replace_vars(lhs.variables())
-#             rhs = [self.sample_term(invent=False)
-#                    for _ in I.repeat(None, ss.geom.rvs(p_rhs))]
-#             return R.Rule(lhs, rhs)
-# 
-#         if self >= constraints:
-#             op_constraints = {c for c in constraints if hasattr(c, 'arity')}
-#             var_constraints = constraints - op_constraints
-# 
-#             lhs_constraints = var_constraints + {c for c in op_constraints
-#                                                  if choice([True, False])}
-#             rhs_constraints = constraints - lhs_constraints
-# 
-#             lhs = self.sample_term_c(lhs_constraints, invent)
-#             self.replace_vars(lhs.variables())
-#             rhs = [self.sample_term_c(rhs_constraints, invent=False)
-#                    for _ in I.repeat(None, ss.geom.rvs(p_rhs))]
-#             return R.Rule(lhs, rhs)
-#         raise SignatureError('sample_rule: constraints must be in signature')
+    def enumerate(self, max_nodes=3, invent=True):
+        return list(I.chain(*(self.enumerate_at(d, invent)
+                              for d in xrange(1, max_nodes+1))))
+
+    def enumerate_at(self, depth, invent):
+        if not (self.terminals or invent):
+            raise ValueError('Signature.enumerate: no terminals!')
+        sig = self.copy()
+
+        # base case: return constants & variables
+        if depth == 1:
+            if invent:
+                sig.add(V.Var())
+            return [(A.App(s, []) if hasattr(s, 'arity') else s)
+                    for s in sig.terminals]
+
+        # recursive case: choose an appropriate head and make some gifts
+        heads = sig.copy()
+        for s in self:
+            if getattr(s, 'arity', 0) > depth-1 or getattr(s, 'arity', 0) < 1:
+                heads.discard(s)
+
+        terms = []
+        for head in heads.operators:
+            distribution = distribute_lengths(depth-1, head.arity)
+            for d in distribution:
+                bodies = sig.bodies_with_distribution(d, invent)
+                terms += [A.App(head, list(body)) for body in bodies]
+        return terms
+
+    def bodies_with_distribution(self, distribution, invent):
+        subterms = self.enumerate_at(distribution[0], invent)
+        bodies = [[st] for st in subterms]
+        for nodes in distribution[1:]:
+            new_bodies = []
+            for body in bodies:
+                body_sig = self.copy()
+                for a in {a for b in body for a in b.atoms}:
+                    body_sig.add(a)
+                subterms = body_sig.enumerate_at(nodes, invent)
+                body_extensions = [body + [st] for st in subterms]
+                new_bodies += body_extensions
+            bodies = new_bodies
+        return bodies
 
     def sample_rule(self, p_rhs=0.5, invent=True):
-        sig = copy.deepcopy(self)
+        sig = self.copy()
         lhs = None
         while not isinstance(lhs, A.Application):
             lhs = sig.sample_term(invent)
@@ -173,7 +217,7 @@ class Signature(collections.MutableSet):
         return R.Rule(lhs, rhs)
 
     def log_p_rule(self, rule, p_rhs=0.5, invent=True):
-        sig = copy.deepcopy(self)
+        sig = self.copy()
         p_lhs = sig.log_p(rule.lhs, invent=invent)
         p_n_clauses = sp.stats.geom.logpmf(p=p_rhs, k=len(rule.rhs))
         sig.replace_vars(rule.lhs.variables)
@@ -191,7 +235,7 @@ class Signature(collections.MutableSet):
         Returns:
           a TRS term
         """
-        sig = copy.deepcopy(self)
+        sig = self.copy()
         if np.random.binomial(1, p_r):
             return sig.sample_term(invent)
         try:
@@ -216,7 +260,7 @@ class Signature(collections.MutableSet):
         Returns:
           a float representing log(p(new | signature, old))
         """
-        sig = copy.deepcopy(self)
+        sig = self.copy()
         p_make_head = M.log(p_r) + sig.log_p(new, invent)
         if new.head == old.head:
             p_keep_head = M.log(1-p_r)
@@ -228,6 +272,7 @@ class Signature(collections.MutableSet):
                 pass
             return sp.misc.logsumexp([p_keep_head, p_make_head])
         return p_make_head
+
 
 #     def sample_term_c(self, constraints, invent=True):
 #         """
