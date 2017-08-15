@@ -1,0 +1,13 @@
+signature true/0 xs_ concat/0 f1/0 false/0 list/0 ./2 x_ list1/0 f1_ a_ after/0 f2_ cons/0 apply/0 y_ nil/0 check/0 z_;
+assume 'library/lists/constructors/list_items';
+assume 'library/lists/miscellaneous/concat';
+apply f1_ after f2_ a_ nil = nil;
+check x_ nil z_ f1_ f2_ a_ = list z_;
+apply f1_ after f2_ a_ (cons x_ y_) = check (f2_ a_ x_) y_ x_ f1_ f2_ a_;
+check true xs_ x_ f1_ f2_ a_ = concat (list x_) (f1_ xs_);
+check false (cons x_ y_) z_ f1_ f2_ a_ = check (f2_ a_ x_) y_ (z_ x_) f1_ f2_ a_;
+
+# apply_after takes in two functions, 'f1_' and 'f2_ a_' (ex. equals? 3), and a list, and applies 'f1_' to the items in the list that follow the first item which returns true when evaluated by 'f2_ a_'. It returns a concatenated list in appropriate order of both the unaffected and affected items.
+
+# Example
+# apply reverse after equals 3 (cons 1 (cons 2 (cons 3 (cons 4 (cons 5 nil))))) = cons 1 (cons 2 (cons 3 (cons 5 (cons 4 nil))))

@@ -1,0 +1,13 @@
+signature 3/0 4/0 5/0 6/0 7/0 8/0 0/0 x_ 2/0 1/0 :/2 digit?/0 y_ ./2 true/0 false/0 9/0;
+digit? :[0 1] = true;
+digit? :[0 2] = true;
+digit? :[0 3] = true;
+digit? :[0 4] = true;
+digit? :[0 5] = true;
+digit? :[0 6] = true;
+digit? :[0 7] = true;
+digit? :[0 8] = true;
+digit? :[0 9] = true;
+digit? :[x_ y_] = false;
+digit? :[x_] = false
+digit? x_ = false;

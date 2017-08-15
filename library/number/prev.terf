@@ -1,0 +1,15 @@
+signature b_ renum/0 1/0 6/0 4/0 9/0 5/0 ./2 0/0 prev/0 8/0 2/0 :/2 3/0 x_ 7/0 y_ a_;
+prev :[0 0] = :[0 0];
+prev :[0 1] = :[0 0];
+prev :[0 2] = :[0 1];
+prev :[0 3] = :[0 2];
+prev :[0 4] = :[0 3];
+prev :[0 5] = :[0 4];
+prev :[0 6] = :[0 5];
+prev :[0 7] = :[0 6];
+prev :[0 8] = :[0 7];
+prev :[0 9] = :[0 8];
+prev :[x_ :[0 0]] = renum1 (prev x_) :[0 9];
+prev :[x_ y_] = renum1 x_ (prev y_);
+renum1 :[0 0] :[x_ y_] = :[x_ y_];
+renum1 :[x_ y_] :[a_ b_] = :[:[x_ y_] :[a_ b_]];

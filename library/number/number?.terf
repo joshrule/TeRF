@@ -1,0 +1,5 @@
+signature 0/0 2/0 1/0 :/2 digit?/0 a_ ./2 true/0 b_ 3/0 4/0 5/0 6/0 7/0 8/0 9/0 x_ y_ false/0 and/0 boolean/0 number?/0;
+assume 'library/number/digit?';
+assume 'library/booleans/and';
+number? :[:[x_ y_] :[a_ b_]] = and (number? :[x_ y_]) (digit? :[a_ b_]);
+number? :[x_ y_] = digit? :[x_ y_];
