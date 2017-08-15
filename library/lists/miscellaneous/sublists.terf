@@ -1,0 +1,14 @@
+signature 1/0 concat/0 3/0 y_ ./2 6/0 nil/0 b_ 5/0 z_ sublists/0 acc_unfold1/0 2/0 a_ x_ acc_unfold/0 4/0 cons/0;
+assume 'library/lists/miscellaneous/concat';
+acc_unfold (cons x_ nil) = cons x_ nil;
+acc_unfold (cons x_ y_) = cons (cons x_ nil) (acc_unfold1 y_ (cons x_ nil));
+acc_unfold1 (cons x_ nil) z_ = cons (concat z_ (cons x_ nil)) nil;
+acc_unfold1 (cons x_ y_) z_ = cons (concat z_ (cons x_ nil)) (acc_unfold1 y_ (concat z_ (cons x_ nil)));
+sublists nil = nil;
+sublists (cons x_ nil) = cons (cons x_ nil) nil;
+sublists (cons x_ y_) = concat (acc_unfold (cons x_ y_)) (sublists y_);
+
+# sublists takes in a list and returns a list of all the sublists of the initial list.
+
+# Examples
+# sublists (cons 1 (cons 2 (cons 3 nil))) = cons (cons 1 nil) (cons (cons 1 (cons 2 nil)) (cons (cons 1 (cons 2 (cons 3 nil))) (cons (cons 2 nil) (cons (cons 2 (cons 3 nil)) (cons (cons 3 nil) nil)))))

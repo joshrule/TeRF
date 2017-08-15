@@ -1,0 +1,4 @@
+signature b_ x_ false/0 prev/0 0/0 7/0 prev?/0 6/0 4/0 y_ 2/0 true/0 5/0 1/0 9/0 8/0 3/0 ./2 equal?/0 :/2 a_ renum1/0;
+assume 'library/number/equal?';
+assume 'library/number/prev';
+prev? x_ y_ = equal? x_ (prev y_);
