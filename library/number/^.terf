@@ -1,0 +1,7 @@
+signature x_ mult_help/0 renum1/0 +/0 3/0 exp_help/0 b_ d_ a_ */0 c_ renum/0 next/0 y_ ^/0 7/0 5/0 9/0 4/0 1/0 6/0 8/0 0/0 2/0 :/2 add_help/0 ./2;
+assume 'library/number/*';
+exp_help :[x_ y_] :[a_ b_] :[a_ b_] = :[x_ y_];
+exp_help :[x_ y_] :[a_ b_] :[c_ d_] = * (exp_help :[x_ y_] :[a_ b_] (next :[c_ d_])) :[x_ y_];
+^ :[x_ y_] :[0 0] = :[0 1];
+^ :[x_ y_] :[0 1] = :[x_ y_];
+^ :[x_ y_] :[a_ b_] = exp_help :[x_ y_] :[a_ b_] :[0 1];

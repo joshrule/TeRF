@@ -1,0 +1,8 @@
+signature ./2 has_features/0 cons/0 x_ y_ a_ b_ nil/0 xs_;
+has_features (cons x_ y_) (cons a_ b_) = cons (x_ (cons a_ b_)) (has_features y_ (cons a_ b_));
+has_features nil xs_ = nil;
+
+# has_features takes in a list of boolean concepts, 'cons x_ y_' and another list of items, 'cons a_ b_', and returns the list of booleans that results from evaluating 'cons a_ b_' with each boolean concept from 'cons x_ y_'.
+
+# Example 
+# has_features (cons palindrome? (cons nested_list? nil)) (cons 4 (cons 5 (cons 4 nil))) = cons true (cons false nil)

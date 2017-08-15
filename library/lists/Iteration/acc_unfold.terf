@@ -1,0 +1,9 @@
+signature ./2 unfoldl/0 nil/0 cons/0 unfold/0 p_ f_ g_ seed_ acc_unfold/0 seed/0 acc_unfold1/0 f_seed/0 prev_seed/0 list/0 a_;
+assume 'library/lists/Iteration/unfold';
+assume 'library/lists/constructors/list_items';
+acc_unfold p_ f_ g_ seed_ = cons (cons (f_ seed) nil) (acc_unfold1 p_ f_ g_ (g_ seed_) f_seed);
+acc_unfold1 p_ f_ g_ p_ a_ = nil;
+acc_unfold1 p_ f_ g_ seed_ prev_seed = cons (list (prev_seed f_seed)) (acc_unfold1 p_ f_ g_ (g_ seed_) f_seed);
+
+# unfold takes in an initial item, 'seed', and initiates/appends the result of 'f_ seed_' to the 'unfold' list. The next 'seed' value in unfold's recursive call is the result of 'g_ seed_'. The list is completely unfolded once 'g_ seed_' == 'p_'.
+# acc_unfold returns a list of lists. Each sublist represents the the unfolded list thus far with the next unfold progression appended.

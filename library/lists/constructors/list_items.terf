@@ -1,6 +1,7 @@
 signature a_ y_ list/0 cons/0 x_ list1/0 nil/0 ./2;
 list1 (x_ y_) a_ = list1 x_ (cons y_ a_);
 list1 x_ a_ = cons x_ a_;
+list (nil x_) = list1 x_ nil;
 list (x_ y_) = list1 (x_ y_) nil;
 list x_ = cons x_ nil;
 

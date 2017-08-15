@@ -1,0 +1,5 @@
+signature ./2 add_help/0 :/2 x_ y_ a_ b_ c_ d_ next/0 7/0 5/0 9/0 2/0 0/0 8/0 6/0 1/0 4/0 3/0 renum1/0 renum/0 +/0;
+add_help :[x_ y_] :[a_ b_] :[a_ b_] = :[x_ y_];
+add_help :[x_ y_] :[a_ b_] :[c_ d_] = next (add_help :[x_ y_] :[a_ b_] (next :[c_ d_]));
+assume 'library/number/next';
++ :[x_ y_] :[a_ b_] = add_help :[x_ y_] :[a_ b_] :[0 0];
