@@ -7,3 +7,5 @@ parser.out
 
 # project detritus
 test_logs/
+
+.DS_Store
