@@ -31,7 +31,7 @@ class Application(T.Term):
         return 'Application({},{})'.format(self.head, self.body)
 
     def __len__(self):
-        return sum(1 for _ in self)
+        return sum(1 for _ in self.subterms)
 
     def __eq__(self, other):
         try:

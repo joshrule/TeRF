@@ -1,6 +1,8 @@
 import copy
 import itertools as iter
+import numpy as np
 import os
+import scipy.stats as ss
 import TeRF.Types.Operator as O
 import TeRF.Types.Rule as R
 import TeRF.Types.Signature as S
@@ -8,7 +10,51 @@ import TeRF.Types.TRS as TRS
 import time
 
 
-def make_tests(out_dir, signature, max_nodes):
+def write_sampled_trss(out_dir, p_operator, p_arity, p_rule, n_trss=1,
+                       max_nodes=np.inf, signature=None):
+    if not os.path.isdir(out_dir):
+        os.mkdir(out_dir)
+    written = []
+    while len(written) < n_trss:
+        str_n = ('{:0' + str(int(np.ceil(np.log10(n_trss)+1))) + 'd}').format(
+            len(written)+1)
+        out_file = os.path.join(out_dir, str_n + '.terf')
+        if not os.path.exists(out_file):
+            try:
+                trs = sample_trs(p_operator, p_arity, p_rule, signature)
+            except ValueError:
+                continue
+            if sum(len(r.lhs) + len(r.rhs0) for r in trs.rules()) <= max_nodes:
+                written += [out_file]
+                trs.save(out_file)
+        else:
+            written += [out_file]
+    return written
+
+
+def sample_trs(p_operator, p_arity, p_rule, signature=None):
+    trs = TRS.TRS()
+
+    if signature is None:
+        for _ in xrange(ss.geom.rvs(p=p_operator)):
+            trs.signature.add(O.Op(arity=ss.geom.rvs(p=p_arity)-1))
+    else:
+        trs.signature = signature
+        trs.signature.parent = trs
+
+    n_rules = ss.geom.rvs(p=p_rule)
+    tries = 0
+    while trs.num_rules() < n_rules and tries < 10*n_rules:
+        sampled = trs.signature.sample_rule(p_rhs=1.0, invent=True)
+        trs.add(sampled)
+        tries += 1
+    if trs.num_rules() < n_rules:
+        raise ValueError('make_tests.sample_trs: could not sample trs')
+
+    return trs
+
+
+def write_enumerated_trss(out_dir, signature, max_nodes):
     for N in xrange(max_nodes+1):
         n_dir = os.path.join(out_dir, str(N))
         if not os.path.isdir(n_dir):

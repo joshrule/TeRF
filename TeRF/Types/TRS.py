@@ -119,7 +119,7 @@ class TRS(collections.MutableMapping):
 
     def add(self, rule):
         try:
-            self._rules[rule.lhs].add(rule)
+            self[rule.lhs].add(rule)
         except KeyError:
             self[0] = rule
 
@@ -184,3 +184,22 @@ class TRS(collections.MutableMapping):
                     return False
             return True
         return False
+
+    def features(self):
+        feats = {}
+        feats['n_rules'] = self.num_rules()
+        feats['n_nodes'] = sum(len(r.lhs) + len(r.rhs0) for r in self.rules())
+        feats['n_lhss'] = len(self)
+        feats['mean_rule_len'] = (float(feats['n_nodes']) /
+                                  float(feats['n_rules']))
+        feats['max_rule_len'] = max(len(r.lhs) + len(r.rhs0)
+                                    for r in self.rules())
+        feats['n_vars'] = sum(1 for r in self.rules()
+                              for t in it.chain(r.lhs.subterms, r.rhs0.subterms)
+                              if not hasattr(t, 'body'))
+        feats['%_vars'] = float(feats['n_vars']) / float(feats['n_nodes'])
+        feats['n_nondet_rules'] = sum(1 for r in self if len(r) > 1)
+        feats['n_nondets'] = sum(len(r) for r in self if len(r) > 1)
+        feats['%_nondets'] = float(feats['n_nondet_rules']) / \
+                             float(feats['n_lhss'])
+        return feats
