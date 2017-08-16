@@ -1,7 +1,7 @@
 signature 1/0 4/0 renum/0 d_ c_ z_ a_ y_ next?/0 x_ check/0 6/0 ./2 negative/0 5/0 more?/0 :/2 true/0 false/0 prev/0 0/0 b_ 2/0 3/0 equal?/0 number/0 renum1/0 9/0 next/0 7/0 8/0 prev?/0;
-assume 'library/number/equal?';
-assume 'library/number/next?';
-assume 'library/number/prev?';
+assume 'lib/number/equal?';
+assume 'lib/number/next?';
+assume 'lib/number/prev?';
 check false false :[x_ y_] :[a_ b_] :[c_ d_] = check (prev? :[x_ y_] :[c_ d_]) (next? :[a_ b_] :[c_ d_]) (next :[x_ y_]) (prev :[a_ b_]) :[c_ d_];
 check true false x_ y_ z_ = false;
 check false true x_ y_ z_ = true;

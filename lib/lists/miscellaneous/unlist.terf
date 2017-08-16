@@ -1,0 +1,10 @@
+assume 'lists/miscellaneous/concat';
+unlist nil = nil;
+unlist (cons (cons x_ y_) z_) = concat (cons x_ y_) (unlist z_);
+unlist (cons x_ y_) = cons x_ (unlist y_);
+
+# unlist takes in a list and returns a list with each item unlisted once. If the item is already in leaf representation, it stays as is.
+
+# Example
+# unlist (cons 4 (cons (cons (cons 5 nil) nil) nil)) = cons 4 (cons (cons 5 nil) nil)
+

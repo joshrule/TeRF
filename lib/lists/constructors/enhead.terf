@@ -1,0 +1,9 @@
+# enhead x_ xs_ adds x_ to the head of the list xs_.
+#
+# Examples:
+# enhead 1 (cons 2 nil) = (cons (cons 1 2) nil)
+# enhead 1 (cons nil nil) = (cons (cons 1 nil) nil)
+# enhead 1 nil = (cons (cons 1 nil) nil)
+
+enhead x_ nil = (cons (cons x_ nil) nil);
+enhead x_ (cons y_ z_) = (cons (cons x_ y_) z_);

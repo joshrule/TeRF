@@ -1,4 +1,3 @@
-signature null/0 ./2 cons/0 nil/0 True/0 map/0 False/0;
 map f_ nil = nil;
 map f_ (cons x_ y_) = cons (f_ x_) (map f_ y_);
 

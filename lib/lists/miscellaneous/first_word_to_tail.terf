@@ -1,0 +1,17 @@
+# first_word_to_tail f_ xs_ takes a function, f_, and a list, xs_, and returns a
+# list with all the same elements as xs_ in a new order created by breaking xs_
+# into words, with word boundaries where (f_ x_) is true, and then putting the
+# first word at the tail of the list
+#
+# Examples:
+# first_word_to_tail (eq 0) (list 4 5 0 6 7) = 
+#   (cons 6 (cons 7 (cons 0 (cons 4 (cons 5 nil)))))
+# first_word_to_tail (eq a) (list a b a b) =
+#   (cons b (cons a (cons b (cons a nil))))
+
+assume 'lists/filter_deletion/flatten'
+assume 'lists/miscellaneous/reverse'
+assume 'lists/miscellaneous/split'
+
+first_word_to_tail f_ nil = nil;
+first_word_to_tail f_ (cons x_ y_) = flatten (reverse (split (cons x_ y_)));

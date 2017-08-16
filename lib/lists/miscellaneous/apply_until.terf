@@ -1,7 +1,7 @@
 signature ./2 apply/0 until/0 nil/0 cons/0 check/0 true/0 concat/0 list/0 false/0 head/0 f1_ f2_ a_ x_ z_ y_ xs_ list1/0;
-assume 'library/lists/selectors/head';
-assume 'library/lists/constructors/list_items';
-assume 'library/lists/miscellaneous/concat';
+assume 'lib/lists/selectors/head';
+assume 'lib/lists/constructors/list_items';
+assume 'lib/lists/miscellaneous/concat';
 apply f1_ until f2_ a_ nil = nil;
 check x_ nil z_ f1_ f2_ a_ = f1_ (list z_);
 apply f1_ until f2_ a_ (cons x_ y_) = check (f2_ a_ x_) y_ x_ f1_ f2_ a_;

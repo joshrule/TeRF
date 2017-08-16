@@ -1,4 +1,3 @@
-signature ./2 concat/0 nil/0 x_ cons/0 y_ z_;
 concat nil x_ = x_;
 concat (cons x_ y_) nil = cons x_ y_;
 concat (cons x_ y_) (cons a_ b_) = cons x_ (concat y_ (cons a_ b_));

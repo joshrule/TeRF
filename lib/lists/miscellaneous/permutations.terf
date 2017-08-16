@@ -1,0 +1,16 @@
+# permutations xs_ returns a list of the possible permutations of the list xs_.
+#
+# Examples (using bracket notation for legibility):
+# permutations [0 1 2] =
+#     [[0 1 2] [0 2 1] [1 0 2] [1 2 0] [2 0 1] [2 1 0]]
+
+assume 'lists/Iteration/map';
+assume 'lists/miscellaneous/unlist';
+
+permutations nil = (cons nil nil);
+permutations (cons x_ y_) = map (insert_everywhere x_) (permutations y_)        ;
+
+insert_everywhere y_ nil = cons (cons y_ nil) nil;
+insert_everywhere y_ (cons x_ xs_) =
+   cons (cons y_ (cons x_ xs_))
+        (map (cons x_) (insert_everywhere y_ xs_));

@@ -1,0 +1,12 @@
+# adj_pairs_related r_ xs_ takes a relation, r_, and a list, xs_, and returns
+# true if every adjacent pair in xs_ is related by r_ and false otherwise.
+#
+# Examples:
+# adj_pairs_related > (list 0 1 2 3 4) = true
+# adj_pairs_related > (list 1 1 2 3 5) = false
+
+adj_pairs_related r_ nil = true;
+adj_pairs_related r_ (cons x_ nil) = true;
+adj_pairs_related r_ (cons x_ (cons y_ z_)) =
+    and (r_ x_ y_)
+        (adj_pairs_related r_ (cons y_ z_));

@@ -1,10 +1,8 @@
-# eq: are two items identical?
+# equals: are two items identical?
 #
 # Examples:
-# eq A A = true
-# eq A B = false
+# equals A A = true
+# equals A B = false
 
-eq x_ x_ = true;
-eq x_ y_ = false;
-
-boolean = eq item item;
+equals x_ x_ = true;
+equals x_ y_ = false;

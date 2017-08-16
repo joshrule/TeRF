@@ -1,0 +1,9 @@
+# entail x_ xs_ adds x_ to the tail of the list xs_.
+#
+# Examples:
+# entail 1 (cons 2 nil) = (cons 2 (cons 1 nil))
+# entail 1 (cons nil nil) = (cons nil (cons 1 nil))
+# entail 1 nil = (cons nil (cons 1 nil))
+
+entail x_ nil = (cons nil (cons x_ nil))
+entail x_ (cons y_ z_) = (cons y_ (cons x_ z_))
