@@ -66,8 +66,9 @@ class Signature(collections.MutableSet):
     def __str__(self):
         return '{' + ', '.join(str(s) for s in self._elements) + '}'
 
-    def copy(self):
-        return Signature(self._elements, self.parent)
+    def copy(self, parent=None):
+        return Signature(self._elements,
+                         parent=(parent if parent else None))
 
     def add(self, item):
         self._elements.add(item)

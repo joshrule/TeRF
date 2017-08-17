@@ -132,5 +132,9 @@ class Rule(collections.MutableSet):
             return list(self.rhs)[0]
         raise ValueError('Rule.lone_rhs: multiple rhss')
 
+    @property
+    def complexity(self):
+        return len(self.lhs) + sum(len(rhs) for rhs in self.rhs)
+
 
 R = Rule

@@ -1,7 +1,14 @@
 from itertools import repeat, product, izip
+import os
 import numpy as np
 from numpy.random import choice
 from random import sample
+import scipy.misc
+
+
+def normalize(log_ps):
+    sum_ps = scipy.misc.logsumexp(log_ps)
+    return [np.exp(p-sum_ps) for p in log_ps]
 
 
 def gift(xs, N):
@@ -101,3 +108,20 @@ def unique_shuffle(xs):
         result = sample(xs, len(xs))
         if xs != result:
             return result
+
+
+def mkdir(the_path):
+    the_dir = os.path.dirname(the_path)
+    if not os.path.exists(the_dir):
+        os.makedirs(the_dir)
+    return the_path
+
+
+def stem(the_path):
+    return os.path.splitext(os.path.basename(the_path))[0]
+
+
+def status(string):
+    print '='*80
+    print string
+    print '='*80 + '\n'

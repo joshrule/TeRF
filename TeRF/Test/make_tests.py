@@ -7,29 +7,6 @@ import TeRF.Types.Operator as O
 import TeRF.Types.Rule as R
 import TeRF.Types.Signature as S
 import TeRF.Types.TRS as TRS
-import time
-
-
-def write_sampled_trss(out_dir, p_operator, p_arity, p_rule, n_trss=1,
-                       max_nodes=np.inf, signature=None):
-    if not os.path.isdir(out_dir):
-        os.mkdir(out_dir)
-    written = []
-    while len(written) < n_trss:
-        str_n = ('{:0' + str(int(np.ceil(np.log10(n_trss)+1))) + 'd}').format(
-            len(written)+1)
-        out_file = os.path.join(out_dir, str_n + '.terf')
-        if not os.path.exists(out_file):
-            try:
-                trs = sample_trs(p_operator, p_arity, p_rule, signature)
-            except ValueError:
-                continue
-            if sum(len(r.lhs) + len(r.rhs0) for r in trs.rules()) <= max_nodes:
-                written += [out_file]
-                trs.save(out_file)
-        else:
-            written += [out_file]
-    return written
 
 
 def sample_trs(p_operator, p_arity, p_rule, signature=None):
@@ -217,10 +194,3 @@ if __name__ == "__main__":
     print len(list(enumerate_trss_with_N_nodes(sig, 4))), '\n'
     print 'Total number of 6 node TRSs:'
     print len(list(enumerate_trss_with_N_nodes(sig, 6))), '\n'
-    
-#     N = 10
-#     start = time.time()
-#     res7 = list(enumerate_trss(sig, N))
-#     end = time.time()
-#     print 'Total number of TRSs with', N, 'nodes or less:', len(res7)
-#     print 'elapsed time to enumerate them:', end-start

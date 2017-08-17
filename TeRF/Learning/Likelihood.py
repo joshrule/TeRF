@@ -17,7 +17,7 @@ class Likelihood(object):
         Assumes:
           self.value: from LOTlib.Hypotheses.Hypothesis
           self.p_observe: should be an argument to the hypothesis __init__
-          self.start: the starting term
+          self.p_similar: should be an argument to the hypothesis __init__
         Args:
           datum: a rewriteRule representing a single datum
         Returns: a float, -inf <= x <= 0, log p(datum | self.value)
