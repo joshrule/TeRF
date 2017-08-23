@@ -1,7 +1,7 @@
 """TeRF: a Term Rewriting Framework
 
 Usage:
-    terf [-ht] [--print=<level>] [--steps=<N>] [--path=<dir>] [<filename>]
+    terf [-ht] [--print=<level>] [--steps=<N>] [--path=<dir>] [--strategy=<name>] [--output=<output>] [<filename>]
 
 Options:
     -h --help            Show this message.
@@ -9,6 +9,9 @@ Options:
     --print=<int>        how to print terms. [default: 0].
     --steps=<int>        maximum execution steps for each term. [default: 1000]
     --path=<dir>         where the library is located. [default: ./]
+    --strategy=<name>    what evaluation strategy ('normal', 'eager') to use
+                         [default: 'eager']
+    --output=<output>    print 'all' evaluations or just 'one' [default: 'one']
 
 Batch mode:
   Include a <filename> as the last argument to run terf in batch mode
@@ -45,40 +48,49 @@ from TeRF.Types.Rule import R
 from TeRF.Types.Signature import SignatureError
 
 
-def batch(filename, verbosity, count, trace=False, path=None):
+def batch(filename, verbosity, count, trace, path, strategy, output):
     trs, terms = p.load_source(filename, path=path)
     print 'TRS:'
     print show_trs(trs)
     print '\nEvaluations:'
     for term in terms:
-        evaled = term.rewrite(trs, max_steps=count, type='one', trace=trace)
-        if verbosity >= 0:
-            if trace:
-                print '\n  {}'.format(term.pretty_print(2*verbosity))
-                for t in evaled[1:]:
-                    print '  = {}'.format(t.pretty_print(2*verbosity))
+        evaled = term.rewrite(trs, max_steps=count, type=output, trace=trace,
+                              strategy=strategy, states=['normal'])
+        if output == 'all':
+            if verbosity >= 0:
+                for i, t in enumerate(set(evaled)):
+                    print '{:d}: {}'.format(i, t.pretty_print(2*verbosity))
             else:
-                print '\n  {} = {}'.format(term.pretty_print(2*verbosity),
-                                           evaled.pretty_print(2*verbosity))
+                for i, t in enumerate(set(evaled)):
+                    print '{:d}: {}'.format(i, t)
         else:
-            if trace:
-                print '\n  {}'.format(term)
-                for t in evaled[1:]:
-                    print '  = {}'.format(t)
+            if verbosity >= 0:
+                if trace:
+                    print '\n  {}'.format(term.pretty_print(2*verbosity))
+                    for t in evaled[1:]:
+                        print '  = {}'.format(t.pretty_print(2*verbosity))
+                else:
+                    print '\n  {} = {}'.format(term.pretty_print(2*verbosity),
+                                               evaled.pretty_print(2*verbosity))
             else:
-                print '\n  {} = {}'.format(term, evaled)
+                if trace:
+                    print '\n  {}'.format(term)
+                    for t in evaled[1:]:
+                        print '  = {}'.format(t)
+                else:
+                    print '\n  {} = {}'.format(term, evaled)
 
 
-def repl(verbosity, count, trace=False, path=None):
+def repl(verbosity, count, trace, path, strategy, output):
     trs = TRS()
     while True:
         try:
             statements = [s.strip() for s in repl_read().split(';') if s != '']
             for statement in statements:
-                output, new_ss = repl_eval(trs, statement,
-                                           verbosity, count, trace, path)
-                if output != '' and output is not None:
-                    print output
+                out, new_ss = repl_eval(trs, statement, verbosity,
+                                        count, trace, path, strategy, output)
+                if out != '' and out is not None:
+                    print out
                 statements += new_ss
         except EOFError:
             break
@@ -91,7 +103,7 @@ def repl_read():
         return input('>> ') + ';'
 
 
-def repl_eval(trs, statement, verbosity, count, trace, path):
+def repl_eval(trs, statement, verbosity, count, trace, path, strategy, output):
     quit = re.compile('quit')
     exit = re.compile('exit')
     help = re.compile('help')
@@ -135,8 +147,9 @@ def repl_eval(trs, statement, verbosity, count, trace, path):
         return 'cannot invent term -- no terminals?', []
     # TODO: add a tree statement to print trees
     else:
-        words = process_statement(trs, statement,
-                                  verbosity, count, trace, path=path)
+        words = process_statement(trs, statement, verbosity, count,
+                                  trace, path=path, strategy=strategy,
+                                  output=output)
         return words, []
 
 
@@ -195,7 +208,8 @@ def print_term(term, how):
         return term.pretty_print(verbose=2)
 
 
-def process_statement(trs, statement, verbosity, count, trace, path=None):
+def process_statement(trs, statement, verbosity, count, trace, path=None,
+                      strategy='eager', output='one'):
     try:
         s = p.parser.parse(statement + ';')[0]
     except IndexError:
@@ -205,31 +219,40 @@ def process_statement(trs, statement, verbosity, count, trace, path=None):
         return ''
     elif s[0] == 'term':
         term = p.make_term(s[1], signature=trs.signature.copy())
-        evaled = term.rewrite(trs, max_steps=count, type='one', trace=trace)
-        if verbosity >= 0:
-            if trace:
-                evaled = evaled.root
-                the_trace = []
-                while evaled.children != []:
-                    evaled = evaled.children[0]
-                    the_trace.append(evaled.term)
-                if the_trace == []:
-                    the_trace.append(evaled.term)
-                return '\n'.join(t.pretty_print(2*verbosity) for t in the_trace)
-            else:
-                return evaled.pretty_print(2*verbosity)
+        evaled = term.rewrite(trs, max_steps=count, type=output, trace=trace,
+                              strategy=strategy, states=['normal'])
+        if output == 'all':
+            for i, t in enumerate(set(evaled)):
+                if verbosity >= 0:
+                    print '{:d}: {}'.format(i, t.pretty_print(2*verbosity))
+                else:
+                    print '{:d}: {}'.format(i, t)
         else:
-            if trace:
-                evaled = evaled.root
-                the_trace = []
-                while evaled.children != []:
-                    evaled = evaled.children[0]
-                    the_trace.append(evaled.term)
-                if the_trace == []:
-                    the_trace.append(evaled.term)
-                return '\n'.join(str(t) for t in the_trace)
+            if verbosity >= 0:
+                if trace:
+                    evaled = evaled.root
+                    the_trace = []
+                    while evaled.children != []:
+                        evaled = evaled.children[0]
+                        the_trace.append(evaled.term)
+                    if the_trace == []:
+                        the_trace.append(evaled.term)
+                    return '\n'.join(t.pretty_print(2*verbosity)
+                                     for t in the_trace)
+                else:
+                    return evaled.pretty_print(2*verbosity)
             else:
-                return str(evaled)
+                if trace:
+                    evaled = evaled.root
+                    the_trace = []
+                    while evaled.children != []:
+                        evaled = evaled.children[0]
+                        the_trace.append(evaled.term)
+                    if the_trace == []:
+                        the_trace.append(evaled.term)
+                    return '\n'.join(str(t) for t in the_trace)
+                else:
+                    return str(evaled)
     elif s[0] == 'signature':
         p.add_signature(trs, s[1])
     elif s[0] == 'assumption':
@@ -240,20 +263,20 @@ def process_statement(trs, statement, verbosity, count, trace, path=None):
 
 def main():
     arguments = docopt.docopt(__doc__, version="terf 0.0.1")
-    trace = arguments.get('--trace', False)
+    output = arguments.get('--output', 'one')
+    trace = (arguments.get('--trace', False) and output == 'one')
     path = arguments['--path'].split(':')
     path += [] if './' in path else ['./']
+    strategy = arguments.get('--strategy', 'eager')
     if arguments['<filename>']:
         batch(arguments['<filename>'],
               int(arguments['--print']),
               int(arguments['--steps']),
-              trace,
-              path=path)
+              trace, path, strategy, output)
     else:
         repl(int(arguments['--print']),
              int(arguments['--steps']),
-             trace,
-             path=path)
+             trace, path, strategy, output)
 
 
 if __name__ == "__main__":

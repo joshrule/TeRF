@@ -46,5 +46,5 @@ class Term(object):
     @abc.abstractmethod
     def differences(self, other, top=True): raise NotImplementedError
 
-    def rewrite(self, trs, trace=False, **kwargs):
-        return T.Trace(trs, self, **kwargs).rewrite(trace)
+    def rewrite(self, trs, trace=False, states=None, **kwargs):
+        return T.Trace(trs, self, **kwargs).rewrite(trace, states=states)

@@ -3,6 +3,7 @@ import os
 import numpy as np
 from numpy.random import choice
 from random import sample
+import re
 import scipy.misc
 
 
@@ -125,3 +126,18 @@ def status(string):
     print '='*80
     print string
     print '='*80 + '\n'
+
+
+def find_files(dir, regexp=None):
+    if regexp is not None:
+        r = re.compile(regexp)
+    problems = []
+    files = os.listdir(dir)
+    if not files:
+        return problems
+    for file in files:
+        if os.path.isdir(os.path.join(dir, file)):
+            problems += find_files(os.path.join(dir, file), regexp)
+        elif regexp is None or re.match(r, file):
+            problems.append(os.path.join(dir, file))
+    return problems

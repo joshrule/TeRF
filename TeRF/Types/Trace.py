@@ -13,7 +13,7 @@ class TraceComplete(Exception):
 class Trace(object):
     """An evaluation trace for a TRS term"""
     def __init__(self, trs, term, type='all', p_observe=0.2,
-                 max_steps=10, min_p=1e-300):
+                 max_steps=10, min_p=1e-300, strategy='eager'):
         root = TraceState(term, 0)
         self.unobserved = []
         hq.heappush(self.unobserved, root)
@@ -23,6 +23,7 @@ class Trace(object):
         self.p_observe = p_observe
         self.max_steps = max_steps
         self.min_p = min_p
+        self.strategy = strategy
 
     @property
     def steps(self):
@@ -40,10 +41,11 @@ class Trace(object):
             except TraceComplete:
                 return self
 
-    def report(self, trace=False):
+    def report(self, trace=False, states=None):
         if trace:
             return self
         outcomes = self.root.leaves()
+        outcomes = self.root.leaves(states=states)
         if self.type == 'one':
             if len(outcomes) == 1:
                 return outcomes[0].term
@@ -51,10 +53,10 @@ class Trace(object):
             print [o.state for o in outcomes]
             raise ValueError('Trace.report: more than one outcome (' +
                              str(len(outcomes)) + ')!')
-        return [o.term for o in self.root.leaves()]
+        return [o.term for o in outcomes]
 
-    def rewrite(self, trace=False):
-        return self.run().report(trace)
+    def rewrite(self, trace=False, states=None):
+        return self.run().report(trace, states=states)
 
     def step(self):
         try:
@@ -62,9 +64,10 @@ class Trace(object):
         except IndexError:
             raise TraceComplete('step: no further steps can be taken')
 
-        rewrites = state.term.single_rewrite(self.trs, type='all')
+        rewrites = state.term.single_rewrite(self.trs, type='all',
+                                             strategy=self.strategy)
 
-        if rewrites == [state.term] or rewrites is None:
+        if rewrites == [state.term] or rewrites is None or rewrites == []:
             state.state = 'normal'
         else:
             for term in rewrites:

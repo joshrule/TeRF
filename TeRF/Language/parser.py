@@ -1,13 +1,10 @@
-import copy
 import ply.yacc as yacc
-
 from TeRF.Language.lexer import tokens
 from TeRF.Types.Operator import Op
 from TeRF.Types.Variable import Var
 from TeRF.Types.Application import App
 from TeRF.Types.TRS import TRS
 from TeRF.Types.Rule import R
-from TeRF.Types.Signature import Signature
 
 
 def p_program(p):
