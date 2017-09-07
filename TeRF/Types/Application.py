@@ -65,6 +65,20 @@ class Application(T.Term):
         except AttributeError:
             return False
 
+    def is_number(self):
+        """
+        this approach assumes we're using S/1 to encode lists and must be
+        changed if we decide to use a different encoding.
+        """
+        try:
+            return (self.head.name == 'S' and
+                    self.head.arity == 1 and
+                    self.body[0].is_number()) or \
+                   (self.head.name == '0' and
+                    self.head.arity == 0)
+        except AttributeError:
+            return False
+
     def pretty_print(self, verbose=0):
         def list_terms(xs):
             try:
@@ -80,8 +94,19 @@ class Application(T.Term):
             items = [t.pretty_print(verbose) for t in list_terms(self)]
             return '[' + ', '.join(items) + ']'
 
+        def number_value(n):
+            try:
+                return 1 + number_value(n.body[0])
+            except IndexError:
+                return 0
+
+        def print_number():
+            return str(number_value(self))
+
         if self.is_list():
             return print_list()
+        if self.is_number():
+            return print_number()
         if self.head.name == '.' and self.head.arity == 2:
             if verbose == 0:
                 return self.body[0].pretty_print(0) + \
