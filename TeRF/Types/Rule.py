@@ -2,6 +2,7 @@ import collections
 import itertools as I
 import TeRF.Types.Term as T
 import TeRF.Types.Application as A
+import TeRF.Types.Variable as V
 
 
 class Rule(collections.MutableSet):
@@ -135,6 +136,17 @@ class Rule(collections.MutableSet):
     @property
     def complexity(self):
         return len(self.lhs) + sum(len(rhs) for rhs in self.rhs)
+
+    def rename_variables(self):
+        for i, v in enumerate(self.variables):
+            v.name = 'v' + str(i)
+
+    def replace_variables(self, pairs=None):
+        if pairs is None:
+            pairs = {v: V.Var() for v in self.variables}
+        self.lhs = self.lhs.replace_variables(pairs=pairs)
+        self.rhs = {r.replace_variables(pairs=pairs) for r in self.rhs}
+        return self
 
 
 R = Rule

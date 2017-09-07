@@ -1,6 +1,6 @@
 import collections
 import copy
-import itertools as it
+import itertools as I
 import TeRF.Types.Signature as S
 
 
@@ -37,6 +37,7 @@ class TRS(collections.MutableMapping):
             the key comes from the value itself
           value: a Rule, the LHS is used as the key
         """
+        value = copy.deepcopy(value).replace_variables()
         if self.signature.operators >= value.operators:
             if value.lhs not in self:
                 self._rules[value.lhs] = value
@@ -179,7 +180,7 @@ class TRS(collections.MutableMapping):
     def unifies(self, other, env=None, type='alpha'):
         if self.signature == other.signature and \
            self.num_rules() == other.num_rules():
-            for r_self, r_other in it.izip(self, other):
+            for r_self, r_other in I.izip(self, other):
                 if r_self.unify(r_other, env=env, type=type) is None:
                     return False
             return True
@@ -195,11 +196,16 @@ class TRS(collections.MutableMapping):
         feats['max_rule_len'] = max(len(r.lhs) + len(r.rhs0)
                                     for r in self.rules())
         feats['n_vars'] = sum(1 for r in self.rules()
-                              for t in it.chain(r.lhs.subterms, r.rhs0.subterms)
+                              for t in I.chain(r.lhs.subterms, r.rhs0.subterms)
                               if not hasattr(t, 'body'))
         feats['%_vars'] = float(feats['n_vars']) / float(feats['n_nodes'])
         feats['n_nondet_rules'] = sum(1 for r in self if len(r) > 1)
         feats['n_nondets'] = sum(len(r) for r in self if len(r) > 1)
         feats['%_nondets'] = float(feats['n_nondet_rules']) / \
-                             float(feats['n_lhss'])
+            float(feats['n_lhss'])
         return feats
+
+    def prettify(self, ignore=None):
+        self.signature.rename_operators(ignore)
+        for rule in self:
+            rule.rename_variables()

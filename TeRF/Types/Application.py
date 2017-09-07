@@ -1,6 +1,7 @@
 import itertools as it
 import numpy.random as random
 import TeRF.Types.Term as T
+import TeRF.Types.Variable as V
 
 
 class Application(T.Term):
@@ -47,7 +48,66 @@ class Application(T.Term):
             self._hash = hash((self.head, tuple(hash(b) for b in self.body)))
         return self._hash
 
+    def is_list(self):
+        """
+        this approach assumes we're using cons/0 to encode lists and must be
+        changed if we decide to use a different encoding.
+        """
+        try:
+            return (self.head.name == '.' and
+                    self.head.arity == 2 and
+                    self.body[0].head.name == '.' and
+                    self.body[0].head.arity == 2 and
+                    self.body[0].body[0].head.name == 'cons' and
+                    self.body[0].body[0].head.arity == 0 and
+                    self.body[1].is_list()) or \
+                   (self.head.name == 'nil' and
+                    self.head.arity == 0)
+        except AttributeError:
+            return False
+
+    def is_number(self):
+        """
+        this approach assumes we're using S/1 to encode lists and must be
+        changed if we decide to use a different encoding.
+        """
+        try:
+            return (self.head.name == 'S' and
+                    self.head.arity == 1 and
+                    self.body[0].is_number()) or \
+                   (self.head.name == '0' and
+                    self.head.arity == 0)
+        except AttributeError:
+            return False
+
     def pretty_print(self, verbose=0):
+        def list_terms(xs):
+            try:
+                return [xs.body[0].body[1]] + list_terms(xs.body[1])
+            except IndexError:
+                return []
+
+        def print_list():
+            """
+            this approach assumes we're using cons to encode lists and will
+            need to be changed if we decide to use a different encoding.
+            """
+            items = [t.pretty_print(verbose) for t in list_terms(self)]
+            return '[' + ', '.join(items) + ']'
+
+        def number_value(n):
+            try:
+                return 1 + number_value(n.body[0])
+            except IndexError:
+                return 0
+
+        def print_number():
+            return str(number_value(self))
+
+        if self.is_list():
+            return print_list()
+        if self.is_number():
+            return print_number()
         if self.head.name == '.' and self.head.arity == 2:
             if verbose == 0:
                 return self.body[0].pretty_print(0) + \
@@ -180,6 +240,17 @@ class Application(T.Term):
         except AttributeError:
             pass
         return diffs
+
+    def replace_variables(self, pairs=None):
+        if pairs is None:
+            pairs = {v: V.Var() for v in self.variables}
+        body = []
+        for t in self.body:
+            if t in pairs:
+                body.append(pairs[t])
+            else:
+                body.append(t.replace_variables(pairs=pairs))
+        return App(self.head, body)
 
 
 App = Application
