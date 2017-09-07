@@ -1,6 +1,7 @@
 import itertools as it
 import numpy.random as random
 import TeRF.Types.Term as T
+import TeRF.Types.Variable as V
 
 
 class Application(T.Term):
@@ -239,6 +240,17 @@ class Application(T.Term):
         except AttributeError:
             pass
         return diffs
+
+    def replace_variables(self, pairs=None):
+        if pairs is None:
+            pairs = {v: V.Var() for v in self.variables}
+        body = []
+        for t in self.body:
+            if t in pairs:
+                body.append(pairs[t])
+            else:
+                body.append(t.replace_variables(pairs=pairs))
+        return App(self.head, body)
 
 
 App = Application

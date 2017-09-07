@@ -3,6 +3,7 @@ import itertools as I
 import scipy as sp
 import numpy as np
 import TeRF.Miscellaneous as M
+import TeRF.Pseudowords as P
 import TeRF.Types.Application as A
 import TeRF.Types.Rule as R
 import TeRF.Types.Variable as V
@@ -103,6 +104,15 @@ class Signature(collections.MutableSet):
         # technically not correct you could let S/1 be head if
         # must_haves = {S/1, 0/0}
         return [s for s in self if getattr(s, 'arity', 0) > 1]
+
+    def rename_operators(self, ignore=None):
+        if ignore is not None:
+            to_rename = [op for op in self.operators if op not in ignore]
+            new_names = np.random.choice(P.pseudowords,
+                                         size=len(to_rename),
+                                         replace=False)
+            for op, name in I.izip(to_rename, new_names):
+                op.name = name
 
     def sample_head(self, invent=True):
         head = np.random.choice(list(self._elements) +

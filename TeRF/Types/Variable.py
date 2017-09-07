@@ -80,5 +80,12 @@ class Variable(A.Atom, T.Term):
             self._hash = hash(self.identity)
         return self._hash
 
+    def replace_variables(self, pairs=None):
+        if pairs is None:
+            return Var()
+        if self in pairs:
+            return pairs[self]
+        return self
+
 
 Var = Variable
