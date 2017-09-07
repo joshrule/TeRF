@@ -47,7 +47,41 @@ class Application(T.Term):
             self._hash = hash((self.head, tuple(hash(b) for b in self.body)))
         return self._hash
 
+    def is_list(self):
+        """
+        this approach assumes we're using cons/0 to encode lists and must be
+        changed if we decide to use a different encoding.
+        """
+        try:
+            return (self.head.name == '.' and
+                    self.head.arity == 2 and
+                    self.body[0].head.name == '.' and
+                    self.body[0].head.arity == 2 and
+                    self.body[0].body[0].head.name == 'cons' and
+                    self.body[0].body[0].head.arity == 0 and
+                    self.body[1].is_list()) or \
+                   (self.head.name == 'nil' and
+                    self.head.arity == 0)
+        except AttributeError:
+            return False
+
     def pretty_print(self, verbose=0):
+        def list_terms(xs):
+            try:
+                return [xs.body[0].body[1]] + list_terms(xs.body[1])
+            except IndexError:
+                return []
+
+        def print_list():
+            """
+            this approach assumes we're using cons to encode lists and will
+            need to be changed if we decide to use a different encoding.
+            """
+            items = [t.pretty_print(verbose) for t in list_terms(self)]
+            return '[' + ', '.join(items) + ']'
+
+        if self.is_list():
+            return print_list()
         if self.head.name == '.' and self.head.arity == 2:
             if verbose == 0:
                 return self.body[0].pretty_print(0) + \
