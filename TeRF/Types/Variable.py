@@ -59,12 +59,26 @@ class Variable(A.Atom, T.Term):
             env[self] = t
             return env
         return None
-    
+
     def single_rewrite(self, trs, type):
         return None
 
     def differences(self, other, top=True):
         return [] if (self == other or not top) else [(self, other)]
+
+    def __eq__(self, other):
+        try:
+            return self.identity == other.identity
+        except AttributeError:
+            return False
+
+    def __ne__(self, other):
+        return not self == other
+
+    def __hash__(self):
+        if not hasattr(self, '_hash'):
+            self._hash = hash(self.identity)
+        return self._hash
 
 
 Var = Variable

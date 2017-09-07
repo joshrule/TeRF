@@ -15,6 +15,20 @@ class Operator(A.Atom):
     def __repr__(self):
         return 'Operator(\'{}\', {:d})'.format(self.name, self.arity)
 
+    def __eq__(self, other):
+        try:
+            return self.arity == other.arity and self.name == other.name
+        except AttributeError:
+            return False
+
+    def __ne__(self, other):
+        return not self == other
+
+    def __hash__(self):
+        if not hasattr(self, '_hash'):
+            self._hash = hash((self.arity, self.name))
+        return self._hash
+
     def pretty_print(self):
         return self.name
 

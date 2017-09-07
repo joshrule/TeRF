@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 import pandas
-import pickle
+import dill
 import sys
 import TeRF.Language.parser as parser
 import TeRF.Learning.TRSHypothesis as TRSH
@@ -43,8 +43,9 @@ rc = collections.namedtuple('rc', [
 
 def main(rcfile):
     rc = load_config(rcfile)
-    test_files = sample_problems(rc)
-    results, start, stop = run_tests(test_files, rc)
+    # test_files = sample_problems(rc)
+    # need to adapt this to make rcs for each test file
+    results, start, stop = run_tests(rc)
     report_results(rc, results, start, stop)
     plot_results(misc.mkdir(rc.plot_dir), results)
 
@@ -77,40 +78,32 @@ def sample_problems(rc):
     return trs_files
 
 
-def run_tests(test_files, rc):
-    test_fs = [(t, misc.mkdir(os.path.join(rc.res_dir, misc.stem(t), str(c))))
-               for t in test_files for c in xrange(rc.n_chains)]
-
+def run_tests(rcs, res_file):
     start = time.strftime("%Y %b %d %H:%M:%S %Z")
-    records = joblib.Parallel(n_jobs=-1)(joblib.delayed(run_test)(
-        in_f, out_f, rc) for in_f, out_f in test_fs)
+    records = joblib.Parallel(n_jobs=-1)(
+        joblib.delayed(run_test)(rc) for rc in rcs)
     stop = time.strftime("%Y %b %d %H:%M:%S %Z")
-
     results = pandas.DataFrame.from_records(records)
-    results.to_csv(rc.res_file)
+    results.to_csv(res_file)
     return results, start, stop
 
 
-def report_results(rc, results, start_time, stop_time):
-    with open(os.path.join(rc.out_dir, 'README'), 'w') as f:
+def report_results(out_f, results, start_time, stop_time):
+    with open(out_f, 'w') as f:
         f.write('This test of TeRF\n\n')
-        f.write('* used the following parameters:\n\n')
-        for k, v in rc._asdict().iteritems():
-            f.write('  - {}: {}\n'.format(k, v))
         f.write('\n* started at {},\n\n'.format(start_time))
         f.write('* ended at {},\n\n'.format(stop_time))
         f.write('* had the following individual results:\n')
 
         successes = []
-        for file in set(results['file']):
-            res_slice = results[results.file == file]
+        for file in set(results['e_trs_f']):
+            res_slice = results[results.e_trs_f == file]
             n_tries = len(res_slice.index)
             succ = len(res_slice[res_slice.diff_score >= 0.0].index)
             successes.append(succ)
-            fail = n_tries-succ
             perc = 100.0 * float(succ) / float(n_tries)
             f.write('  - {}: {:d}/{:d} = {:.2f}%...{}\n'.format(
-                file, succ, fail, perc, 'PASS' if succ else 'FAIL'))
+                file, succ, n_tries, perc, 'PASS' if succ else 'FAIL'))
             trs, _ = parser.load_source(file)
             f.write('    ' + str(trs).replace('\n', '\n    ') + '\n\n')
         pd = sum(1 for s in successes if s)
@@ -123,12 +116,10 @@ def report_results(rc, results, start_time, stop_time):
 
 
 def plot_results(out_dir, results):
-    features = results.columns.tolist()
-    features.remove('map_score')
-    features.remove('diff_score')
-    features.remove('true_score')
-    features.remove('file')
-    for feature in features:
+    # hack! figure out how to learn these programatically
+    for feature in ['n_rules', 'n_nodes', 'n_lhss', 'mean_rule_len',
+                    'max_rule_len', 'n_vars', '%_vars', 'n_nondet_rules',
+                    'n_nondets', '%_nondets']:
         plot_file = misc.mkdir(os.path.join(out_dir, feature + '.svg'))
         plot_feature(plot_file, feature, results[feature], results.diff_score)
 
@@ -144,102 +135,91 @@ def plot_feature(out_file, feature, feats, scores):
     plt.savefig(out_file)
 
 
-def run_test(in_file, out_stem, rc):
-    pickle_file = out_stem + '.pkl'
-    if not os.path.exists(pickle_file):
-        saveout, saveerr = sys.stdout, sys.stderr
-        with open(out_stem + '.log', 'w', 1) as o:
-            sys.stdout, sys.stderr = o, o
-
-            data, h0, h_star = prepare_for_test(rc, in_file)
-            hs = test(h0, data, rc.n_steps)
-
-            sys.stdout, sys.stderr = saveout, saveerr
-        results = summarize_results(hs.best(), h_star, data, in_file)
-        with open(pickle_file, 'wb') as pkl:
-            pickle.dump(results, pkl)
-            # pickle.dump(hs, pkl)
-    with open(pickle_file, 'rb') as pkl:
-        return pickle.load(pkl)
+def run_test(rc):
+    print rc.test, '-', rc.chain
+    dill_f = os.path.join(rc.result_dir, 'results.pkl')
+    if not os.path.exists(dill_f):
+        data, h0, h_star = prepare_for_test(rc)
+        del rc.reqs  # for pickling, etc.
+        hs = test(h0, data, rc.n_steps, rc.test_log)
+        results = summarize_test(rc, hs.best(), h_star, data)
+        with open(dill_f, 'wb') as d:
+            dill.dump(results, d)
+            dill.dump(hs, d)
+    with open(dill_f, 'rb') as d:
+        return dill.load(d)
 
 
-def prepare_for_test(rc, in_file):
-    g_trs, _ = parser.load_source(rc.gen_theory)
-    e_trs, _ = parser.load_source(in_file,
+def log_problem(rc, data=None, h0=None, h_star=None, h_gen=None):
+    with open(rc.problem_log, 'w') as f:
+        f.write('Problem Configuration\n')
+        for k, v in rc.__dict__.iteritems():
+            f.write('{}: {}\n'.format(k, v))
+        if data is not None:
+            f.write('\nObserved Data:\n')
+            for datum in data:
+                f.write(str(datum) + '\n')
+        if h_gen is not None:
+            f.write('\nGeneration (START -> LHS) Theory:\n')
+            f.write(str(h_gen) + '\n')
+        if h_star is not None:
+            f.write('\nEvaluation (LHS -> RHS) Theory (H*):\n')
+            f.write(str(h_star) + '\n')
+        if h0 is not None:
+            f.write('\nInitial Theory (H0):\n' + str(h0) + '\n')
+
+
+def prepare_for_test(rc):
+    g_trs, _ = parser.load_source(rc.g_trs_f)
+    e_trs, _ = parser.load_source(rc.e_trs_f,
                                   signature=g_trs.signature.copy())
-    start = A.App(g_trs.signature.find(rc.start_string), [])
+    start = A.App(g_trs.signature.find(rc.start), [])
 
-    data = make_data(e_trs, g_trs, rc.n_changed, rc.n_total, start)
+    data_dir = misc.mkdir(os.path.join(rc.result_dir, 'data/'))
+    data = make_data(e_trs, g_trs, data_dir, rc.reqs, start)
     h0 = make_hypothesis(rc.p_observe, rc.p_similar, rc.p_operator,
                          rc.p_arity, rc.p_rule, rc.p_r, data=data)
     h_star = make_hypothesis(rc.p_observe, rc.p_similar, rc.p_operator,
                              rc.p_arity, rc.p_rule, rc.p_r, trs=e_trs)
 
-    print '# Generating Theory:\n# ' + str(g_trs).replace('\n', '\n# ') + '\n#'
-    print '# Evaluating Theory (H*):\n# ' + str(e_trs).replace('\n', '\n# ')
-    print '#\n# Observed Data:'
-    for datum in data:
-        print '# ', datum
-    print '#'
-    print '# H0:\n# ' + str(h0).replace('\n', '\n# ') + '\n#'
+    if rc.problem_log is not None:
+        log_problem(rc, data, h0, h_star, g_trs)
 
     return data, h0, h_star
 
 
-def test(h0, data, n_steps):
+def test(h0, data, n_steps, log_file=None):
+    if log_file is not None:
+        saveout, saveerr = sys.stdout, sys.stderr
+        o = open(os.path.join(log_file), 'w', 1)
+        sys.stdout, sys.stderr = o, o
+
     start = time.time()
-    hs = ts.test_sample(h0, data, N=10, trace=False, show_skip=0,
-                        steps=n_steps, likelihood_temperature=0.5)
+    hs = ts.test_sample(
+        h0, data, N=10, trace=False, likelihood_temperature=0.1,
+        steps=n_steps, show_skip=0, show=(log_file is not None))
     stop = time.time()
 
-    print '# time spent sampling: {:.2f}s'.format(stop-start)
-    print '#\n#\n# The best hypotheses discovered:'
-    for h in hs.get_all(sorted=True):
-        print '#\n#', h.prior, h.likelihood, h.posterior_score
-        print '#', str(h).replace('\n', '\n# ')
+    if log_file is not None:
+        print '# time spent sampling: {:.2f}s'.format(stop-start)
+        print '#\n#\n# The best hypotheses discovered:'
+        for h in hs.get_all(sorted=True):
+            print '#\n#', h.prior, h.likelihood, h.posterior_score
+            print '#', str(h).replace('\n', '\n# ')
+
+        sys.stdout, sys.stderr = saveout, saveerr
+        o.close()
 
     return hs
 
 
-def summarize_results(h_map, h_star, data, in_file):
+def summarize_test(rc, h_map, h_star, data):
     results = h_star.value.features()
-    results['file'] = in_file
+    results.update(rc.__dict__)
     results['map_score'] = h_map.compute_posterior(data)
     results['true_score'] = h_star.compute_posterior(data)
-    results['diff_score'] = results['true_score'] - results['map_score']
+    results['diff_score'] = results['map_score'] - results['true_score']
     return results
-
-
-def make_data(e_trs, g_trs, nChanged, nTotal, start_sym):
-    data = TRS.TRS()
-    data.signature = e_trs.signature.copy(parent=data)
-
-    print '# Generating data starting from:', start_sym
-    start = time.time()
-    trace = start_sym.rewrite(g_trs, max_steps=11, type='all', trace=True)
-    stop = time.time()
-    states = trace.root.leaves(states=['normal'])
-    terms = [s.term for s in states]
-    ps = misc.normalize([s.log_p*0.5 for s in states])  # *0.5 weakens decay
-    print '# {:d} LHSs generated in {:.2f}s'.format(len(terms), stop-start)
-
-    start = time.time()
-    tries = 0
-    while data.num_rules() < nTotal:
-        tries += 1
-        lhs = np.random.choice(terms, p=ps)
-        rhs = lhs.rewrite(e_trs, max_steps=7, type='one')
-        rule = R.Rule(lhs, rhs)
-        if ((data.num_rules() < nChanged and lhs != rhs) or
-            (data.num_rules() >= nChanged and lhs == rhs) or
-            (tries >= len(terms)*0.1)) and \
-           (rule not in e_trs):
-            data.add(rule)
-    stop = time.time()
-    print '# {:d} rules selected in {:.2f}s and {:d} tries\n#'.format(
-        nTotal, stop-start, tries)
-
-    return list(data.rules())
 
 
 def make_hypothesis(p_observe, p_similar, p_operator, p_arity,
@@ -263,3 +243,41 @@ def make_hypothesis(p_observe, p_similar, p_operator, p_arity,
                               p_arity=p_arity,
                               p_rules=p_rule,
                               p_r=p_r)
+
+
+def make_data(e_trs, g_trs, data_dir, reqs, start, quiet=False):
+    data = TRS.TRS()
+    data.signature = e_trs.signature.copy(parent=data)
+
+    # load & test the existing data
+    data_fs = misc.find_files(misc.mkdir(data_dir))
+    for datum_f in data_fs:
+        with open(datum_f, 'rb') as dill_f:
+            datum = dill.load(dill_f)
+        meet_reqs = [r(datum) for r in reqs]
+        if any(meet_reqs):
+            data.add(datum)
+        else:
+            os.remove(datum_f)
+        reqs = [r for p, r in zip(meet_reqs, reqs) if not p]
+
+    # sample any data we still need
+    while reqs != []:
+        trace = start.rewrite(g_trs, max_steps=100, type='one',
+                              trace=True, strategy='eager')
+        terms = [s.term for s in trace.root.leaves(states=['normal'])]
+        try:
+            lhs = terms[0]
+        except IndexError:
+            continue
+        rhs = lhs.rewrite(e_trs, max_steps=100, type='one')
+        datum = R.Rule(lhs, rhs)
+        meet_reqs = [r(datum) for r in reqs]
+        if any(meet_reqs):
+            data.add(datum)
+            datum_f = os.path.join(data_dir, str(data.num_rules()) + '.pkl')
+            with open(datum_f, 'wb') as dill_f:
+                dill.dump(datum, dill_f)
+            reqs = [r for p, r in zip(meet_reqs, reqs) if not p]
+
+    return list(data.rules())

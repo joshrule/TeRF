@@ -141,3 +141,7 @@ def find_files(dir, regexp=None):
         elif regexp is None or re.match(r, file):
             problems.append(os.path.join(dir, file))
     return problems
+
+
+class ExtensibleObject(object):
+    pass
