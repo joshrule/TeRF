@@ -216,13 +216,17 @@ def make_term(t, trs=None, signature=None):
         return App(head, body)
 
 
-def load_source(filename, path=None, signature=None):
-    with open(filename) as file:
-        ss = parser.parse(file.read())
+def load_string(string, path=None, signature=None):
+        ss = parser.parse(string)
         trs = make_trs(ss, path=path, signature=signature)
         terms = [make_term(s[1], signature=trs.signature.copy())
                  for s in ss if s[0] == 'term']
         return trs, terms
+
+
+def load_source(filename, path=None, signature=None):
+    with open(filename) as file:
+        return load_string(file.read())
 
 
 if __name__ == '__main__':
