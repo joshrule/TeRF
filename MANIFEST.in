@@ -1,0 +1,8 @@
+# include the readme and license
+include README.org
+
+# include the terf binary
+include-recursive bin *
+
+# include the terf library
+include-recursive lib *

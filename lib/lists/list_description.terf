@@ -1,2 +1,0 @@
-# What are lists? They are empty lists or cons cells.
-list = nil | cons list list;

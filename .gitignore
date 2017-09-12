@@ -1,13 +1,13 @@
 # python detritus
 *pyc
+Pipfile*
 
 # PLY detritus
 parsetab.py
 parser.out
 
 # project detritus
-test_logs/
-test_*
+science/
 
 # silly OS X files
 .DS_Store
