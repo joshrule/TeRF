@@ -1,6 +1,6 @@
 * TErm Rewriting Framework (TeRF)
 
-TeRF is a python 2.7 package providing tools to describe, compute with, and learn Term Rewriting Systems (TRS).
+TeRF is a python 2 library for describing, computing with, and learning Term Rewriting Systems (TRS).
 
 ** Term Rewriting Systems (TRSs)
 
