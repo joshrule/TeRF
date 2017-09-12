@@ -7,9 +7,7 @@ parsetab.py
 parser.out
 
 # project detritus
-test_logs/
-test_*
-srrs/
+science/
 
 # silly OS X files
 .DS_Store
