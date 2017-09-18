@@ -1,4 +1,3 @@
-import collections
 import copy
 import joblib
 import matplotlib.pyplot as plt
@@ -16,42 +15,6 @@ import TeRF.Types.Application as A
 import TeRF.Types.Rule as R
 import TeRF.Types.TRS as TRS
 import time
-import yaml
-
-
-rc = collections.namedtuple('rc', [
-    'out_dir',
-    'gen_theory',
-    'res_dir',
-    'res_file',
-    'plot_dir',
-    'prob_dir',
-    'signature_file',
-    'start_string',
-    'p_operator',
-    'p_arity',
-    'p_rule',
-    'p_r',
-    'max_nodes',
-    'n_chains',
-    'n_steps',
-    'n_problems',
-    'n_changed',
-    'n_total'])
-
-
-def main(rcfile):
-    rc = load_config(rcfile)
-    # test_files = sample_problems(rc)
-    # need to adapt this to make rcs for each test file
-    results, start, stop = run_tests(rc)
-    report_results(rc, results, start, stop)
-    plot_results(misc.mkdir(rc.plot_dir), results)
-
-
-def load_config(rcfile):
-    with open(rcfile, 'r') as the_file:
-        return rc(**yaml.safe_load(the_file))
 
 
 def load_signature(sig_file):
