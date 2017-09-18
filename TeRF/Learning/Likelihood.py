@@ -1,5 +1,4 @@
 import numpy as np
-import scipy as sp
 import TeRF.Types.Trace as T
 
 
@@ -16,15 +15,20 @@ class Likelihood(object):
 
         Assumes:
           self.value: from LOTlib.Hypotheses.Hypothesis
-          self.p_observe: should be an argument to the hypothesis __init__
-          self.p_similar: should be an argument to the hypothesis __init__
+          self.p_partial: should be an argument of the hypothesis
         Args:
           datum: a rewriteRule representing a single datum
         Returns: a float, -inf <= x <= 0, log p(datum | self.value)
         """
-        rt = T.Trace(self.value, datum.lhs, p_observe=self.p_observe,
-                     max_steps=7).run()
-        p_eval = rt.rewrites_to(datum.rhs0)
-        p_gen = self.value.signature.log_p(datum.rhs0, invent=False)
-        return sp.misc.logsumexp([np.log(self.p_similar) + p_eval,
-                                  np.log(1-self.p_similar) + p_gen])
+        t = T.Trace(self.value, datum.lhs, p_observe=0.0,
+                    max_steps=25).run()
+        ll = t.rewrites_to(datum.rhs0)
+
+        partial_credit = self.p_partial + (self.temperature - 1.0
+                                           if self.temperature > 1.0
+                                           else 0.0)
+
+        if ll == -np.inf:
+            return np.log(partial_credit)
+        else:
+            return np.log(1.-partial_credit) + ll

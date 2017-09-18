@@ -1,4 +1,4 @@
-import collections
+import copy
 import joblib
 import matplotlib.pyplot as plt
 import numpy as np
@@ -15,44 +15,6 @@ import TeRF.Types.Application as A
 import TeRF.Types.Rule as R
 import TeRF.Types.TRS as TRS
 import time
-import yaml
-
-
-rc = collections.namedtuple('rc', [
-    'out_dir',
-    'gen_theory',
-    'res_dir',
-    'res_file',
-    'plot_dir',
-    'prob_dir',
-    'signature_file',
-    'start_string',
-    'p_operator',
-    'p_arity',
-    'p_rule',
-    'p_r',
-    'p_observe',
-    'p_similar',
-    'max_nodes',
-    'n_chains',
-    'n_steps',
-    'n_problems',
-    'n_changed',
-    'n_total'])
-
-
-def main(rcfile):
-    rc = load_config(rcfile)
-    # test_files = sample_problems(rc)
-    # need to adapt this to make rcs for each test file
-    results, start, stop = run_tests(rc)
-    report_results(rc, results, start, stop)
-    plot_results(misc.mkdir(rc.plot_dir), results)
-
-
-def load_config(rcfile):
-    with open(rcfile, 'r') as the_file:
-        return rc(**yaml.safe_load(the_file))
 
 
 def load_signature(sig_file):
@@ -95,24 +57,44 @@ def report_results(out_f, results, start_time, stop_time):
         f.write('* ended at {},\n\n'.format(stop_time))
         f.write('* had the following individual results:\n')
 
-        successes = []
+        s_succs = []
+        f_succs = []
+        e_succs = []
         for file in set(results['e_trs_f']):
             res_slice = results[results.e_trs_f == file]
             n_tries = len(res_slice.index)
-            succ = len(res_slice[res_slice.diff_score >= 0.0].index)
-            successes.append(succ)
-            perc = 100.0 * float(succ) / float(n_tries)
-            f.write('  - {}: {:d}/{:d} = {:.2f}%...{}\n'.format(
-                file, succ, n_tries, perc, 'PASS' if succ else 'FAIL'))
+            s_succ = len(res_slice[res_slice.diff_score >= 0.0].index)
+            f_succ = len(res_slice[res_slice.any_correct].index)
+            e_succ = len(res_slice[res_slice.h_map_correct].index)
+            s_succs.append(s_succ)
+            f_succs.append(f_succ)
+            e_succs.append(e_succ)
+            s_perc = 100.0 * float(s_succ) / float(n_tries)
+            f_perc = 100.0 * float(f_succ) / float(n_tries)
+            e_perc = 100.0 * float(e_succ) / float(n_tries)
+            f.write('  - {}:\n'.format(file))
+            p_str = '      - {}: {:d}/{:d} = {:.2f}%...{}\n'
+            f.write(p_str.format('p(MAP|d) > p(h*|d)', s_succ, n_tries,
+                                 s_perc, 'PASS' if s_succ else 'FAIL'))
+            f.write(p_str.format('finds h*', f_succ, n_tries,
+                                 f_perc, 'PASS' if f_succ else 'FAIL'))
+            f.write(p_str.format('MAP is h*', e_succ, n_tries,
+                                 e_perc, 'PASS' if e_succ else 'FAIL'))
             trs, _ = parser.load_source(file)
-            f.write('    ' + str(trs).replace('\n', '\n    ') + '\n\n')
-        pd = sum(1 for s in successes if s)
-        tt = len(successes)
-        fd = tt-pd
-        pt = 100.0 * float(pd) / float(tt)
+            trs.prettify()
+            f.write('\n    ' + str(trs).replace('\n', '\n    ') + '\n\n')
         f.write('\n* and can be summarized as follows:\n')
-        f.write('  - PASSED: {0:d}/{1:d} = {2:.2f}%\n'.format(pd, tt, pt))
-        f.write('  - FAILED: {0:d}/{1:d} = {2:.2f}%\n'.format(fd, tt, 100-pt))
+        tt = len(s_succs)
+        s_pd = sum(1 for s in s_succs if s)
+        s_pt = 100.0 * float(s_pd) / float(tt)
+        f_pd = sum(1 for s in f_succs if s)
+        f_pt = 100.0 * float(f_pd) / float(tt)
+        e_pd = sum(1 for s in e_succs if s)
+        e_pt = 100.0 * float(e_pd) / float(tt)
+        p_str = '  - {}: {:d}/{:d} = {:.2f}% PASSED\n'
+        f.write(p_str.format('p(MAP|d) > p(h*|d)', s_pd, tt, s_pt))
+        f.write(p_str.format('finds h*', f_pd, tt, f_pt))
+        f.write(p_str.format('MAP is h*', e_pd, tt, e_pt))
 
 
 def plot_results(out_dir, results):
@@ -137,12 +119,12 @@ def plot_feature(out_file, feature, feats, scores):
 
 def run_test(rc):
     print rc.test, '-', rc.chain
-    dill_f = os.path.join(rc.result_dir, 'results.pkl')
+    dill_f = os.path.join(rc.result_dir, 'results.dill')
     if not os.path.exists(dill_f):
         data, h0, h_star = prepare_for_test(rc)
         del rc.reqs  # for pickling, etc.
-        hs = test(h0, data, rc.n_steps, rc.test_log)
-        results = summarize_test(rc, hs.best(), h_star, data)
+        hs = test(h0, data, rc.sampler_args, rc.test_log)
+        results = summarize_test(rc, hs, h_star, data)
         with open(dill_f, 'wb') as d:
             dill.dump(results, d)
             dill.dump(hs, d)
@@ -150,7 +132,8 @@ def run_test(rc):
         return dill.load(d)
 
 
-def log_problem(rc, data=None, h0=None, h_star=None, h_gen=None):
+def log_problem(rc, data=None, h0=None, h_star=None, h_gen=None,
+                human_data=None):
     with open(rc.problem_log, 'w') as f:
         f.write('Problem Configuration\n')
         for k, v in rc.__dict__.iteritems():
@@ -167,6 +150,12 @@ def log_problem(rc, data=None, h0=None, h_star=None, h_gen=None):
             f.write(str(h_star) + '\n')
         if h0 is not None:
             f.write('\nInitial Theory (H0):\n' + str(h0) + '\n')
+    if human_data is not None:
+        human_log = rc.problem_log + '.human_data'
+        with open(human_log, 'w') as f:
+            f.write('\nObserved Data:\n')
+            for datum in human_data:
+                f.write(str(datum) + '\n')
 
 
 def prepare_for_test(rc):
@@ -174,21 +163,23 @@ def prepare_for_test(rc):
     e_trs, _ = parser.load_source(rc.e_trs_f,
                                   signature=g_trs.signature.copy())
     start = A.App(g_trs.signature.find(rc.start), [])
+    ops_to_change = [op for op in e_trs.signature if op.name in rc.symbols]
 
     data_dir = misc.mkdir(os.path.join(rc.result_dir, 'data/'))
-    data = make_data(e_trs, g_trs, data_dir, rc.reqs, start)
-    h0 = make_hypothesis(rc.p_observe, rc.p_similar, rc.p_operator,
-                         rc.p_arity, rc.p_rule, rc.p_r, data=data)
-    h_star = make_hypothesis(rc.p_observe, rc.p_similar, rc.p_operator,
-                             rc.p_arity, rc.p_rule, rc.p_r, trs=e_trs)
+    data, human_data = make_data(e_trs, g_trs, data_dir, rc.reqs, start,
+                                 ops_to_change)
+    h0 = make_hypothesis(rc.p_partial, rc.p_operator, rc.p_arity, rc.p_rule,
+                         rc.p_r, data=data)
+    h_star = make_hypothesis(rc.p_partial, rc.p_operator, rc.p_arity,
+                             rc.p_rule, rc.p_r, trs=e_trs)
 
     if rc.problem_log is not None:
-        log_problem(rc, data, h0, h_star, g_trs)
+        log_problem(rc, data, h0, h_star, g_trs, human_data)
 
     return data, h0, h_star
 
 
-def test(h0, data, n_steps, log_file=None):
+def test(h0, data, sampler_args, log_file=None):
     if log_file is not None:
         saveout, saveerr = sys.stdout, sys.stderr
         o = open(os.path.join(log_file), 'w', 1)
@@ -196,8 +187,8 @@ def test(h0, data, n_steps, log_file=None):
 
     start = time.time()
     hs = ts.test_sample(
-        h0, data, N=10, trace=False, likelihood_temperature=0.1,
-        steps=n_steps, show_skip=0, show=(log_file is not None))
+        h0, data, N=10, trace=False, show_skip=0, show=(log_file is not None),
+        **sampler_args)
     stop = time.time()
 
     if log_file is not None:
@@ -213,17 +204,19 @@ def test(h0, data, n_steps, log_file=None):
     return hs
 
 
-def summarize_test(rc, h_map, h_star, data):
+def summarize_test(rc, hs, h_star, data):
     results = h_star.value.features()
     results.update(rc.__dict__)
-    results['map_score'] = h_map.compute_posterior(data)
+    results['map_score'] = hs.best().compute_posterior(data)
     results['true_score'] = h_star.compute_posterior(data)
     results['diff_score'] = results['map_score'] - results['true_score']
+    results['any_correct'] = any(h_star.value.unifies(h.value) for h in hs)
+    results['h_map_correct'] = h_star.value.unifies(hs.best().value)
     return results
 
 
-def make_hypothesis(p_observe, p_similar, p_operator, p_arity,
-                    p_rule, p_r, data=None, trs=None):
+def make_hypothesis(p_partial, p_operator, p_arity, p_rule, p_r, data=None,
+                    trs=None):
     if trs is not None:
         hyp = trs
     elif data is not None:
@@ -237,15 +230,15 @@ def make_hypothesis(p_observe, p_similar, p_operator, p_arity,
     return TRSH.TRSHypothesis(value=hyp,
                               data=data,
                               privileged_ops=hyp.signature.operators,
-                              p_observe=p_observe,
-                              p_similar=p_similar,
+                              p_partial=p_partial,
                               p_operators=p_operator,
                               p_arity=p_arity,
                               p_rules=p_rule,
-                              p_r=p_r)
+                              p_r=p_r,
+                              likelihood_temperature=0.1)
 
 
-def make_data(e_trs, g_trs, data_dir, reqs, start, quiet=False):
+def make_data(e_trs, g_trs, data_dir, reqs, start, ops_to_change):
     data = TRS.TRS()
     data.signature = e_trs.signature.copy(parent=data)
 
@@ -280,4 +273,7 @@ def make_data(e_trs, g_trs, data_dir, reqs, start, quiet=False):
                 dill.dump(datum, dill_f)
             reqs = [r for p, r in zip(meet_reqs, reqs) if not p]
 
-    return list(data.rules())
+    human_data = copy.deepcopy(data)
+    human_data.prettify(change=ops_to_change)
+
+    return list(data.rules()), list(human_data.rules())

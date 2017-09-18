@@ -1,6 +1,8 @@
 import collections
 import copy
 import itertools as I
+import numpy as np
+import TeRF.Pseudowords as P
 import TeRF.Types.Signature as S
 
 
@@ -205,7 +207,23 @@ class TRS(collections.MutableMapping):
             float(feats['n_lhss'])
         return feats
 
-    def prettify(self, ignore=None):
-        self.signature.rename_operators(ignore)
+    def rename_operators(self, change=None):
+        if change is not None:
+            to_rename = [op for op in self.signature.operators if op in change]
+            new_names = np.random.choice(P.pseudowords,
+                                         size=len(to_rename),
+                                         replace=False)
+            for op, name in I.izip(to_rename, new_names):
+                for rule in self.rules():
+                    for term in rule.lhs.subterms:
+                        if term.head == op:
+                            term.head.name = name
+                    for term in rule.rhs0.subterms:
+                        if term.head == op:
+                            term.head.name = name
+                op.name = name
+
+    def prettify(self, change=None):
+        self.rename_operators(change)
         for rule in self:
             rule.rename_variables()

@@ -84,7 +84,9 @@ setup(
     # dependencies). You can install these using the following syntax,
     # for example:
     # $ pip install -e .[dev,test]
-    extras_require={},
+    extras_require={
+        'dev': ['joblib', 'pandas', 'matplotlib', 'dill']
+            },
 
     # If your project only runs on certain Python versions
     python_requires='>=2.7.9, <3',
