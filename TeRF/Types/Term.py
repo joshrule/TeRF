@@ -11,11 +11,11 @@ class Term(object):
         self.head = head
         super(Term, self).__init__(**kwargs)
 
-    def __copy__(self):
-        return self
-
-    def __deepcopy__(self, memo):
-        return self
+#    def __copy__(self):
+#        return self
+#
+#    def __deepcopy__(self, memo):
+#        return self
 
     @property
     def operators(self):

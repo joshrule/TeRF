@@ -12,10 +12,10 @@ class Atom(object):
         self.name = str(id(self.identity)) if name is None else name
         super(Atom, self).__init__(**kwargs)
 
-    def __copy__(self):
-        # I'm immutable
-        return self
-
-    def __deepcopy__(self, memo):
-        # I'm immutable
-        return self
+#    def __copy__(self):
+#        # I'm immutable
+#        return self
+#
+#    def __deepcopy__(self, memo):
+#        # I'm immutable
+#        return self
