@@ -7,8 +7,9 @@ import TeRF.Types.Signature as S
 
 
 class TRS(collections.MutableMapping):
-    def __init__(self):
+    def __init__(self, deterministic=False):
         self.signature = S.Signature(parent=self)
+        self.deterministic = deterministic
         self._order = []
         self._rules = {}
 
@@ -21,6 +22,7 @@ class TRS(collections.MutableMapping):
     def __eq__(self, other):
         return self._order == other._order and \
             self._rules == other._rules and \
+            self.deterministic == other.deterministic and \
             self.signature == other.signature
 
     def __ne__(self, other):
@@ -28,6 +30,7 @@ class TRS(collections.MutableMapping):
 
     def __hash__(self):
         return hash((frozenset(self.signature),
+                     self.deterministic,
                      tuple(self._rules),
                      tuple(self._order)))
 
@@ -41,11 +44,19 @@ class TRS(collections.MutableMapping):
         """
         value = copy.deepcopy(value).replace_variables()
         if self.signature.operators >= value.operators:
-            if value.lhs not in self:
+            the_lhs = None
+            for lhs in self._rules.keys():
+                if lhs.unify(value.lhs, type='alpha'):
+                    the_lhs = lhs
+                    break
+            if the_lhs is None:
                 self._rules[value.lhs] = value
-            else:
+            elif not self.deterministic:
                 self[value.lhs].add(value)
                 self._order.remove(value.lhs)
+            else:
+                raise ValueError('TRS.__setitem__: a deterministic TRS can ' +
+                                 'have only one right-hand side per rule')
             self._order.insert(index, value.lhs)
         else:
             print self.signature.operators
@@ -76,18 +87,28 @@ class TRS(collections.MutableMapping):
     def __delitem__(self, key):
         # assume it's a rule
         try:
-            self._rules[key.lhs].discard(key)
-            if len(self._rules[key.lhs]) == 0:
-                self._order.remove(key.lhs)
-                del self._rules[key.lhs]
+            the_lhs = None
+            for lhs in self._rules.keys():
+                if lhs.unify(key.lhs, type='alpha'):
+                    the_lhs = lhs
+                    break
+            self._rules[the_lhs].discard(key)
+            if len(self._rules[the_lhs]) == 0:
+                self._order.remove(the_lhs)
+                del self._rules[the_lhs]
             return
         except AttributeError:
             pass
 
         # assume it's a term
         try:
-            self._order.remove(key)
-            del self._rules[key]
+            the_lhs = None
+            for lhs in self._rules.keys():
+                if lhs.unify(key, type='alpha'):
+                    the_lhs = lhs
+                    break
+            self._order.remove(the_lhs)
+            del self._rules[the_lhs]
             return
         except (ValueError, KeyError, TypeError):
             pass
