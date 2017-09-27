@@ -2,6 +2,7 @@ import heapq as hq
 import itertools as I
 import numpy as np
 import scipy as sp
+import scipy.misc as sm
 import numpy.random as random
 import TeRF.Miscellaneous as M
 
@@ -28,6 +29,16 @@ class Trace(object):
     @property
     def steps(self):
         return max([s.step for s in self.root.leaves()])
+
+    @property
+    def size(self):
+        return 1 + self.root.number_of_descendents
+
+    @property
+    def mass(self):
+        # the mass is 1 - the mass in unobserved leaves
+        x = [s.log_p for s in self.root.leaves(states=['start', 'unobserved'])]
+        return (1.0 - np.exp(sm.logsumexp(x)))
 
     def sample(self):
         outcomes = self.root.leaves()
@@ -67,7 +78,7 @@ class Trace(object):
         rewrites = state.term.single_rewrite(self.trs, type='all',
                                              strategy=self.strategy)
 
-        if rewrites == [state.term] or rewrites is None or rewrites == []:
+        if rewrites is None or rewrites == []:
             state.state = 'normal'
         else:
             for term in rewrites:
@@ -81,7 +92,8 @@ class Trace(object):
                                             state='unobserved')
                     hq.heappush(self.unobserved, unobserved)
                     state.children.append(unobserved)
-            state.log_p += M.log(self.p_observe)
+            if state.step < self.max_steps:
+                state.log_p += M.log(self.p_observe)
 
         # if only exploring a single path, kill the other paths
         if self.type == 'one' and state.children != []:
@@ -94,7 +106,8 @@ class Trace(object):
     def rewrites_to(self, term):
         # NOTE: we only use tree equality and don't consider tree edit distance
         self.run()
-        terms = [l.log_p for l in self.root.leaves() if l.term == term]
+        terms = [l.log_p for l in self.root.leaves()
+                 if l.term.unify(term, type='alpha')]
         return sp.misc.logsumexp(terms) if terms else -np.inf
 
 
@@ -116,3 +129,8 @@ class TraceState(object):
 
     def __cmp__(self, other):
         return self.log_p < other.log_p
+
+    @property
+    def number_of_descendents(self):
+        return len(self.children) + sum(c.number_of_descendents
+                                        for c in self.children)
