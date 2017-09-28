@@ -1,13 +1,12 @@
 # python detritus
 *pyc
 Pipfile*
+*_env
+*.egg-info
 
 # PLY detritus
 parsetab.py
 parser.out
 
-# project detritus
-science/
-
-# silly OS X files
+# OS X detritus
 .DS_Store
