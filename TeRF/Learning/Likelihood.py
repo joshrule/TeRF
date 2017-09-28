@@ -21,7 +21,7 @@ class Likelihood(object):
         Returns: a float, -inf <= x <= 0, log p(datum | self.value)
         """
         t = T.Trace(self.value, datum.lhs, p_observe=0.0,
-                    max_steps=2000).run()
+                    max_steps=500).run()
         ll = t.rewrites_to(datum.rhs0)
 
         partial_credit = self.p_partial + (self.temperature - 1.0
