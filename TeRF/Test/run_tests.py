@@ -235,7 +235,8 @@ def make_hypothesis(p_partial, p_operator, p_arity, p_rule, p_r, data=None,
                               p_arity=p_arity,
                               p_rules=p_rule,
                               p_r=p_r,
-                              likelihood_temperature=0.1)
+                              prior_temperature=1.,
+                              likelihood_temperature=1.)
 
 
 def make_data(e_trs, g_trs, data_dir, reqs, start, ops_to_change):

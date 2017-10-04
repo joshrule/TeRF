@@ -22,7 +22,7 @@ class TRSHypothesis(GenerativePrior, Likelihood, TestProposer, Hypothesis):
       proposers: the components of the mixture
       weights: the weights of the mixture components
     """
-    def __init__(self, temperature=1.0, **kwargs):
+    def __init__(self, temperature=0.0, **kwargs):
         self.temperature = temperature
         self.__dict__.update(kwargs)
         super(TRSHypothesis, self).__init__(**kwargs)

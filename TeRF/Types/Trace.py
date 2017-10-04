@@ -73,6 +73,7 @@ class Trace(object):
     def mass(self):
         # the mass is 1 - the mass in unobserved leaves
         x = [s.log_p for s in self.root.leaves(states=['start', 'unobserved'])]
+        x += [-np.inf]
         return (1.0 - np.exp(sm.logsumexp(x)))
 
     def sample(self):
@@ -150,7 +151,7 @@ class Trace(object):
         # NOTE: we only use tree equality and don't consider tree edit distance
         self.run()
         terms = [l.log_p for l in self.root.leaves()
-                 if l.term.unify(term, type='alpha')]
+                 if l.term.unify(term, type='alpha') is not None]
         return sp.misc.logsumexp(terms) if terms else -np.inf
 
 
