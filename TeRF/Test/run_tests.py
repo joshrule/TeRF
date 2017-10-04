@@ -40,9 +40,9 @@ def sample_problems(rc):
     return trs_files
 
 
-def run_tests(rcs, res_file):
+def run_tests(rcs, res_file, n_jobs=-1):
     start = time.strftime("%Y %b %d %H:%M:%S %Z")
-    records = joblib.Parallel(n_jobs=-1)(
+    records = joblib.Parallel(n_jobs=n_jobs)(
         joblib.delayed(run_test)(rc) for rc in rcs)
     stop = time.strftime("%Y %b %d %H:%M:%S %Z")
     results = pandas.DataFrame.from_records(records)

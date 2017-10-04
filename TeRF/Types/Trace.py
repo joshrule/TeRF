@@ -165,10 +165,16 @@ class TraceState(object):
         self.children = []
 
     def leaves(self, states=None):
-        if self.children != []:
-            return list(I.chain(*[c.leaves(states=states)
-                                  for c in self.children]))
-        return [self] if states is None or self.state in states else []
+        '''this is iterative to avoid recursion-depth errors'''
+        leaves = []
+        processing = [self]
+        while len(processing) > 0:
+            node = processing.pop()
+            if node.children != []:
+                processing += node.children
+            elif states is None or node.state in states:
+                leaves.append(node)
+        return leaves
 
     def __cmp__(self, other):
         return self.log_p < other.log_p
