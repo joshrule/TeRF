@@ -1,4 +1,5 @@
 import numpy as np
+import TeRF.Miscellaneous as misc
 import TeRF.Types.Trace as T
 
 
@@ -24,11 +25,9 @@ class Likelihood(object):
                     max_steps=100).run()
         ll = t.rewrites_to(datum.rhs0)
 
-        partial_credit = self.p_partial + (self.temperature - 1.0
-                                           if self.temperature > 1.0
-                                           else 0.0)
+        partial_credit = self.p_partial + self.temperature
 
         if ll == -np.inf:
-            return np.log(partial_credit)
+            return misc.log(partial_credit)
         else:
-            return np.log(1.-partial_credit) + ll
+            return misc.log(1.-partial_credit) + ll
