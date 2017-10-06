@@ -17,7 +17,7 @@ def propose_value(value, **kwargs):
 
 def give_proposal_log_p(old, new, **kwargs):
     if old.signature == new.signature and \
-       old.find_move(new) is not (None, None):
+       old.find_move(new) != (None, None):
         return misc.logNof([1]*len(old)) + misc.logNof([1]*(len(old)-1))
     return misc.log(0)
 

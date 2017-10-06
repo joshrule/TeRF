@@ -78,6 +78,11 @@ class Rule(collections.MutableSet):
     def __hash__(self):
         return hash((self.lhs, tuple(self.rhs)))
 
+    @property
+    def size(self):
+        lhs_size = len(self.lhs)
+        return sum(lhs_size + len(rhs) for rhs in self.rhs)
+
     def add(self, item):
         # assume item is a rule
         try:

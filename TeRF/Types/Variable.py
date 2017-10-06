@@ -35,7 +35,7 @@ class Variable(A.Atom, T.Term):
         # see wikipedia.org/wiki/Unification_(computer_science)
         env = {} if env is None else env
 
-        if self is t:
+        if self == t:
             return env
         if (type is not 'alpha' or not hasattr(t, 'body')) and\
            self not in t.variables:
