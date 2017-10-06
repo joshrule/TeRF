@@ -1,11 +1,11 @@
 from LOTlib.Hypotheses.Hypothesis import Hypothesis
 
-from TeRF.Learning.GenerativePrior import GenerativePrior
+from TeRF.Learning.SimplerPrior import TRSPrior
 from TeRF.Learning.Likelihood import Likelihood
 from TeRF.Learning.TestProposer import TestProposer
 
 
-class TRSHypothesis(GenerativePrior, Likelihood, TestProposer, Hypothesis):
+class TRSHypothesis(TRSPrior, Likelihood, TestProposer, Hypothesis):
     """
     A Hypothesis in the space of Term Rewriting Systems (TRS)
 

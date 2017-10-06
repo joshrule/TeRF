@@ -132,6 +132,10 @@ class TRS(collections.MutableMapping):
     def __len__(self):
         return sum(1 for _ in self)
 
+    @property
+    def size(self):
+        return sum(r.size for r in self)
+
     def rules(self):
         for lhs in self._order:
             for rule in self._rules[lhs]:
