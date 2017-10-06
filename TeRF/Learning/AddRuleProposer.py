@@ -17,8 +17,9 @@ def give_proposal_log_p(old, new, **kwargs):
     if old.signature == new.signature:
         rule = new.find_insertion(old)
         try:
-            return new.signature.operators.log_p_rule(rule, p_rhs=1.0,
-                                                      invent=True)
+            return -(1 + rule.size / 1.5)
+            # return new.signature.operators.log_p_rule(rule, p_rhs=1.0,
+            #                                           invent=True)
         except AttributeError:
             pass
     return M.log(0)

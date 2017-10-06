@@ -9,7 +9,11 @@ def propose_value_maker(data):
         new_value = copy.deepcopy(value)
         try:
             ok_data = [datum for datum in data if datum not in new_value]
-            rule = np.random.choice(ok_data)
+            sizes = [datum.size for datum in ok_data]
+            max_size = float(max(sizes))
+            ps = [np.exp(-float(size)/max_size) for size in sizes]
+            ps = [p/sum(ps) for p in ps]
+            rule = copy.deepcopy(np.random.choice(ok_data, p=ps))
         except (TypeError, ValueError):
             raise P.ProposalFailedException('AddException: no new exceptions')
         print '# aep: adding rule', rule
@@ -23,9 +27,14 @@ def give_proposal_log_p_maker(data):
         if old.signature == new.signature:
             rule = new.find_insertion(old)
             try:
-                ok_data = [d.unify(rule, type='alpha') is not None
+                ok_data = [(d, d.unify(rule, type='alpha') is not None)
                            for d in data if d not in old]
-                return misc.logNof(ok_data, n=sum(ok_data))
+                sizes = [d[0].size for d in ok_data]
+                max_size = float(max(sizes))
+                ps = [np.exp(-float(size)/max_size) for size in sizes]
+                ps = [p/sum(ps) for p in ps]
+                return misc.log(sum(p for p, d in zip(ps, ok_data) if d[1]))
+                # return misc.logNof(ok_data, n=sum(ok_data))
             except (TypeError, AttributeError):
                 pass
         return -np.inf
