@@ -274,6 +274,30 @@ class Signature(collections.MutableSet):
             return sp.misc.logsumexp([p_keep_head, p_make_head])
         return p_make_head
 
+    def get_counts(self, terms):
+        """
+        count how many times each operator appears in a list of terms
+
+        Parameters
+        ----------
+        signature : TeRF.Types.Signature
+            the signature from which we get our operators
+        terms : list of TeRF.Types.Term
+            the terms over which to count operators
+        """
+        counts = {op: 0 for op in self.operators}
+
+        for term in terms:
+            for t in term.subterms:
+                try:
+                    counts[t.head] += 1
+                except KeyError:
+                    if hasattr(t, 'arity'):
+                        raise ValueError('get_counts: term is invalid ' +
+                                         'under signature')
+                    pass
+
+        return counts
 
 #     def sample_term_c(self, constraints, invent=True):
 #         """
