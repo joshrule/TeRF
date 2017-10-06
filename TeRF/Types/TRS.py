@@ -42,22 +42,23 @@ class TRS(collections.MutableMapping):
             the key comes from the value itself
           value: a Rule, the LHS is used as the key
         """
-        value = copy.deepcopy(value).replace_variables()
+        value = copy.deepcopy(value)
         if self.signature.operators >= value.operators:
             the_lhs = None
             for lhs in self._rules.keys():
-                if lhs.unify(value.lhs, type='alpha'):
+                if lhs.unify(value.lhs, type='alpha') is not None:
                     the_lhs = lhs
                     break
             if the_lhs is None:
                 self._rules[value.lhs] = value
+                the_lhs = value.lhs
             elif not self.deterministic:
-                self[value.lhs].add(value)
-                self._order.remove(value.lhs)
+                self[the_lhs].add(value)
+                self._order.remove(the_lhs)
             else:
                 raise ValueError('TRS.__setitem__: a deterministic TRS can ' +
                                  'have only one right-hand side per rule')
-            self._order.insert(index, value.lhs)
+            self._order.insert(index, the_lhs)
         else:
             print self.signature.operators
             print value.operators
@@ -65,10 +66,16 @@ class TRS(collections.MutableMapping):
 
     def __getitem__(self, key):
         try:
-            rule = self._rules[key.lhs]
-            for r in rule:
-                if key in r:
-                    return r
+            the_lhs = None
+            for lhs in self._order:
+                if lhs.unify(key.lhs, type='alpha') is not None:
+                    the_lhs = lhs
+                    break
+            if the_lhs is not None:
+                rule = self._rules[the_lhs]
+                for r in rule:
+                    if key in r:
+                        return r
         except (AttributeError, KeyError, ValueError):
             pass
 
@@ -89,7 +96,7 @@ class TRS(collections.MutableMapping):
         try:
             the_lhs = None
             for lhs in self._rules.keys():
-                if lhs.unify(key.lhs, type='alpha'):
+                if lhs.unify(key.lhs, type='alpha') is not None:
                     the_lhs = lhs
                     break
             self._rules[the_lhs].discard(key)
