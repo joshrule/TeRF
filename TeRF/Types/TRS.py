@@ -7,8 +7,12 @@ import TeRF.Types.Signature as S
 
 
 class TRS(collections.MutableMapping):
-    def __init__(self, deterministic=False):
-        self.signature = S.Signature(parent=self)
+    def __init__(self, deterministic=False, signature=None):
+        if signature is None:
+            self.signature = S.Signature(parent=self)
+        else:
+            self.signature = signature
+            self.signature.parent = self
         self.deterministic = deterministic
         self._order = []
         self._rules = {}
