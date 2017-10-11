@@ -310,7 +310,9 @@ class RationalRulesTRSGrammar(object):
         float
             log(p(trs | p_rule))
         """
-        cflp = compute_rr_term(self.count_trs(trs), self.counts)
+        counts = self.count_trs(trs)
+        counts = merge_counts(self.counts, counts)
+        cflp = compute_rr_term(counts, self.counts)
         cslp = 0.0
         for r in trs.rules():
             cslp += self.compute_var_term([t.head for t in r.lhs.subterms])
@@ -318,4 +320,4 @@ class RationalRulesTRSGrammar(object):
             self.invent = False
             cslp += self.compute_var_term([t.head for t in r.rhs0.subterms])
             self.invent = invent
-        return cflp + cslp + sp.stats.geom.logpmf(trs.num_rules(), p=p_rule)
+        return cflp + cslp + sp.stats.geom.logpmf(trs.num_rules()+1, p=p_rule)

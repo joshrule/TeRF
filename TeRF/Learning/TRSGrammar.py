@@ -269,8 +269,7 @@ class TRSGrammar(object):
         TeRF.Types.TRS
             the sampled TRS
         """
-        n = ss.geom.rvs(p_rule)
-        print 'n', n
+        n = ss.geom.rvs(p_rule)-1
         trs = TRS.TRS(signature=self.signature)
         while trs.num_rules() < n:
             trs.add(self.sample_rule(invent=invent))

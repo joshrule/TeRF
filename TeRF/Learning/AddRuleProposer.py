@@ -30,7 +30,7 @@ def give_proposal_log_p_maker(alpha):
             g.counts = RR.merge_counts(g.counts, counts)
             try:
                 return g.log_p_rule(rule)
-            except AttributeError:
+            except (TypeError, AttributeError):
                 pass
         return M.log(0)
     return give_proposal_log_p
