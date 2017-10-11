@@ -34,22 +34,29 @@ def propose_value(value, **kwargs):
 
 
 def give_proposal_log_p(old, new, **kwargs):
+    print 'old == new', old.signature == new.signature
     if old.signature == new.signature:
         new_rule, old_rule = new.find_difference(old)
+        print '(new, old)', new_rule, old_rule
         try:
             subterms = list(old_rule.lhs.subterms) + \
                        list(old_rule.rhs0.subterms)
-            subterms = [t for t in subterms if hasattr(t, 'body')]
+            subterms = list(set([t for t in subterms if hasattr(t, 'body')]))
             var = V.Variable()
+            print 'subterms', subterms
             eq_lhs = [new_rule.lhs.unify(
-                replace(old_rule.lhs, t, var), type='alpha')
+                replace(old_rule.lhs, t, var), type='alpha') is not None
                       for t in subterms]
-            eq_rhs = [new_rule.lhs.unify(
-                replace(old_rule.lhs, t, var), type='alpha')
+            eq_rhs = [new_rule.rhs0.unify(
+                replace(old_rule.rhs0, t, var), type='alpha') is not None
                       for t in subterms]
-            if old_rule is not None and \
-               eq_lhs == eq_rhs and \
-               sum(eq_lhs) == sum(eq_rhs) == 1:
+            eqs = [lhs and rhs for lhs, rhs in zip(eq_lhs, eq_rhs)]
+            print 'eq_lhs', eq_lhs
+            print 'eq_rhs', eq_rhs
+            print 'sum lhs', sum(eq_lhs)
+            print 'sum rhs', sum(eq_rhs)
+            print 'eqs', eqs
+            if old_rule is not None and sum(eqs) == 1:
                 return misc.logNof(subterms)
         except:
             pass

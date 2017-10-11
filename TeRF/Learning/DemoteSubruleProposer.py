@@ -26,7 +26,7 @@ def propose_value(value, **kwargs):
     lhs = rule.lhs if side == 'rhs' else demote(rule.lhs, sig, True)
 
     sig.replace_vars(lhs.variables)
-    rhs = rule.rhs0 if side == 'lhs' else demote(rule.rhs0, sig, True)
+    rhs = rule.rhs0 if side == 'lhs' else demote(rule.rhs0, sig, False)
 
     new_rule = pu.make_a_rule(lhs, rhs)
     print '# dsp: changing', rule, 'to', new_rule

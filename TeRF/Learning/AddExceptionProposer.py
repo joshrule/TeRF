@@ -35,7 +35,7 @@ def give_proposal_log_p_maker(data):
                 ps = [p/sum(ps) for p in ps]
                 return misc.log(sum(p for p, d in zip(ps, ok_data) if d[1]))
                 # return misc.logNof(ok_data, n=sum(ok_data))
-            except (TypeError, AttributeError):
+            except (ValueError, TypeError, AttributeError):
                 pass
         return -np.inf
     return give_proposal_log_p
