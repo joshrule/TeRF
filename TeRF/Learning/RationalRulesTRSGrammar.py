@@ -283,6 +283,17 @@ class RationalRulesTRSGrammar(object):
                                probs=prod_probs).sample_trs(p_rule,
                                                             invent=self.invent)
 
+    def count_trs(self, trs):
+        counts = {k: 0 for k in self.counts}
+        for r in trs.rules():
+            counts = update_counts(counts,
+                                   [t.head for t in r.lhs.subterms],
+                                   invent=self.invent)
+            counts = update_counts(counts,
+                                   [t.head for t in r.rhs0.subterms],
+                                   invent=False)
+        return counts
+
     def log_p_trs(self, trs, p_rule):
         """
         compute the log prior probability of a TRS
@@ -299,15 +310,7 @@ class RationalRulesTRSGrammar(object):
         float
             log(p(trs | p_rule))
         """
-        top_counts = self.counts.copy()
-        for r in trs.rules():
-            top_counts = update_counts(top_counts,
-                                       [t.head for t in r.lhs.subterms],
-                                       invent=self.invent)
-            top_counts = update_counts(top_counts,
-                                       [t.head for t in r.rhs0.subterms],
-                                       invent=False)
-        cflp = compute_rr_term(top_counts, self.counts)
+        cflp = compute_rr_term(self.count_trs(trs), self.counts)
         cslp = 0.0
         for r in trs.rules():
             cslp += self.compute_var_term([t.head for t in r.lhs.subterms])
