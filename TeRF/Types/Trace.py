@@ -1,5 +1,4 @@
 import heapq as hq
-import itertools as I
 import numpy as np
 import scipy as sp
 import scipy.misc as sm
@@ -13,14 +12,14 @@ class TraceComplete(Exception):
 
 class Trace(object):
     """
-    An evaluation trace for a TRS term
+    An evaluation trace for a term
 
     Parameters
     ----------
-    trs : TeRF.Types.TRS
-        a term rewriting system (TRS)
+    g : TeRF.Types.Grammar
+        a grammar
     term : TeRF.Types.Term
-        a term to be rewritten according to `trs`
+        a term to be rewritten according to `g`
     type : {'all', 'one'}
         pursue all possible rewrities or just one?
     p_observe : float
@@ -41,14 +40,14 @@ class Trace(object):
         the lower bound of the mass a leaf must contain to be expanded. If
         None, treat as 0.0 (optional, None)
     """
-    def __init__(self, trs, term, type='all', p_observe=0.0, strategy='eager',
+    def __init__(self, g, term, type='all', p_observe=0.0, strategy='eager',
                  max_steps=None, max_depth=None, min_p=None, total_p=None):
         root = TraceState(term, 0)
         self.unobserved = []
         hq.heappush(self.unobserved, root)
         self.steps = 0
         self.root = root
-        self.trs = trs
+        self.g = g
         self.type = type
         self.p_observe = p_observe
         self.strategy = strategy
@@ -118,10 +117,12 @@ class Trace(object):
         # in case we care about the number of steps taken
         self.steps += 1
 
-        if (hasattr(self, 'max_depth') and state.depth <= self.max_depth) or \
-           (hasattr(self, 'min_p') and np.exp(state.log_p) > self.min_p) or \
+        if (not hasattr(self, 'max_depth')
+            or state.depth <= self.max_depth) or \
+           (not hasattr(self, 'min_p')
+            or np.exp(state.log_p) > self.min_p) or \
            hasattr(self, 'max_steps') or hasattr(self, 'total_p'):
-            rewrites = state.term.single_rewrite(self.trs, type='all',
+            rewrites = state.term.single_rewrite(self.g, type='all',
                                                  strategy=self.strategy)
 
             if rewrites is None or rewrites == []:
