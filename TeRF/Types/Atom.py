@@ -3,8 +3,16 @@ import copy
 
 
 class Atom(object):
-    """the smallest units in terms"""
+    """
+    the smallest units in terms
 
+    Parameters
+    ----------
+    terminal : bool
+        True if this atom is considered a terminal of the language, else False
+    name : string (default: None)
+        the name of the atom. If None, the name comes from the identity.
+    """
     __metaclass__ = abc.ABCMeta
 
     def __init__(self, terminal, name=None, **kwargs):
