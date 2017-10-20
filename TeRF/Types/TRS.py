@@ -3,164 +3,9 @@ import copy
 import itertools as I
 import numpy as np
 import TeRF.Pseudowords as P
-import TeRF.Types.Signature as S
 
 
 class TRS(collections.MutableMapping):
-    def __init__(self, deterministic=False, signature=None):
-        if signature is None:
-            self.signature = S.Signature(parent=self)
-        else:
-            self.signature = signature
-            self.signature.parent = self
-        self.deterministic = deterministic
-        self._order = []
-        self._rules = {}
-
-    def __str__(self):
-        return 'Signature: ' + \
-            ', '.join(str(s) for s in self.signature) + \
-            '\nRules:\n  ' + \
-            ',\n  '.join(str(rule) for rule in self)
-
-    def __eq__(self, other):
-        return self._order == other._order and \
-            self._rules == other._rules and \
-            self.deterministic == other.deterministic and \
-            self.signature == other.signature
-
-    def __ne__(self, other):
-        return not self == other
-
-    def __hash__(self):
-        return hash((frozenset(self.signature),
-                     self.deterministic,
-                     tuple(self._rules),
-                     tuple(self._order)))
-
-    def __setitem__(self, index, value):
-        """
-        Args:
-          index: an integer, the order the rule should take. This would be used
-            as a key in most mappings, but here it acts as an index, because
-            the key comes from the value itself
-          value: a Rule, the LHS is used as the key
-        """
-        value = copy.deepcopy(value)
-        if self.signature.operators >= value.operators:
-            the_lhs = None
-            for lhs in self._rules.keys():
-                if lhs.unify(value.lhs, type='alpha') is not None:
-                    the_lhs = lhs
-                    break
-            if the_lhs is None:
-                self._rules[value.lhs] = value
-                the_lhs = value.lhs
-            elif not self.deterministic:
-                self[the_lhs].add(value)
-                self._order.remove(the_lhs)
-            else:
-                raise ValueError('TRS.__setitem__: a deterministic TRS can ' +
-                                 'have only one right-hand side per rule')
-            self._order.insert(index, the_lhs)
-        else:
-            print self.signature.operators
-            print value.operators
-            raise ValueError('TRS.__setitem__: inconsistent signature')
-
-    def __getitem__(self, key):
-        try:
-            the_lhs = None
-            for lhs in self._order:
-                if lhs.unify(key.lhs, type='alpha') is not None:
-                    the_lhs = lhs
-                    break
-            if the_lhs is not None:
-                rule = self._rules[the_lhs]
-                for r in rule:
-                    if key in r:
-                        return r
-        except (AttributeError, KeyError, ValueError):
-            pass
-
-        # assume key is a term
-        try:
-            return self._rules[key]
-        except KeyError:
-            pass
-
-        # assume key is a number
-        try:
-            return self._rules[self._order[key]]
-        except TypeError:
-            raise KeyError
-
-    def __delitem__(self, key):
-        # assume it's a rule
-        try:
-            the_lhs = None
-            for lhs in self._rules.keys():
-                if lhs.unify(key.lhs, type='alpha') is not None:
-                    the_lhs = lhs
-                    break
-            self._rules[the_lhs].discard(key)
-            if len(self._rules[the_lhs]) == 0:
-                self._order.remove(the_lhs)
-                del self._rules[the_lhs]
-            return
-        except AttributeError:
-            pass
-
-        # assume it's a term
-        try:
-            the_lhs = None
-            for lhs in self._rules.keys():
-                if lhs.unify(key, type='alpha'):
-                    the_lhs = lhs
-                    break
-            self._order.remove(the_lhs)
-            del self._rules[the_lhs]
-            return
-        except (ValueError, KeyError, TypeError):
-            pass
-
-        # assume it's a number
-        del self._rules[self._order[key]]
-        del self._order[key]
-
-    def __iter__(self):
-        order = self._order[:]
-        for lhs in order:
-                yield self._rules[lhs]
-
-    def __len__(self):
-        return sum(1 for _ in self)
-
-    @property
-    def size(self):
-        return sum(r.size for r in self)
-
-    def rules(self):
-        for lhs in self._order:
-            for rule in self._rules[lhs]:
-                yield rule
-
-    def num_rules(self):
-        return sum(1 for _ in self.rules())
-
-    def index(self, value):
-        return self._order.index(value)
-
-    def clear(self):
-        self.signature = S.Signature(parent=self)
-        self._order = []
-        self._rules = {}
-
-    def add(self, rule):
-        try:
-            self[rule.lhs].add(rule)
-        except KeyError:
-            self[0] = rule
 
     def find_insertion(self, other):
         """if self == other + one more rule, return that rule, else None"""
@@ -193,36 +38,11 @@ class TRS(collections.MutableMapping):
                     return moves[0]
         return (None, None)
 
-    def swap(self, r1, r2):
-        try:
-            stored_rule = self[r1.lhs]
-        except KeyError:
-            raise ValueError('TRS.swap: rule to swap out does not exist')
-        stored_rule.discard(r1)
-        self.add(r2)
-        if len(stored_rule) == 0:
-            del self[stored_rule]
-        return self
-
-    def move(self, i1, i2):
-        key = self._order[i1]
-        del self._order[i1]
-        self._order.insert(i2 + (0 if i2 < i1 else 1), key)
-
     def save(self, filename):
         with open(filename, 'w') as f:
             f.write('signature ')
             f.write(' '.join(str(op) for op in self.signature) + ';\n')
             f.write(';\n'.join([str(rule) for rule in self])+';\n')
-
-    def unifies(self, other, env=None, type='alpha'):
-        if self.signature == other.signature and \
-           self.num_rules() == other.num_rules():
-            for r_self, r_other in I.izip(self, other):
-                if r_self.unify(r_other, env=env, type=type) is None:
-                    return False
-            return True
-        return False
 
     def features(self):
         feats = {}

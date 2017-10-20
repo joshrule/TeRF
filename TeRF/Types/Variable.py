@@ -76,7 +76,7 @@ class Variable(A.Atom, T.Term):
             return env
         return None
 
-    def single_rewrite(self, trs, type):
+    def single_rewrite(self, g, type):
         return None
 
     def differences(self, other, top=True):

@@ -167,19 +167,19 @@ class Application(T.Term):
             pass
         return None
 
-    def single_rewrite(self, trs, type, strategy):
+    def single_rewrite(self, g, type, strategy):
 
         def rewrite_head():
-            for rule in trs:
+            for rule in g:
                 sub = rule.lhs.unify(self, type='match')
                 if sub is not None:
                     if type == 'one':
-                        return random.choice(rule.rhs).substitute(sub)
+                        return random.choice(list(rule.rhs)).substitute(sub)
                     return [rhs.substitute(sub) for rhs in rule.rhs]
 
         def rewrite_body():
             for idx in xrange(len(self.body)):
-                part = self.body[idx].single_rewrite(trs, type, strategy)
+                part = self.body[idx].single_rewrite(g, type, strategy)
                 if part is not None and type == 'one':
                     return App(self.head,
                                self.body[:max(0, idx)] +
@@ -196,7 +196,7 @@ class Application(T.Term):
         def rewrite_all():
             rewrites = []
             for idx in xrange(len(self.body)):
-                parts = self.body[idx].single_rewrite(trs, type, strategy)
+                parts = self.body[idx].single_rewrite(g, type, strategy)
                 rewrites += [App(self.head,
                                  self.body[:max(0, idx)] +
                                  [p] +

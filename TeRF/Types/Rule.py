@@ -2,11 +2,10 @@ import collections
 import itertools as I
 import TeRF.Types.Term as T
 import TeRF.Types.Application as A
-import TeRF.Types.Variable as V
 
 
 class Rule(collections.MutableSet):
-    def __init__(self, lhs, rhs):
+    def __init__(self, lhs, rhs, background=False):
         if isinstance(lhs, A.Application):
             self.lhs = lhs
             # ensure rhs is iterable of RHSs
@@ -26,6 +25,8 @@ class Rule(collections.MutableSet):
         else:
             raise ValueError('Rule: lhs must be an application')
 
+        self.background = background
+
     @property
     def variables(self):
         return self.lhs.variables
@@ -34,6 +35,11 @@ class Rule(collections.MutableSet):
     def operators(self):
         return self.lhs.operators | {o for rhs in self.rhs
                                      for o in rhs.operators}
+
+    @property
+    def size(self):
+        lhs_size = len(self.lhs)
+        return sum(lhs_size + len(rhs) for rhs in self.rhs)
 
     def __contains__(self, item):
         # treat item as rule
@@ -62,8 +68,8 @@ class Rule(collections.MutableSet):
             yield R(self.lhs, rhs)
 
     def __str__(self):
-        lhs = self.lhs.pretty_print()
-        rhs = ' | '.join(rhs.pretty_print() for rhs in self.rhs)
+        lhs = self.lhs.to_string()
+        rhs = ' | '.join(rhs.to_string() for rhs in self.rhs)
         return '{} = {}'.format(lhs, rhs)
 
     def __repr__(self):
@@ -78,10 +84,8 @@ class Rule(collections.MutableSet):
     def __hash__(self):
         return hash((self.lhs, tuple(self.rhs)))
 
-    @property
-    def size(self):
-        lhs_size = len(self.lhs)
-        return sum(lhs_size + len(rhs) for rhs in self.rhs)
+    def toggle(self):
+        self.background = not self.background
 
     def add(self, item):
         # assume item is a rule
@@ -145,13 +149,6 @@ class Rule(collections.MutableSet):
     def rename_variables(self):
         for i, v in enumerate(self.variables):
             v.name = 'v' + str(i)
-
-    def replace_variables(self, pairs=None):
-        if pairs is None:
-            pairs = {v: V.Var() for v in self.variables}
-        self.lhs = self.lhs.replace_variables(pairs=pairs)
-        self.rhs = {r.replace_variables(pairs=pairs) for r in self.rhs}
-        return self
 
 
 R = Rule

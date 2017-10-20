@@ -47,8 +47,8 @@ class Term(object):
     @abc.abstractmethod
     def differences(self, other, top=True): raise NotImplementedError
 
-    def rewrite(self, trs, trace=False, states=None, **kwargs):
-        return T.Trace(trs, self, **kwargs).rewrite(trace, states=states)
+    def rewrite(self, g, trace=False, states=None, **kwargs):
+        return T.Trace(g, self, **kwargs).rewrite(trace, states=states)
 
     def rename_variables(self):
         for i, v in enumerate(self.variables):
