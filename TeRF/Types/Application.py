@@ -1,7 +1,6 @@
 import itertools as it
 import numpy.random as random
 import TeRF.Types.Term as T
-import TeRF.Types.Variable as V
 
 
 class Application(T.Term):
@@ -29,7 +28,7 @@ class Application(T.Term):
         return '{}[{}]'.format(self.head, ', '.join(str(x) for x in self.body))
 
     def __repr__(self):
-        return 'Application({},{})'.format(self.head, self.body)
+        return 'Application({}, {})'.format(repr(self.head), repr(self.body))
 
     def __len__(self):
         return sum(1 for _ in self.subterms)
@@ -80,7 +79,7 @@ class Application(T.Term):
         except AttributeError:
             return False
 
-    def pretty_print(self, verbose=0):
+    def to_string(self, verbose=0):
         def list_terms(xs):
             try:
                 return [xs.body[0].body[1]] + list_terms(xs.body[1])
@@ -92,7 +91,7 @@ class Application(T.Term):
             this approach assumes we're using cons to encode lists and will
             need to be changed if we decide to use a different encoding.
             """
-            items = [t.pretty_print(verbose) for t in list_terms(self)]
+            items = [t.to_string(verbose) for t in list_terms(self)]
             return '[' + ', '.join(items) + ']'
 
         def number_value(n):
@@ -110,17 +109,17 @@ class Application(T.Term):
             return print_number()
         if self.head.name == '.' and self.head.arity == 2:
             if verbose == 0:
-                return self.body[0].pretty_print(0) + \
-                    ' ' + self.body[1].pretty_print(1)
+                return self.body[0].to_string(0) + \
+                    ' ' + self.body[1].to_string(1)
             elif verbose == 1:
-                return '(' + self.body[0].pretty_print(0) + \
-                    ' ' + self.body[1].pretty_print(1) + ')'
+                return '(' + self.body[0].to_string(0) + \
+                    ' ' + self.body[1].to_string(1) + ')'
             else:
-                return '(' + self.body[0].pretty_print(2) + \
-                    ' ' + self.body[1].pretty_print(2) + ')'
-        body = '[{}]'.format(' '.join(b.pretty_print(1) for b in self.body)) \
+                return '(' + self.body[0].to_string(2) + \
+                    ' ' + self.body[1].to_string(2) + ')'
+        body = '[{}]'.format(' '.join(b.to_string(1) for b in self.body)) \
                if self.body else ''
-        return self.head.pretty_print() + body
+        return str(self.head) + body
 
     def substitute(self, sub):
         if sub is None:
@@ -240,17 +239,6 @@ class Application(T.Term):
         except AttributeError:
             pass
         return diffs
-
-    def replace_variables(self, pairs=None):
-        if pairs is None:
-            pairs = {v: V.Var() for v in self.variables}
-        body = []
-        for t in self.body:
-            if t in pairs:
-                body.append(pairs[t])
-            else:
-                body.append(t.replace_variables(pairs=pairs))
-        return App(self.head, body)
 
 
 App = Application

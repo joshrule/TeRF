@@ -38,7 +38,7 @@ class Variable(A.Atom, T.Term):
     def subterms(self):
         yield self
 
-    def pretty_print(self, verbose=0):
+    def to_string(self, verbose=0):
         return str(self)
 
     def substitute(self, env):
@@ -81,13 +81,6 @@ class Variable(A.Atom, T.Term):
 
     def differences(self, other, top=True):
         return [] if (self == other or not top) else [(self, other)]
-
-    def replace_variables(self, pairs=None):
-        if pairs is None:
-            return Var()
-        if self in pairs:
-            return pairs[self]
-        return self
 
 
 Var = Variable
