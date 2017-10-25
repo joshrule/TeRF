@@ -53,3 +53,6 @@ class Term(object):
     def rename_variables(self):
         for i, v in enumerate(self.variables):
             v.name = 'v' + str(i)
+
+    def log_p(self, grammar):
+        return grammar.log_p_term(self)

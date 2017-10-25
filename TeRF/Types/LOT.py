@@ -1,4 +1,5 @@
 import TeRF.Types.Grammar as G
+import TeRF.Types.CFGrammar as CFG
 
 
 class LOT(object):
@@ -30,16 +31,16 @@ class LOT(object):
         if primitives is None:
             primitives = set() if semantics is None else semantics.operators
             primitives |= set() if syntax is None else syntax.operators
-        if isinstance(primitives, G.FlatCFG):
+        if isinstance(primitives, CFG.FCFG):
             self.primitives = primitives
         else:
-            self.primitives = G.FlatCFG(primitives)
+            self.primitives = CFG.FCFG(primitives)
 
         # now that we have our primitives, we check the syntax
         if syntax is None:
-            syntax = G.CFG([rule for rule in self.primitives])
+            syntax = CFG.CFG([rule for rule in self.primitives])
         # TODO: can terms in `syntax` be parsed by `primitives`?
-        if isinstance(syntax, G.CFG):
+        if isinstance(syntax, CFG.CFG):
             self.syntax = syntax
         else:
             raise ValueError('LOT: syntax must be a CFG')

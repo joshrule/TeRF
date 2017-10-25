@@ -1,5 +1,4 @@
 import LOTlib.Miscellaneous as misc
-import GrammarSampler
 
 
 class Prior(object):
@@ -27,7 +26,25 @@ class Prior(object):
         float
             -inf <= x <= 0, ln p(self.value)
         """
-        raw_prior = GrammarSampler.log_p_g(source=self.value.syntax,
-                                           target=self.value.semantics,
-                                           p_rule=self.p_rules)
+        raw_prior = self.value.semantics.log_p(self.value.syntax,
+                                               self.p_rules)
         return raw_prior / self.prior_temperature
+
+
+if __name__ == '__main__':
+    import TeRF.Test.test_grammars as tg
+    
+    prior = Prior()
+    prior.prior_temperature = 1.0
+    prior.p_rules = 0.5
+
+    def test_prior(hypothesis):
+            prior.value = hypothesis
+            print '\nhypothesis:\n', prior.value
+            print '\nprior:\n', prior.compute_prior()
+
+    lot_with_no_vars = tg.list_lot
+    test_prior(lot_with_no_vars)
+
+    # lot_with_vars = tg.head_lot
+    # test_prior(lot_with_vars)

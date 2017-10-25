@@ -1,16 +1,33 @@
 import collections
+import contextlib
 import copy
-# import itertools as ittl
 import TeRF.Types.Application as A
-import TeRF.Types.Operator as O
+import TeRF.Types.Operator as Op
 import TeRF.Types.Rule as R
+from scipy import stats
+
+
+@contextlib.contextmanager
+def scope(grammar, operation):
+    scope = grammar.get_scope()
+    for rule in grammar:
+        if operation == 'clear':
+            rule.clear_scope()
+        if operation == 'close':
+            rule.close_scope()
+        if operation == 'open':
+            rule.open_scope()
+    try:
+        yield
+    finally:
+        grammar.set_scope(scope)
 
 
 class Grammar(collections.MutableMapping):
     def __init__(self, rules=None, start=None):
         if start is None:
-            self.start = O.Operator('START', 0)
-        elif start.arity != 0:
+            self.start = A.App(Op.Operator('START', 0), [])
+        elif start.head.arity != 0:
             raise ValueError('start symbol has non-zero arity')
         else:
             self.start = start
@@ -125,6 +142,25 @@ class Grammar(collections.MutableMapping):
     def operators(self):
         return {op for rule in self for op in rule.operators}
 
+    def __str__(self):
+        return '\n'.join(str(rule) for rule in self)
+
+    @property
+    def clauses(self):
+        return [rule
+                for lhs in self._order
+                for rule in self._rules[lhs]]
+
+    def log_p(self, grammar, p_rule):
+        return grammar.log_p_grammar(self, p_rule)
+
+    def get_scope(self):
+        return {rule.lhs: rule.scope for rule in self}
+
+    def set_scope(self, scope):
+        for rule in self:
+            rule.scope = scope[rule.lhs]
+
 #    @property
 #    def size(self):
 #        return sum(r.size for r in self)
@@ -136,17 +172,6 @@ class Grammar(collections.MutableMapping):
 #
 #    def __ne__(self, other):
 #        return not self == other
-#
-    def __str__(self):
-        return '\n'.join(str(rule) for rule in self)
-#
-#    def rules(self):
-#        for lhs in self._order:
-#            for rule in self._rules[lhs]:
-#                yield rule
-#
-#    def num_rules(self):
-#        return sum(1 for _ in self.rules())
 #
 #    def index(self, value):
 #        return self._order.index(value)
@@ -206,24 +231,100 @@ class Grammar(collections.MutableMapping):
 #                op.name = name
 
 
-class CFG(Grammar):
-    def __init__(self, rules=None, start=None):
-        super(CFG, self).__init__(rules=rules, start=start)
-
-        if rules is not None:
-            for rule in rules:
-                if rule.lhs.head.arity != 0:
-                    err_str = 'CFG: context-sensitive rule -> {}'
-                    raise ValueError(err_str.format(rule))
-
-
-class FlatCFG(CFG):
-    def __init__(self, primitives, **kwargs):
-        super(FlatCFG, self).__init__(**kwargs)
-
-        S = A.App(self.start, [])
-        rules = [R.Rule(S, {A.App(p, [S]*p.arity) for p in primitives})]
-        self.update(rules)
+# class ProbabilisticGrammar(Grammar):
+#     def log_p_grammar(self, grammar, p_rule, env=None):
+#         """
+#         compute the log prior probability of a grammar
+# 
+#         Parameters
+#         ----------
+#         grammar: TeRF.Types.Grammar
+#             the grammar whose probability we're computing
+#         p_rule: float
+#             the probability of adding another rule
+#         env : TeRF.Types.Environment (default: None)
+#             the set of bound and free variables
+# 
+#         Returns
+#         -------
+#         float
+#             log(p(grammar | self, p_rule, env))
+#         """
+#         p_n_rules = stats.geom.logpmf(len(grammar.clauses)+1, p=p_rule)
+#         p_rules = sum(rule.log_p(self, env=env) for rule in grammar.rules())
+#         return p_n_rules + p_rules
+# 
+#     def log_p_rule(self, rule, env=None):
+#         """
+#         give the log prior probability of a TeRF.Types.Rule
+# 
+#         Parameters
+#         ----------
+#         rule : TeRF.Types.Rule
+#             the rule whose probability is being computed
+#         env : TeRF.Types.Environment (default: None)
+#             the set of bound and free variables
+# 
+#         Returns
+#         -------
+#         float
+#             log(p(rule | self, env))
+#         """
+#         p_lhs = rule.lhs.log_p(self, env=env)
+#         with E.Environment(rule.lhs.variables, invent=False) as env1:
+#             try:
+#                 return p_lhs + rule.rhs0.log_p(self, env=env1)
+#             except AttributeError:
+#                 raise ValueError('log_p_rule: only valid for one clause rules')
+# 
+#     def log_p_term(self, term, env=None):
+#         """
+#         give the log prior probability of a TeRF.Types.Term
+# 
+#         Parameters
+#         ----------
+#         term : TeRF.Types.Term
+#             the term whose log prior probability we're computing
+#         env : TeRF.Types.Environment (default: None)
+#             the set of bound and free variables
+# 
+#         Returns
+#         -------
+#         float
+#             log(p(term | self, env))
+#         """
+#         p_head = self.log_p_atom(term.head, env=env)
+#         try:
+#             p_body = sum(t.log_p(self, env=env) for t in term.body)
+#             return p_head + p_body
+#         except AttributeError:
+#             return p_head
+# 
+#     def log_p_atom(self, atom, env=None):
+#         """
+#         give the log-probability of sampling a particular atom
+# 
+#         Parameters
+#         ----------
+#         atom : TeRF.Types.Atom
+#             the atom whose probability is being computed
+#         env : TeRF.Types.Environment (default: None)
+#             the set of bound and free variables
+# 
+#         Returns
+#         -------
+#         float
+#             log(p(atom | self, env))
+#         """
+#         if atom in self.signature:
+#             return tmisc.log(self.probs[atom])
+#         if invent and isinstance(atom, V.Var):
+#             return tmisc.log(self.probs['var']) - \
+#                 tmisc.logNof(list(self.variables) + ['var'])
+#         if atom in self.variables:
+#             return tmisc.log(self.probs['var']) - \
+#                 tmisc.logNof(list(self.variables))
+#         return tmisc.log(0)
 
 
 if __name__ == '__main__':
@@ -235,12 +336,13 @@ if __name__ == '__main__':
         return A.App(x, xs)
 
     # test Grammar
-    S = O.Operator('S', 0)
-    K = O.Operator('K', 0)
+    S = Op.Operator('S', 0)
+    K = Op.Operator('K', 0)
+    I = Op.Operator('I', 0)
     x = V.Variable('x')
     y = V.Variable('y')
     z = V.Variable('z')
-    a = O.Operator('.', 2)
+    a = Op.Operator('.', 2)
 
     lhs_s = f(a, [f(a, [f(a, [f(S), x]), y]), z])
     rhs_s = f(a, [f(a, [x, z]), f(a, [y, z])])
@@ -254,31 +356,8 @@ if __name__ == '__main__':
 
     print '\nGrammar:\n', g
 
-    # test CFG
-    start = O.Operator('START', 0)
-    T = O.Operator('T', 0)
-    lhs_start = f(start)
-    rhs_start = {f(S), f(K)}
-    lhs_k = f(K)
-    rhs_k = f(a, [f(S), f(a, [f(K), f(S)])])
-    lhs_s = f(S)
-    rhs_s = {f(T), f(K)}
-
-    rule_start = R.Rule(lhs_start, rhs_start)
-    rule_s = R.Rule(lhs_s, rhs_s)
-    rule_k = R.Rule(lhs_k, rhs_k)
-
-    cfg = CFG(rules={rule_start, rule_s, rule_k}, start=start)
-
-    print '\nCFG:\n', cfg
-
-    # test FlatCFG
-    flat_cfg = FlatCFG({T, K, S, a}, start=start)
-
-    print '\nFlat CFG:\n', flat_cfg
-
     # test rewriting
-    term = f(a, [f(a, [f(K), f(a, [f(a, [f(K), f(T)]), f(S)])]), f(S)])
+    term = f(a, [f(a, [f(K), f(a, [f(a, [f(K), f(I)]), f(S)])]), f(S)])
 
     print '\nterm:\n', term.to_string()
     print '\nrewrite:'
