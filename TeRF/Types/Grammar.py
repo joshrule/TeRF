@@ -4,27 +4,29 @@ import copy
 import TeRF.Types.Application as A
 import TeRF.Types.Operator as Op
 import TeRF.Types.Rule as R
+import TeRF.Types.Scope as S
 from scipy import stats
 
 
 @contextlib.contextmanager
-def scope(grammar, operation):
-    scope = grammar.get_scope()
-    for rule in grammar:
-        if operation == 'clear':
-            rule.clear_scope()
-        if operation == 'close':
-            rule.close_scope()
-        if operation == 'open':
-            rule.open_scope()
+def scope(grammar, scope=None, lock=None, reset=False):
+    stored_scope = grammar.scope.copy()
+    if scope is not None:
+        grammar.scope = scope.copy()
+    if lock is False:
+        grammar.scope.unlock()
+    elif lock is True:
+        grammar.scope.lock()
+    if reset:
+        grammar.scope.reset()
     try:
         yield
     finally:
-        grammar.set_scope(scope)
+        grammar.scope = stored_scope
 
 
 class Grammar(collections.MutableMapping):
-    def __init__(self, rules=None, start=None):
+    def __init__(self, rules=None, start=None, locked=True):
         if start is None:
             self.start = A.App(Op.Operator('START', 0), [])
         elif start.head.arity != 0:
@@ -34,6 +36,7 @@ class Grammar(collections.MutableMapping):
 
         self._order = []
         self._rules = {}
+        self.scope = S.Scope(locked=locked)
 
         if rules is not None:
             self.update(rules)
@@ -153,13 +156,6 @@ class Grammar(collections.MutableMapping):
 
     def log_p(self, grammar, p_rule):
         return grammar.log_p_grammar(self, p_rule)
-
-    def get_scope(self):
-        return {rule.lhs: rule.scope for rule in self}
-
-    def set_scope(self, scope):
-        for rule in self:
-            rule.scope = scope[rule.lhs]
 
 #    @property
 #    def size(self):

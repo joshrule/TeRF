@@ -7,7 +7,6 @@ import TeRF.Types.Application as A
 class Rule(collections.MutableSet):
     def __init__(self, lhs, rhs, background=False):
         if isinstance(lhs, A.Application):
-            self.scope = set()
             self.lhs = lhs
             # ensure rhs is iterable of RHSs
             if isinstance(rhs, T.Term):
@@ -153,15 +152,6 @@ class Rule(collections.MutableSet):
 
     def log_p(self, grammar):
         return grammar.log_p_rule(self)
-
-    def clear_scope(self):
-        self.scope = set()
-
-    def open_scope(self):
-        self.scope_open = True
-
-    def close_scope(self):
-        self.scope_open = False
 
 
 R = Rule

@@ -1,5 +1,6 @@
 import itertools
 from scipy import stats
+from scipy import misc as smisc
 import TeRF.Miscellaneous as misc
 import TeRF.Types.Application as A
 import TeRF.Types.Grammar as Grammar
@@ -8,8 +9,8 @@ import TeRF.Types.Variable as V
 
 
 class CFG(Grammar.Grammar):
-    def __init__(self, rules=None, start=None):
-        super(CFG, self).__init__(rules=rules, start=start)
+    def __init__(self, rules=None, **kwargs):
+        super(CFG, self).__init__(rules=rules, **kwargs)
 
         if rules is not None:
             for rule in rules:
@@ -81,11 +82,18 @@ class PCFG(CFG):
         float
             log(p(rule | self))
         """
-        with Grammar.scope(self, 'clear'):
-            p_lhs = rule.lhs.log_p(self) * len(rule.rhs)
-            with Grammar.scope(self, 'close'):
-                p_rhs = sum(rhs.log_p(self) for rhs in rule.rhs)
-        return p_lhs + p_rhs
+        # get the parses for the lhs
+        ps = []
+        with Grammar.scope(self, reset=True):
+            lhs_parses = self.parse(rule.lhs)
+            for lhs_parse in lhs_parses:
+                with Grammar.scope(self, scope=lhs_parse[2], lock=True):
+                    for rhs in rule.rhs:
+                        rhs_parses = self.parse(rhs)
+                        clause_ps = [lhs_parse[0] + rhs_parse[0]
+                                     for rhs_parse in rhs_parses]
+                        ps.append(smisc.logsumexp(clause_ps))
+        return smisc.logsumexp(ps)
 
     def log_p_term(self, term):
         """
@@ -102,7 +110,7 @@ class PCFG(CFG):
             log(p(term | self))
         """
         try:
-            return sum(zip(*self.parse(term))[0])
+            return smisc.logsumexp(list(zip(*self.parse(term))[0]))
         except IndexError:
             return misc.log(0.0)
 
@@ -121,28 +129,67 @@ class PCFG(CFG):
             the possible parses and their log probabilities
         """
         start = self.start if start is None else start
-        return [parse for parse in self.get_possible_parses(term)
-                if start.unify(parse[1], 'alpha') is not None]
+        parses = [parse for parse in self.get_possible_parses(term)
+                  if start.unify(parse[1], 'alpha') is not None]
+        return parses
 
     def get_possible_parses(self, term):
         if isinstance(term, V.Var):
-            raise ValueError('get_possible_parses: no variables in PCFGs')
-        if term.head.arity == 0:
-            parses = [(0.0, term)]
+            # is it in the scope already
+            try:
+                nonterminal = self.scope.scope[term]
+                n_options = len(self[nonterminal]) + \
+                    len(self.scope.find(nonterminal)) + \
+                    int(not self.scope.locked)
+                log_p = -misc.log(n_options)
+                parses = [(log_p, nonterminal, self.scope.copy())]
+            # nope, so assume we added it
+            except KeyError:
+                parses = []
+                if not self.scope.locked:
+                    for rule in self:
+                        nonterminal = rule.lhs
+                        n_options = len(self[nonterminal]) + \
+                            len(self.scope.find(nonterminal)) + \
+                            int(not self.scope.locked)
+                        log_p = -misc.log(n_options)
+                        new_scope = self.scope.copy()
+                        new_scope.scope[term] = nonterminal
+                        parses.append((log_p, nonterminal, new_scope))
         else:
-            subparses = [self.get_possible_parses(branch)
-                         for branch in term.body]
-            parses = []
-            for body in itertools.product(*subparses):
-                term = A.App(term.head, list(zip(*body)[1]))
-                log_p = sum(zip(*body)[0])
-                parses.append((log_p, term))
+            if term.head.arity == 0:
+                parses = [(0.0, term, self.scope.copy())]
+            else:
+                subparses = []
+                scopes = [self.scope.copy()]
+                for branch in term.body:
+                    tmp_scopes = []
+                    tmp_results = []
+                    for scope in scopes:
+                        with Grammar.scope(self, scope=scope):
+                            results = self.get_possible_parses(branch)
+                            tmp_results += results
+                            tmp_scopes += list(zip(*results)[2])
+                    scopes = list(set(tmp_scopes))
+                    subparses.append(tmp_results)
+                parses = []
+                for body in itertools.product(*subparses):
+                    log_ps, term_body, parse_scopes = zip(*body)
+                    if all(parse_scopes[-1].entails(ps)
+                           for ps in parse_scopes[:-1]):
+                        log_p = sum(log_ps)
+                        term = A.App(term.head, list(term_body))
+                        scope = body[-1][2]
+                        parses.append((log_p, term, scope))
         for parse in parses:
             for rule in self:
                 for clause in rule:
                     if parse[1] == clause.rhs0:
-                        parses.append((parse[0] - misc.log(len(rule.rhs)),
-                                       clause.lhs))
+                        parses.append((parse[0] -
+                                       misc.log(len(rule.rhs) +
+                                                len(self.scope.find(rule.lhs)) +
+                                                int(not self.scope.locked)),
+                                       clause.lhs, parse[2]))
         return parses
 
 
@@ -151,77 +198,40 @@ class FPCFG(FCFG, PCFG):
 
 
 if __name__ == '__main__':
-    import TeRF.Types.Operator as Op
+    import numpy as np
+    import TeRF.Test.test_grammars as tg
 
-    def f(x, xs=None):
-        if xs is None:
-            xs = []
-        return A.App(x, xs)
+    def print_parses(ps):
+        for p in ps:
+            print_parse(p)
 
-    def g(x, y):
-        return A.App(a, [x, y])
+    def print_parse(p):
+        print '({:.1f}, {}, {}'.format(1./np.exp(p[0]), p[1].to_string(), p[2])
 
-    # test Grammar
-    s = Op.Operator('START', 0)
-    xs = Op.Operator('list', 0)
-    num = Op.Operator('number', 0)
-    nil = Op.Operator('nil', 0)
-    nel = Op.Operator('nel', 0)
-    cons = Op.Operator('cons', 0)
-    zero = Op.Operator('0', 0)
-    one = Op.Operator('1', 0)
-    two = Op.Operator('2', 0)
-    three = Op.Operator('3', 0)
-    a = Op.Operator('.', 2)
-
-    rule_s = R.Rule(f(s), f(xs))
-    rule_xs = R.Rule(f(xs), {f(nil), f(nel)})
-    rule_nel = R.Rule(f(nel), g(g(f(cons), f(num)), f(xs)))
-    rule_num = R.Rule(f(num), {f(zero), f(one), f(two), f(three)})
-
-    # test CFG
-    cfg = PCFG(rules={rule_s, rule_xs, rule_nel, rule_num}, start=f(s))
+    cfg = tg.head_pcfg
 
     print '\nCFG:\n', cfg
 
-    term = f(three)
-    parses = cfg.get_possible_parses(term)
+    term = tg.head_lhs
 
     print '\nPossible Parses for {}:\n'.format(term.to_string())
-    for parse in parses:
-        print parse
-
-    term = g(g(f(cons), f(three)), f(nil))
-    parses = cfg.get_possible_parses(term)
-
-    print '\nPossible Parses for {}:\n'.format(term.to_string())
-    for parse in parses:
-        print parse
+    print_parses(cfg.get_possible_parses(term))
 
     print '\nFull Parse for {}:\n'.format(term.to_string())
-    print cfg.parse(term)
+    print_parses(cfg.parse(term))
 
     print '\nLog Probability for {}:\n'.format(term.to_string())
-    print cfg.log_p_term(term)
+    log_p = cfg.log_p_term(term)
+    print log_p, 1./np.exp(log_p)
 
-    rule = R.Rule(term, g(g(f(cons), f(two)), f(nil)))
+    rule = tg.head_rule
 
     print '\nLog Probability for {}:\n'.format(rule)
-    print cfg.log_p_rule(rule)
+    log_p = cfg.log_p_rule(rule)
+    print log_p, 1./np.exp(log_p)
 
-    rule1 = R.Rule(g(g(f(cons), f(three)), f(nil)),
-                   g(g(f(cons), f(two)), f(nil)))
-    rule2 = R.Rule(g(g(f(cons), f(one)), f(nil)),
-                   g(g(f(cons), f(zero)), f(nil)))
-    rule3 = R.Rule(g(g(f(cons), f(one)), f(nil)),
-                   g(g(f(cons), f(three)), f(nil)))
-
-    g = Grammar.Grammar(rules={rule1, rule2, rule3})
+    g = tg.head_g
 
     print '\nLog Probability for a grammar:\n'.format(rule)
-    print cfg.log_p_grammar(g, 0.5)
-
-    # test FlatCFG
-    flat_cfg = FCFG({one, two, three, a})
-
-    print '\nFlat CFG:\n', flat_cfg
+    log_p = cfg.log_p_grammar(g, 0.5)
+    print log_p, 1./np.exp(log_p)

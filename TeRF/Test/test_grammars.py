@@ -55,13 +55,13 @@ list_pcfg = CFG.PCFG(rules={rule_START})
 # make a PCFG for the head list problem, including head
 rule_START = R.Rule(f(START), {f(LIST), f(NUMBER)})
 rule_LIST = R.Rule(f(LIST), {f(NIL), f(NEL)})
-rule_NEL = R.Rule(f(NIL), g(g(f(CONS), f(NUMBER)), f(LIST)))
+rule_NEL = R.Rule(f(NEL), g(g(f(CONS), f(NUMBER)), f(LIST)))
 rule_NUMBER = R.Rule(f(NUMBER), {f(ZERO), f(ONE), f(TWO), f(THREE)})
 rule_head = R.Rule(f(NUMBER), g(f(HEAD), f(NEL)))
 
 head_pcfg = CFG.PCFG(rules={rule_START, rule_LIST, rule_NEL,
                             rule_NUMBER, rule_head},
-                     start=f(START))
+                     start=f(START), locked=False)
 
 # make a Grammar for list semantics
 rule_LIST = R.Rule(f(LIST), {f(NIL), g(g(f(CONS), f(NUMBER)), f(LIST))})
@@ -69,9 +69,11 @@ rule_LIST = R.Rule(f(LIST), {f(NIL), g(g(f(CONS), f(NUMBER)), f(LIST))})
 list_g = G.Grammar(rules={rule_NUMBER, rule_LIST})
 
 # make a Grammar for list semantics, including head
-head_rule = R.Rule(g(f(HEAD), g(g(f(CONS), X), Y)), Y)
+head_lhs = g(f(HEAD), g(g(f(CONS), X), Y))
+head_rhs = X
+head_rule = R.Rule(head_lhs, head_rhs)
 
-head_g = G.Grammar(rules={head_rule})
+head_g = G.Grammar(rules={head_rule}, locked=False)
 
 # make an LOT for learning to make lists
 list_lot = LOT.LOT(primitives=list_fpcfg, syntax=list_pcfg, semantics=list_g)
