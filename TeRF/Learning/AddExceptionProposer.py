@@ -2,42 +2,33 @@ import copy
 import LOTlib.Hypotheses.Proposers as P
 import numpy as np
 import TeRF.Miscellaneous as misc
+import TeRF.Learning.ProposerUtilities as utils
 
 
 def propose_value_maker(data):
+    @utils.propose_value_template
     def propose_value(value, **kwargs):
-        new_value = copy.deepcopy(value)
         try:
-            ok_data = [datum for datum in data if datum not in new_value]
-            sizes = [datum.size for datum in ok_data]
-            max_size = float(max(sizes))
-            ps = [np.exp(-float(size)/max_size) for size in sizes]
-            ps = [p/sum(ps) for p in ps]
+            ok_data = [datum for datum in data if datum not in value.semantics]
+            ps = misc.renormalize([1./float(datum.size) for datum in ok_data])
             rule = copy.deepcopy(np.random.choice(ok_data, p=ps))
         except (TypeError, ValueError):
             raise P.ProposalFailedException('AddException: no new exceptions')
-        print '# aep: adding rule', rule
-        new_value.add(rule)
-        return new_value
+        value.semantics.add(rule)
     return propose_value
 
 
 def give_proposal_log_p_maker(data):
+    @utils.validate_syntax_and_primitives
     def give_proposal_log_p(old, new, **kwargs):
-        if old.signature == new.signature:
-            rule = new.find_insertion(old)
-            try:
-                ok_data = [(d, d.unify(rule, type='alpha') is not None)
-                           for d in data if d not in old]
-                sizes = [d[0].size for d in ok_data]
-                max_size = float(max(sizes))
-                ps = [np.exp(-float(size)/max_size) for size in sizes]
-                ps = [p/sum(ps) for p in ps]
-                return misc.log(sum(p for p, d in zip(ps, ok_data) if d[1]))
-                # return misc.logNof(ok_data, n=sum(ok_data))
-            except (ValueError, TypeError, AttributeError):
-                pass
-        return -np.inf
+        rule = utils.find_insertion(new.semantics, old.semantics)
+        try:
+            ok_data = [(d, d.unify(rule, type='alpha') is not None)
+                       for d in data if d not in old.semantics]
+            ps = misc.renormalize([1./float(d[0].size) for d in ok_data])
+            return misc.log(sum(p for p, d in zip(ps, ok_data) if d[1]))
+        except (ValueError, TypeError, AttributeError):
+            pass
     return give_proposal_log_p
 
 
@@ -53,3 +44,13 @@ class AddExceptionProposer(P.Proposer):
         self.propose_value = propose_value_maker(data)
         self.give_proposal_log_p = give_proposal_log_p_maker(data)
         super(AddExceptionProposer, self).__init__(**kwargs)
+
+
+if __name__ == "__main__":
+    import TeRF.Test.test_grammars as tg
+    data = [tg.head_datum_T,
+            tg.head_datum_T2,
+            tg.head_datum_T3]
+    
+    utils.test_a_proposer(propose_value_maker(data),
+                          give_proposal_log_p_maker(data))
