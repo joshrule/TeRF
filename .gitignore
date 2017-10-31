@@ -10,3 +10,6 @@ parser.out
 
 # OS X detritus
 .DS_Store
+
+# personal detritus
+debug.log
