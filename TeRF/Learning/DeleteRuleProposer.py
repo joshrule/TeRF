@@ -1,24 +1,21 @@
-import copy
 import LOTlib.Hypotheses.Proposers as P
 import numpy.random as random
-import TeRF.Miscellaneous as M
+import TeRF.Learning.ProposerUtilities as utils
+import TeRF.Miscellaneous as misc
 
 
+@utils.propose_value_template
 def propose_value(value, **kwargs):
-    new_value = copy.deepcopy(value)
     try:
-        rule = random.choice(list(new_value.rules()))
+        del value.semantics[random.choice(list(value.semantics.clauses))]
     except ValueError:
-        raise P.ProposalFailedException('DeleteRuleProposer: TRS has no rules')
-    print '# drp: deleting', rule
-    del new_value[rule]
-    return new_value
+        raise P.ProposalFailedException('DeleteRule: Grammar has no rules')
 
 
+@utils.validate_syntax_and_primitives
 def give_proposal_log_p(old, new, **kwargs):
-    if new.signature == old.signature and old.find_insertion(new) is not None:
-        return M.logNof(list(old.rules()))
-    return M.log(0)
+    if utils.find_insertion(old.semantics, new.semantics) is not None:
+        return misc.logNof(list(old.semantics.clauses))
 
 
 class DeleteRuleProposer(P.Proposer):
@@ -28,7 +25,10 @@ class DeleteRuleProposer(P.Proposer):
     Given a TRS (S, R U {r}), where r is a Rule, give a new TRS (S, R).
     """
     def __init__(self, **kwargs):
-        """Create a DeleteRuleProposer"""
         self.propose_value = propose_value
         self.give_proposal_log_p = give_proposal_log_p
         super(DeleteRuleProposer, self).__init__(**kwargs)
+
+
+if __name__ == "__main__":
+    utils.test_a_proposer(propose_value, give_proposal_log_p)

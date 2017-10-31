@@ -1,39 +1,27 @@
-import copy
 import LOTlib.Hypotheses.Proposers as P
-import TeRF.Miscellaneous as M
-import TeRF.Learning.RationalRulesTRSGrammar as RR
+import numpy.random as random
+from scipy import misc as smisc
+import TeRF.Learning.ProposerUtilities as utils
 
 
-def propose_value_maker(alpha):
-    def propose_value(value, **kwargs):
-        new_value = copy.deepcopy(value)
-        g = RR.RationalRulesTRSGrammar(new_value.signature,
-                                       alpha=alpha)
-        counts = g.count_trs(new_value)
-        g.counts = RR.merge_counts(g.counts, counts)
-        rule = g.sample_rule()
-        if rule in new_value:
-            raise P.ProposalFailedException('rule already exists')
-        print '# arp: adding rule', rule
-        new_value.add(rule)
-        return new_value
-    return propose_value
+@utils.propose_value_template
+def propose_value(value, **kwargs):
+    start = random.choice([rule.lhs for rule in value.syntax])
+    print 'starting at', start.to_string()
+    rule = value.syntax.sample_rule(start=start)
+    if rule in value.semantics:
+        raise P.ProposalFailedException('AddRule: rule already exists')
+    value.semantics.add(rule)
 
 
-def give_proposal_log_p_maker(alpha):
-    def give_proposal_log_p(old, new, **kwargs):
-        if old.signature == new.signature:
-            rule = new.find_insertion(old)
-            g = RR.RationalRulesTRSGrammar(new.signature,
-                                           alpha=alpha)
-            counts = g.count_trs(old)
-            g.counts = RR.merge_counts(g.counts, counts)
-            try:
-                return g.log_p_rule(rule)
-            except (TypeError, AttributeError):
-                pass
-        return M.log(0)
-    return give_proposal_log_p
+@utils.validate_syntax_and_primitives
+def give_proposal_log_p(old, new, **kwargs):
+    rule = utils.find_insertion(new.semantics, old.semantics)
+    try:
+        ps = [rule.log_p(old.syntax, start=r.lhs) for r in old.syntax]
+        return smisc.logsumexp(ps)
+    except AttributeError:
+        pass
 
 
 class AddRuleProposer(P.Proposer):
@@ -43,8 +31,10 @@ class AddRuleProposer(P.Proposer):
     Given a TRS (S,R), give a new TRS (S, R U {r}), where r is a Rule.
     """
     def __init__(self, **kwargs):
-        """Create an AddRuleProposer"""
-        self.propose_value = propose_value_maker(getattr(self, 'rrAlpha', 1.0))
-        self.give_proposal_log_p = \
-            give_proposal_log_p_maker(getattr(self, 'rrAlpha', 1.0))
+        self.propose_value = propose_value
+        self.give_proposal_log_p = give_proposal_log_p
         super(AddRuleProposer, self).__init__(**kwargs)
+
+
+if __name__ == "__main__":
+    utils.test_a_proposer(propose_value, give_proposal_log_p)
