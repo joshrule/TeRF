@@ -14,15 +14,24 @@ class Likelihood(object):
 
         compute_likelihood manages likelihood_temperature. It's ignored here.
 
-        Assumes:
-          self.value: from LOTlib.Hypotheses.Hypothesis
-          self.p_partial: should be an argument of the hypothesis
-        Args:
-          datum: a rewriteRule representing a single datum
-        Returns: a float, -inf <= x <= 0, log p(datum | self.value)
+        Assumes
+        -------
+        self.value: an attribute of the hypothesis
+        self.p_partial: an attribute of the hypothesis
+        self.temperature: an attribute of the hypothesis
+
+        Parameters
+        ----------
+        datum: TeRF.Types.Rule
+            a single datum
+
+        Returns
+        -------
+        float
+            -inf <= x <= 0, log p(datum | self.value)
         """
-        t = T.Trace(self.value, datum.lhs, p_observe=0.0,
-                    max_steps=100).run()
+        t = T.Trace(self.value.semantics, datum.lhs,
+                    p_observe=0.0, max_steps=100).run()
         ll = t.rewrites_to(datum.rhs0)
 
         partial_credit = self.p_partial + self.temperature
@@ -31,3 +40,31 @@ class Likelihood(object):
             return misc.log(partial_credit)
         else:
             return misc.log(1.-partial_credit) + ll
+
+
+if __name__ == '__main__':
+    import TeRF.Test.test_grammars as tg
+    
+    ll = Likelihood()
+    ll.temperature = 0.0
+    ll.p_partial = 0.0
+
+    def test_likelihood(hypothesis, data):
+        ll.value = hypothesis
+        print '\nhypothesis:\n', ll.value
+        for datum in data:
+            log_p = ll.compute_single_likelihood(datum)
+            print '\ndatum:', datum
+            print 'll:', log_p
+            if log_p == -np.inf:
+                print '1/exp(ll): inf'
+            else:
+                print '1/exp(ll):', 1./np.exp(log_p)
+
+    lot_with_no_vars = tg.list_lot
+    test_likelihood(lot_with_no_vars, [tg.list_datum_T,
+                                       tg.list_datum_F])
+
+    lot_with_vars = tg.head_lot
+    test_likelihood(lot_with_vars, [tg.head_datum_T,
+                                    tg.head_datum_F])
