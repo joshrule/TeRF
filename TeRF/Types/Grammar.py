@@ -9,16 +9,18 @@ from scipy import stats
 
 
 @contextlib.contextmanager
-def scope(grammar, scope=None, lock=None, reset=False):
+def scope(grammar, scope=None, lock=None, reset=False, extend=None):
     stored_scope = grammar.scope.copy()
     if scope is not None:
         grammar.scope = scope.copy()
+    if extend is not None:
+        grammar.scope.scope.update(extend.scope)
+    if reset:
+        grammar.scope.reset()
     if lock is False:
         grammar.scope.unlock()
     elif lock is True:
         grammar.scope.lock()
-    if reset:
-        grammar.scope.reset()
     try:
         yield
     finally:
@@ -157,17 +159,34 @@ class Grammar(collections.MutableMapping):
     def log_p(self, grammar, p_rule):
         return grammar.log_p_grammar(self, p_rule)
 
+    def __eq__(self, other):
+        return self._order == other._order and \
+            self._rules == other._rules and \
+            self.start == other.start and \
+            self.scope == other.scope
+
+    def __ne__(self, other):
+        return not self == other
+
+    def move(self, i1, i2):
+        key = self._order[i1]
+        del self._order[i1]
+        self._order.insert(i2, key)
+
+    def replace(self, r1, r2):
+        try:
+            rule = self[r1.lhs]
+        except KeyError:
+            raise ValueError('replace: rule to replace does not exist')
+        rule.discard(r1)
+        self.add(r2)
+        if len(rule) == 0:
+            del self[rule]
+        return self
+
 #    @property
 #    def size(self):
 #        return sum(r.size for r in self)
-#
-#    def __eq__(self, other):
-#        return self._order == other._order and \
-#            self._rules == other._rules and \
-#            self.start == other.start
-#
-#    def __ne__(self, other):
-#        return not self == other
 #
 #    def index(self, value):
 #        return self._order.index(value)
@@ -180,22 +199,6 @@ class Grammar(collections.MutableMapping):
 #    def clear(self):
 #        self._order = []
 #        self._rules = {}
-#
-#    def replace(self, r1, r2):
-#        try:
-#            rule = self[r1.lhs]
-#        except KeyError:
-#            raise ValueError('replace: rule to replace does not exist')
-#        rule.discard(r1)
-#        self.add(r2)
-#        if len(rule) == 0:
-#            del self[rule]
-#        return self
-#
-#    def move(self, i1, i2):
-#        key = self._order[i1]
-#        del self._order[i1]
-#        self._order.insert(i2 + (0 if i2 < i1 else 1), key)
 #
 #    def unifies(self, other, env=None, type='alpha'):
 #        if len(self) == len(other):

@@ -1,6 +1,7 @@
 import itertools as it
 import numpy.random as random
 import TeRF.Types.Term as T
+import TeRF.Types.Variable as V
 
 
 class Application(T.Term):
@@ -23,6 +24,26 @@ class Application(T.Term):
         for term in self.body:
             for subterm in term.subterms:
                 yield subterm
+
+    @property
+    def places(self):
+        yield []
+        for i, term in enumerate(self.body):
+            for place in term.places:
+                yield [i] + place
+
+    def place(self, place):
+        if place == []:
+            return self
+        return self.body[place[0]].place(place[1:])
+
+    def replace(self, place, term):
+        if place == []:
+            return term
+        else:
+            body = self.body[:]
+            body[place[0]] = body[place[0]].replace(place[1:], term)
+            return Application(self.head, body)
 
     def __str__(self):
         return '{}[{}]'.format(self.head, ', '.join(str(x) for x in self.body))
@@ -167,15 +188,30 @@ class Application(T.Term):
             pass
         return None
 
-    def single_rewrite(self, g, type, strategy):
+    def single_rewrite(self, g, type='one', strategy='eager'):
+
+        def collect_options(g, start=None):
+            start = g.start if start is None else start
+            applications = list(g[start].rhs)
+            variables = g.scope.find(start)
+            new_var = [] if g.scope.locked else [V.Var()]
+            options = applications + variables + new_var
+            return options
 
         def rewrite_head():
             for rule in g:
                 sub = rule.lhs.unify(self, type='match')
                 if sub is not None:
+                    options = collect_options(g, start=rule.lhs)
                     if type == 'one':
-                        return random.choice(list(rule.rhs)).substitute(sub)
-                    return [rhs.substitute(sub) for rhs in rule.rhs]
+                        choice = random.choice(options)
+                        if isinstance(choice, V.Var):
+                            g.scope.scope[choice] = rule.lhs
+                        return random.choice(options).substitute(sub)
+                    for choice in options:
+                        if isinstance(choice, V.Var) and choice not in g:
+                            g.scope.scope[choice] = rule.lhs
+                    return [o.substitute(sub) for o in options]
 
         def rewrite_body():
             for idx in xrange(len(self.body)):

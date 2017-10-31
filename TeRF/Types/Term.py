@@ -32,6 +32,9 @@ class Term(object):
     @abc.abstractproperty
     def subterms(self): raise NotImplementedError
 
+    @abc.abstractproperty
+    def places(self): raise NotImplementedError
+
     @abc.abstractmethod
     def to_string(self, verbose=0): raise NotImplementedError
 
@@ -42,10 +45,14 @@ class Term(object):
     def unify(self, t, env=None, type='simple'): raise NotImplementedError
 
     @abc.abstractmethod
-    def single_rewrite(self, trs, type='one'): raise NotImplementedError
+    def single_rewrite(self, trs, type='one', strategy='eager'):
+        raise NotImplementedError
 
     @abc.abstractmethod
     def differences(self, other, top=True): raise NotImplementedError
+    
+    @abc.abstractmethod
+    def place(self, place): raise NotImplementedError
 
     def rewrite(self, g, trace=False, states=None, **kwargs):
         return T.Trace(g, self, **kwargs).rewrite(trace, states=states)
@@ -54,5 +61,5 @@ class Term(object):
         for i, v in enumerate(self.variables):
             v.name = 'v' + str(i)
 
-    def log_p(self, grammar):
-        return grammar.log_p_term(self)
+    def log_p(self, grammar, start=None):
+        return grammar.log_p_term(self, start=start)

@@ -32,8 +32,9 @@ class Prior(object):
 
 
 if __name__ == '__main__':
+    import numpy as np
     import TeRF.Test.test_grammars as tg
-    
+
     prior = Prior()
     prior.prior_temperature = 1.0
     prior.p_rules = 0.5
@@ -41,10 +42,14 @@ if __name__ == '__main__':
     def test_prior(hypothesis):
             prior.value = hypothesis
             print '\nhypothesis:\n', prior.value
-            print '\nprior:\n', prior.compute_prior()
+            log_p = prior.compute_prior()
+            print '\nprior:\n', log_p
+            print '\n1/exp(prior):\n', 1./np.exp(log_p)
 
+    # should give -40.0076235013, or 2.37e17
     lot_with_no_vars = tg.list_lot
     test_prior(lot_with_no_vars)
 
-    # lot_with_vars = tg.head_lot
-    # test_prior(lot_with_vars)
+    # should give -9.93962659915, or 20736.0
+    lot_with_vars = tg.head_lot
+    test_prior(lot_with_vars)

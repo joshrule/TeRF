@@ -143,5 +143,14 @@ def find_files(dir, regexp=None):
     return problems
 
 
+def renormalize(xs):
+    total = float(sum(xs))
+    return [x/total for x in xs]
+
+
 class ExtensibleObject(object):
     pass
+
+
+def logsumexp(xs):
+    return scipy.misc.logsumexp(xs)

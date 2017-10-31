@@ -150,8 +150,8 @@ class Rule(collections.MutableSet):
         for i, v in enumerate(self.variables):
             v.name = 'v' + str(i)
 
-    def log_p(self, grammar):
-        return grammar.log_p_rule(self)
+    def log_p(self, grammar, start=None):
+        return grammar.log_p_rule(self, start=start)
 
 
 R = Rule

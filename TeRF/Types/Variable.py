@@ -38,6 +38,21 @@ class Variable(A.Atom, T.Term):
     def subterms(self):
         yield self
 
+    @property
+    def places(self):
+        yield []
+
+    def place(self, place):
+        if place != []:
+            raise ValueError('place: non-empty place')
+        return self
+
+    def replace(self, place, term):
+        if place == []:
+            return term
+        else:
+            raise ValueError('replace: non-empty place')
+
     def to_string(self, verbose=0):
         return str(self)
 
@@ -76,7 +91,7 @@ class Variable(A.Atom, T.Term):
             return env
         return None
 
-    def single_rewrite(self, g, type):
+    def single_rewrite(self, g, type='one', strategy='eager'):
         return None
 
     def differences(self, other, top=True):

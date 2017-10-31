@@ -1,43 +1,10 @@
 import collections
-import copy
 import itertools as I
 import numpy as np
 import TeRF.Pseudowords as P
 
 
 class TRS(collections.MutableMapping):
-
-    def find_insertion(self, other):
-        """if self == other + one more rule, return that rule, else None"""
-        self2 = copy.deepcopy(self)
-        new_rules = {rule for rule in self2.rules() if rule not in other}
-        if len(new_rules) == 1:
-            rule = new_rules.pop()
-            del self2[rule]
-            if self2 == other:
-                return rule
-        return None
-
-    def find_difference(self, other):
-        s_rules = {rule for rule in self.rules() if rule not in other}
-        o_rules = {rule for rule in other.rules() if rule not in self}
-        if len(s_rules) == len(o_rules) == 1:
-            return s_rules.pop(), o_rules.pop()
-        return (None, None)
-
-    def find_move(self, other):
-        if len(self) == len(other):
-            s_rules = {rule for rule in self.rules() if rule not in other}
-            o_rules = {rule for rule in other.rules() if rule not in self}
-            if s_rules == o_rules == set():
-                moves = [(self._order.index(other._order[i]), i)
-                         for i, key in enumerate(self._order)
-                         if i != self._order.index(other._order[i]) and
-                         i < self._order.index(other._order[i])]
-                if len(moves) == 1:
-                    return moves[0]
-        return (None, None)
-
     def save(self, filename):
         with open(filename, 'w') as f:
             f.write('signature ')

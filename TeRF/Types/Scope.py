@@ -32,6 +32,13 @@ class Scope(object):
     def __repr__(self):
         return str(self)
 
+    def __eq__(self, other):
+        return self.locked == other.locked and \
+            self.scope == other.scope
+
+    def __ne__(self, other):
+        return not self == other
+
     def entails(self, other):
         """
         does self entail other?
