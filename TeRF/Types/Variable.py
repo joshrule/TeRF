@@ -5,14 +5,30 @@ import TeRF.Types.Term as T
 class Variable(A.Atom, T.Term):
     """an unspecified term"""
     def __init__(self, name=None, **kwargs):
-        super(Variable, self).__init__(name=name, terminal=True,
-                                       head=self, **kwargs)
+        super(Variable, self).__init__(name=name,
+                                       terminal=True,
+                                       head=self,
+                                       **kwargs)
 
     def __str__(self):
         return self.name + '_'
 
     def __len__(self):
         return 1
+
+    def __eq__(self, other):
+        try:
+            return self.identity == other.identity
+        except AttributeError:
+            return False
+
+    def __ne__(self, other):
+        return not self == other
+
+    def __hash__(self):
+        if not hasattr(self, '_hash'):
+            self._hash = hash(self.identity)
+        return self._hash
 
     @property
     def atoms(self):
@@ -22,7 +38,7 @@ class Variable(A.Atom, T.Term):
     def subterms(self):
         yield self
 
-    def pretty_print(self, verbose=0):
+    def to_string(self, verbose=0):
         return str(self)
 
     def substitute(self, env):
@@ -60,32 +76,11 @@ class Variable(A.Atom, T.Term):
             return env
         return None
 
-    def single_rewrite(self, trs, type):
+    def single_rewrite(self, g, type):
         return None
 
     def differences(self, other, top=True):
         return [] if (self == other or not top) else [(self, other)]
-
-    def __eq__(self, other):
-        try:
-            return self.identity == other.identity
-        except AttributeError:
-            return False
-
-    def __ne__(self, other):
-        return not self == other
-
-    def __hash__(self):
-        if not hasattr(self, '_hash'):
-            self._hash = hash(self.identity)
-        return self._hash
-
-    def replace_variables(self, pairs=None):
-        if pairs is None:
-            return Var()
-        if self in pairs:
-            return pairs[self]
-        return self
 
 
 Var = Variable

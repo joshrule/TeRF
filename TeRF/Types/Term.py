@@ -3,19 +3,20 @@ import TeRF.Types.Trace as T
 
 
 class Term(object):
-    """trees built of Variables or Operators applied to Terms"""
+    """
+    Variables or Applications of Operators to Terms
+
+    Parameters
+    ----------
+    head : TeRF.Types.Atom
+        the root of the term
+    """
 
     __metaclass__ = abc.ABCMeta
 
     def __init__(self, head, **kwargs):
         self.head = head
         super(Term, self).__init__(**kwargs)
-
-#    def __copy__(self):
-#        return self
-#
-#    def __deepcopy__(self, memo):
-#        return self
 
     @property
     def operators(self):
@@ -32,7 +33,7 @@ class Term(object):
     def subterms(self): raise NotImplementedError
 
     @abc.abstractmethod
-    def pretty_print(self, verbose=0): raise NotImplementedError
+    def to_string(self, verbose=0): raise NotImplementedError
 
     @abc.abstractmethod
     def substitute(self, env): raise NotImplementedError
@@ -46,12 +47,12 @@ class Term(object):
     @abc.abstractmethod
     def differences(self, other, top=True): raise NotImplementedError
 
-    @abc.abstractmethod
-    def replace_variables(self): raise NotImplementedError
-
-    def rewrite(self, trs, trace=False, states=None, **kwargs):
-        return T.Trace(trs, self, **kwargs).rewrite(trace, states=states)
+    def rewrite(self, g, trace=False, states=None, **kwargs):
+        return T.Trace(g, self, **kwargs).rewrite(trace, states=states)
 
     def rename_variables(self):
         for i, v in enumerate(self.variables):
             v.name = 'v' + str(i)
+
+    def log_p(self, grammar):
+        return grammar.log_p_term(self)
