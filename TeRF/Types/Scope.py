@@ -47,3 +47,17 @@ class Scope(object):
             all(other.scope[k] == v
                 for k, v in self.scope.iteritems()
                 if k in other.scope)
+
+
+def merge_scopes(scopes):
+    if scopes == []:
+        return None
+    scope = scopes[0].copy()
+    for s in scopes:
+        if s.locked == scope.locked:
+            for k, v in s.scope.items():
+                if k in scope.scope and scope.scope[k] != v:
+                    return None
+                elif k not in scope.scope:
+                    scope.scope[k] = v
+    return scope

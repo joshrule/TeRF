@@ -7,6 +7,7 @@ import TeRF.Miscellaneous as misc
 import TeRF.Types.Application as A
 import TeRF.Types.Grammar as Grammar
 import TeRF.Types.Rule as R
+import TeRF.Types.Parse as P
 import TeRF.Types.Trace as T
 import TeRF.Types.Variable as V
 
@@ -49,7 +50,6 @@ class PCFG(CFG):
     TODO
     ----
     - add weights to the grammar
-    - handle variables in PCFG.get_possible_parses
     """
     def log_p_grammar(self, grammar, p_rule):
         """
@@ -152,58 +152,58 @@ class PCFG(CFG):
         trace = T.Trace(self, start, type='one', max_steps=max_steps)
         return trace.rewrite(states=['normal'])
 
-    def sample_term_t(self, term, max_steps=50):
-        # pick a subterm
-        print 'term:', term.to_string()
-        term = copy.deepcopy(term)
-        places = list(term.places)
-        print 'places:', places
-        while places != []:
-            place_idx = np.random.choice(len(places))
-            place = places[place_idx]
-            print 'place:', place
-            subterm = term.place(place)
-            print 'subterm:', subterm.to_string()
-
-            # find a non-terminal that could have generated it
-            parses = [p for p in self.get_possible_parses(subterm)
-                      if p[1] in self]
-            if parses == []:
-                places.remove(place)
-                continue
-            for p in parses:
-                pterm = term.replace(place, p[1])
-                print 'pterm', pterm
-                parses = self.parse(pterm)
-                print 'parses'
-                print parses
-                if parses == []:
-                    parses.remove(p)
-            parse_ps = misc.renormalize([p[0] for p in parses])
-            i = np.random.choice(len(parses), p=parse_ps)
-            parse = parses[i]
-            print 'parse:', parse
-            
-            # compute the scope for the subtree
-            scope = self.scope.copy()
-            for p in term.places:
-                if p == place:
-                    break
-                term_at_p = term.place(p)
-                if isinstance(term_at_p, V.Var) and \
-                   term_at_p not in scope.scope and \
-                   term_at_p in parse[2].scope:
-                    scope[term_at_p] = parse[2].scope[term_at_p]
-
-            # generate the tree and substitute it into the new term
-            with Grammar.scope(self, scope=scope):
-                new_subterm = self.sample_term(start=parse[1],
-                                               max_steps=max_steps)
-                print 'new_subterm:', new_subterm.to_string()
-                term = term.replace(place, new_subterm)
-            print 'returning:', term
-            return term
-        raise ValueError('sample_term_t: term cannot be resampled')
+#    def sample_term_t(self, term, max_steps=50):
+#        # pick a subterm
+#        print 'term:', term.to_string()
+#        term = copy.deepcopy(term)
+#        places = list(term.places)
+#        print 'places:', places
+#        while places != []:
+#            place_idx = np.random.choice(len(places))
+#            place = places[place_idx]
+#            print 'place:', place
+#            subterm = term.place(place)
+#            print 'subterm:', subterm.to_string()
+#
+#            # find a non-terminal that could have generated it
+#            parses = [p for p in self.get_possible_parses(subterm)
+#                      if p[1] in self]
+#            if parses == []:
+#                places.remove(place)
+#                continue
+#            for p in parses:
+#                pterm = term.replace(place, p[1])
+#                print 'pterm', pterm
+#                parses = self.parse(pterm)
+#                print 'parses'
+#                print parses
+#                if parses == []:
+#                    parses.remove(p)
+#            parse_ps = misc.renormalize([p[0] for p in parses])
+#            i = np.random.choice(len(parses), p=parse_ps)
+#            parse = parses[i]
+#            print 'parse:', parse
+#
+#            # compute the scope for the subtree
+#            scope = self.scope.copy()
+#            for p in term.places:
+#                if p == place:
+#                    break
+#                term_at_p = term.place(p)
+#                if isinstance(term_at_p, V.Var) and \
+#                   term_at_p not in scope.scope and \
+#                   term_at_p in parse[2].scope:
+#                    scope[term_at_p] = parse[2].scope[term_at_p]
+#
+#            # generate the tree and substitute it into the new term
+#            with Grammar.scope(self, scope=scope):
+#                new_subterm = self.sample_term(start=parse[1],
+#                                               max_steps=max_steps)
+#                print 'new_subterm:', new_subterm.to_string()
+#                term = term.replace(place, new_subterm)
+#            print 'returning:', term
+#            return term
+#        raise ValueError('sample_term_t: term cannot be resampled')
 
     def parse(self, term, start=None):
         """
@@ -219,69 +219,9 @@ class PCFG(CFG):
         list of (float, TeRF.Types.Term) tuples
             the possible parses and their log probabilities
         """
-        start = self.start if start is None else start
-        parses = [parse for parse in self.get_possible_parses(term)
-                  if start.unify(parse[1], 'alpha') is not None]
-        return parses
-
-    def get_possible_parses(self, term):
-        if isinstance(term, V.Var):
-            # is it in the scope already
-            try:
-                nonterminal = self.scope.scope[term]
-                n_options = len(self[nonterminal]) + \
-                    len(self.scope.find(nonterminal)) + \
-                    int(not self.scope.locked)
-                log_p = -misc.log(n_options)
-                parses = [(log_p, nonterminal, self.scope.copy())]
-            # nope, so assume we added it
-            except KeyError:
-                parses = []
-                if not self.scope.locked:
-                    for rule in self:
-                        nonterminal = rule.lhs
-                        n_options = len(self[nonterminal]) + \
-                            len(self.scope.find(nonterminal)) + \
-                            int(not self.scope.locked)
-                        log_p = -misc.log(n_options)
-                        new_scope = self.scope.copy()
-                        new_scope.scope[term] = nonterminal
-                        parses.append((log_p, nonterminal, new_scope))
-        else:
-            if term.head.arity == 0:
-                parses = [(0.0, term, self.scope.copy())]
-            else:
-                subparses = []
-                scopes = [self.scope.copy()]
-                for branch in term.body:
-                    tmp_scopes = []
-                    tmp_results = []
-                    for scope in scopes:
-                        with Grammar.scope(self, scope=scope):
-                            results = self.get_possible_parses(branch)
-                            tmp_results += results
-                            tmp_scopes += list(zip(*results)[2])
-                    scopes = list(set(tmp_scopes))
-                    subparses.append(tmp_results)
-                parses = []
-                for body in itertools.product(*subparses):
-                    log_ps, term_body, parse_scopes = zip(*body)
-                    if all(parse_scopes[-1].entails(ps)
-                           for ps in parse_scopes[:-1]):
-                        log_p = sum(log_ps)
-                        term = A.App(term.head, list(term_body))
-                        scope = body[-1][2]
-                        parses.append((log_p, term, scope))
-        for parse in parses:
-            for rule in self:
-                for clause in rule:
-                    if parse[1] == clause.rhs0:
-                        parses.append((parse[0] -
-                                       misc.log(len(rule.rhs) +
-                                                len(self.scope.find(rule.lhs)) +
-                                                int(not self.scope.locked)),
-                                       clause.lhs, parse[2]))
-        return parses
+        return list(P.Parse(grammar=self,
+                            term=term,
+                            start=start).parse().parses)
 
 
 class FPCFG(FCFG, PCFG):
@@ -303,9 +243,6 @@ if __name__ == '__main__':
     print '\nCFG:\n', cfg
 
     term = tg.head_lhs
-
-    print '\nPossible Parses for {}:\n'.format(term.to_string())
-    print_parses(cfg.get_possible_parses(term))
 
     print '\nFull Parse for {}:\n'.format(term.to_string())
     print_parses(cfg.parse(term))
