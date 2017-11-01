@@ -28,6 +28,14 @@ class CFG(Grammar.Grammar):
             raise ValueError(err_str.format(value))
         Grammar.Grammar.__setitem__(self, index, value)
 
+    def n_options(self, term):
+        try:
+            return ((len(self[term]) +
+                     int(not self.scope.locked) +
+                     len(self.scope.find(term))))
+        except KeyError:
+            return 0
+
 
 class FCFG(CFG):
     def __init__(self, primitives, **kwargs):
@@ -221,7 +229,7 @@ class PCFG(CFG):
         """
         return list(P.Parse(grammar=self,
                             term=term,
-                            start=start).parse().parses)
+                            start=start).parses)
 
 
 class FPCFG(FCFG, PCFG):
