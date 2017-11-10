@@ -154,3 +154,14 @@ class ExtensibleObject(object):
 
 def logsumexp(xs):
     return scipy.misc.logsumexp(xs)
+
+
+def attrmem(name):
+    """stolen from LOTlib"""
+    def wrap1(f):
+        def wrap2(self, *args, **kwargs):
+            v = f(self, *args, **kwargs)
+            setattr(self, name, v)
+            return v
+        return wrap2
+    return wrap1

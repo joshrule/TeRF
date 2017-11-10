@@ -1,8 +1,9 @@
+import copy
 import TeRF.Types.Atom as A
 import TeRF.Types.Term as T
 
 
-class Variable(A.Atom, T.Term):
+class Variable(T.Term, A.Atom):
     """an unspecified term"""
     def __init__(self, name=None, **kwargs):
         super(Variable, self).__init__(name=name,
@@ -30,25 +31,50 @@ class Variable(A.Atom, T.Term):
             self._hash = hash(self.identity)
         return self._hash
 
-    @property
+    def __deepcopy__(self, memo):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        memo[id(self)] = result
+        for k, v in self.__dict__.items():
+            if k == 'identity':
+                setattr(result, k, v)
+            elif k in ['_atoms', '_places', '_variables', '_operators']:
+                pass
+            else:
+                setattr(result, k, copy.deepcopy(v, memo))
+        return result
+
     def atoms(self):
-        yield self
+        try:
+            return self._atoms
+        except AttributeError:
+            self._atoms = {self}
+            return self._atoms
+
+    def variables(self):
+        try:
+            return self._variables
+        except AttributeError:
+            self._variables = {self}
+            return self._variables
+
+    def operators(self):
+        return set()
 
     @property
     def subterms(self):
         yield self
 
-    @property
     def places(self):
-        yield []
+        return []
 
     def place(self, place):
-        if place != []:
+        if list(place) != []:
             raise ValueError('place: non-empty place')
         return self
 
     def replace(self, place, term):
-        if place == []:
+        if list(place) == []:
             return term
         else:
             raise ValueError('replace: non-empty place')
@@ -69,7 +95,7 @@ class Variable(A.Atom, T.Term):
         if self == t:
             return env
         if (type is not 'alpha' or not hasattr(t, 'body')) and\
-           self not in t.variables:
+           self not in t.variables():
             if self not in env:
                 for var in env:
                     env[var] = env[var].substitute({self: t})

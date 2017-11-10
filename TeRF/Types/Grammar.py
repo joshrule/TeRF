@@ -5,7 +5,6 @@ import TeRF.Types.Application as A
 import TeRF.Types.Operator as Op
 import TeRF.Types.Rule as R
 import TeRF.Types.Scope as S
-from scipy import stats
 
 
 @contextlib.contextmanager
@@ -184,6 +183,11 @@ class Grammar(collections.MutableMapping):
             del self[rule]
         return self
 
+    def __hash__(self):
+        return hash((tuple(self._rules),
+                     tuple(self._order),
+                     self.start))
+
 #    @property
 #    def size(self):
 #        return sum(r.size for r in self)
@@ -191,10 +195,6 @@ class Grammar(collections.MutableMapping):
 #    def index(self, value):
 #        return self._order.index(value)
 #
-#    def __hash__(self):
-#        return hash((tuple(self._rules),
-#                     tuple(self._order),
-#                     self.start))
 #
 #    def clear(self):
 #        self._order = []
@@ -230,102 +230,6 @@ class Grammar(collections.MutableMapping):
 #                op.name = name
 
 
-# class ProbabilisticGrammar(Grammar):
-#     def log_p_grammar(self, grammar, p_rule, env=None):
-#         """
-#         compute the log prior probability of a grammar
-# 
-#         Parameters
-#         ----------
-#         grammar: TeRF.Types.Grammar
-#             the grammar whose probability we're computing
-#         p_rule: float
-#             the probability of adding another rule
-#         env : TeRF.Types.Environment (default: None)
-#             the set of bound and free variables
-# 
-#         Returns
-#         -------
-#         float
-#             log(p(grammar | self, p_rule, env))
-#         """
-#         p_n_rules = stats.geom.logpmf(len(grammar.clauses)+1, p=p_rule)
-#         p_rules = sum(rule.log_p(self, env=env) for rule in grammar.rules())
-#         return p_n_rules + p_rules
-# 
-#     def log_p_rule(self, rule, env=None):
-#         """
-#         give the log prior probability of a TeRF.Types.Rule
-# 
-#         Parameters
-#         ----------
-#         rule : TeRF.Types.Rule
-#             the rule whose probability is being computed
-#         env : TeRF.Types.Environment (default: None)
-#             the set of bound and free variables
-# 
-#         Returns
-#         -------
-#         float
-#             log(p(rule | self, env))
-#         """
-#         p_lhs = rule.lhs.log_p(self, env=env)
-#         with E.Environment(rule.lhs.variables, invent=False) as env1:
-#             try:
-#                 return p_lhs + rule.rhs0.log_p(self, env=env1)
-#             except AttributeError:
-#                 raise ValueError('log_p_rule: only valid for one clause rules')
-# 
-#     def log_p_term(self, term, env=None):
-#         """
-#         give the log prior probability of a TeRF.Types.Term
-# 
-#         Parameters
-#         ----------
-#         term : TeRF.Types.Term
-#             the term whose log prior probability we're computing
-#         env : TeRF.Types.Environment (default: None)
-#             the set of bound and free variables
-# 
-#         Returns
-#         -------
-#         float
-#             log(p(term | self, env))
-#         """
-#         p_head = self.log_p_atom(term.head, env=env)
-#         try:
-#             p_body = sum(t.log_p(self, env=env) for t in term.body)
-#             return p_head + p_body
-#         except AttributeError:
-#             return p_head
-# 
-#     def log_p_atom(self, atom, env=None):
-#         """
-#         give the log-probability of sampling a particular atom
-# 
-#         Parameters
-#         ----------
-#         atom : TeRF.Types.Atom
-#             the atom whose probability is being computed
-#         env : TeRF.Types.Environment (default: None)
-#             the set of bound and free variables
-# 
-#         Returns
-#         -------
-#         float
-#             log(p(atom | self, env))
-#         """
-#         if atom in self.signature:
-#             return tmisc.log(self.probs[atom])
-#         if invent and isinstance(atom, V.Var):
-#             return tmisc.log(self.probs['var']) - \
-#                 tmisc.logNof(list(self.variables) + ['var'])
-#         if atom in self.variables:
-#             return tmisc.log(self.probs['var']) - \
-#                 tmisc.logNof(list(self.variables))
-#         return tmisc.log(0)
-
-
 if __name__ == '__main__':
     import TeRF.Types.Variable as V
 
@@ -335,15 +239,15 @@ if __name__ == '__main__':
         return A.App(x, xs)
 
     # test Grammar
-    S = Op.Operator('S', 0)
+    s = Op.Operator('S', 0)
     K = Op.Operator('K', 0)
-    I = Op.Operator('I', 0)
+    i = Op.Operator('I', 0)
     x = V.Variable('x')
     y = V.Variable('y')
     z = V.Variable('z')
     a = Op.Operator('.', 2)
 
-    lhs_s = f(a, [f(a, [f(a, [f(S), x]), y]), z])
+    lhs_s = f(a, [f(a, [f(a, [f(s), x]), y]), z])
     rhs_s = f(a, [f(a, [x, z]), f(a, [y, z])])
     lhs_k = f(a, [f(a, [f(K), x]), y])
     rhs_k = x
@@ -356,7 +260,7 @@ if __name__ == '__main__':
     print '\nGrammar:\n', g
 
     # test rewriting
-    term = f(a, [f(a, [f(K), f(a, [f(a, [f(K), f(I)]), f(S)])]), f(S)])
+    term = f(a, [f(a, [f(K), f(a, [f(a, [f(K), f(i)]), f(s)])]), f(s)])
 
     print '\nterm:\n', term.to_string()
     print '\nrewrite:'

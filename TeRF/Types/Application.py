@@ -14,9 +14,31 @@ class Application(T.Term):
         else:
             raise ValueError('Application: wrong number of arguments')
 
-    @property
     def atoms(self):
-        return {self.head} | {a for t in self.body for a in t.atoms}
+        try:
+            return self._atoms
+        except AttributeError:
+            self._atoms = ({self.head} |
+                           {a for t in self.body for a in t.atoms()})
+            return self._atoms
+
+    def variables(self):
+        try:
+            return self._variables
+        except AttributeError:
+            atoms = self.atoms()
+            self._variables = {v for v in atoms
+                               if not hasattr(v, 'arity')}
+            return self._variables
+
+    def operators(self):
+        try:
+            return self._operators
+        except AttributeError:
+            atoms = self.atoms()
+            self._operators = {o for o in atoms
+                               if hasattr(o, 'arity')}
+            return self._operators
 
     @property
     def subterms(self):
@@ -25,20 +47,26 @@ class Application(T.Term):
             for subterm in term.subterms:
                 yield subterm
 
-    @property
     def places(self):
-        yield []
-        for i, term in enumerate(self.body):
-            for place in term.places:
-                yield [i] + place
+        try:
+            return self._places
+        except AttributeError:
+            self._places = [[]]
+            for i, term in enumerate(self.body):
+                for place in term.places():
+                    self._places += [[i] + place]
+            return self._places
 
     def place(self, place):
-        if place == []:
+        if list(place) == []:
             return self
-        return self.body[place[0]].place(place[1:])
+        try:
+            return self.body[place[0]].place(place[1:])
+        except IndexError:
+            raise ValueError('place: invalid place')
 
     def replace(self, place, term):
-        if place == []:
+        if list(place) == []:
             return term
         else:
             body = self.body[:]
@@ -263,7 +291,6 @@ class Application(T.Term):
 
     def differences(self, other, top=True):
         # TODO: What if heads have different arity?
-        # TODO: What if other isn't an application?
         if (self == other):
             return []
         diffs = ([(self, other)] if top else [])

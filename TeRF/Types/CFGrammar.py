@@ -76,9 +76,7 @@ class PCFG(CFG):
             log(p(grammar | self, p_rule))
         """
         p_n_rules = stats.geom.logpmf(len(grammar.clauses)+1, p=p_rule)
-        print 'p_n_rules', p_n_rules
         p_rules = sum(rule.log_p(self) for rule in grammar)
-        print 'p_rules', p_rules
         return p_n_rules + p_rules
 
     def log_p_rule(self, rule, start=None):
@@ -102,15 +100,16 @@ class PCFG(CFG):
             for lhs_parse in lhs_parses:
                 rhs_ps = []
                 for rhs in rule.rhs:
-                    with Grammar.scope(self, scope=lhs_parse[2], lock=True):
+                    with Grammar.scope(self, scope=lhs_parse.down_scope,
+                                       lock=True):
                         rhs_ps.append(rhs.log_p(self, start=start))
-                parse_ps.append(len(rule.rhs)*lhs_parse[0] + sum(rhs_ps))
+                parse_ps.append(len(rule.rhs)*lhs_parse.log_p + sum(rhs_ps))
         return smisc.logsumexp(parse_ps) if parse_ps != [] else -np.inf
 
     def sample_rule(self, start=None):
         """
         sample a Rule from the grammar
-        
+
         Returns
         -------
         TeRF.Types.Rule
@@ -120,10 +119,8 @@ class PCFG(CFG):
         while not isinstance(lhs, A.Application):
             with Grammar.scope(self):
                 lhs = self.sample_term(start=start)
-                print 'lhs', lhs.to_string()
         with Grammar.scope(self, lock=True):
             rhs = self.sample_term(start=start)
-            print 'rhs', rhs.to_string()
         return R.Rule(lhs, rhs)
 
     def log_p_term(self, term, start=None):
@@ -142,9 +139,9 @@ class PCFG(CFG):
         """
         try:
             parses = self.parse(term, start=start)
-            return smisc.logsumexp(list(zip(*parses)[0]))
-        except IndexError:
-            return misc.log(0.0)
+            return misc.logsumexp([p.log_p for p in parses])
+        except ValueError:
+            return -np.inf
 
     def sample_term(self, start=None, max_steps=50):
         """

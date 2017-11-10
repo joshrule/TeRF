@@ -1,4 +1,3 @@
-import abc
 import copy
 
 
@@ -13,7 +12,6 @@ class Atom(object):
     name : string (default: None)
         the name of the atom. If None, the name comes from the identity.
     """
-    __metaclass__ = abc.ABCMeta
 
     def __init__(self, terminal, name=None, **kwargs):
         self.terminal = terminal

@@ -31,6 +31,7 @@ THREE = Op.Operator('3', 0)
 DOT = Op.Operator('.', 2)
 HEAD = Op.Operator('head', 0)
 TAIL = Op.Operator('tail', 0)
+NUMBERS = [Op.Operator(str(i), 0) for i in xrange(100)]
 
 # make a few variables
 X = V.Var('x')
@@ -147,3 +148,14 @@ list_datum_T = R.Rule(f(LIST),
 list_datum_F = R.Rule(f(LIST),
                       g(g(f(ONE), f(ZERO)),
                         f(NIL)))
+
+# full head syntax
+rule_START = R.Rule(f(START), {f(LIST), f(NUMBER)})
+rule_LIST = R.Rule(f(LIST), {f(NIL), f(NEL)})
+rule_NEL = R.Rule(f(NEL), g(g(f(CONS), f(NUMBER)), f(LIST)))
+rule_NUMBER = R.Rule(f(NUMBER), {f(N) for N in NUMBERS})
+rule_HEAD = R.Rule(f(NUMBER), g(f(HEAD), f(NEL)))
+
+full_head_pcfg = CFG.PCFG(rules={rule_START, rule_LIST, rule_NEL,
+                                 rule_NUMBER, rule_HEAD},
+                          start=f(START), locked=False)

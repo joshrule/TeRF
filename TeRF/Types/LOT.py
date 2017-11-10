@@ -47,7 +47,7 @@ class LOT(object):
 
         # now that we have our primitives and syntax, check our semantics
         if semantics is None:
-            syntax = G.Grammar()
+            semantics = G.Grammar()
         # TODO: can terms in `semantics` be parsed by `syntax`?
         if isinstance(semantics, G.Grammar):
             self.semantics = semantics

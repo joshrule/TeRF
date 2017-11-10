@@ -1,27 +1,46 @@
+import copy
 import collections as coll
 import itertools
 import TeRF.Miscellaneous as misc
 import TeRF.Types.Application as A
 import TeRF.Types.Grammar as Grammar
+import TeRF.Types.Scope as S
 import TeRF.Types.Variable as V
+
+
+parses = {}
 
 
 class ParseComplete(Exception):
     pass
 
 
+def make_bg(grammar):
+    bg = {}
+    for clause in grammar.clauses:
+        if clause.rhs0 in bg:
+            bg[clause.rhs0] += clause.lhs
+        else:
+            bg[clause.rhs0] = [clause.lhs]
+    return bg
+
+
 class Parse(object):
-    def __init__(self, grammar, term, start=None, place=None):
+    def __init__(self, grammar, term, start=None, place=None, bg=None):
         self.grammar = grammar
         self.start = start
         self._parses = set()
-        self._parsed = False
         self.term = term
         self.place = [] if place is None else place
         self._queue = coll.deque()
-        self.dead_ends = set()
+        self._bg = make_bg(grammar) if bg is None else bg
+        key_g = copy.copy(grammar)
+        key_g.scope = S.Scope(locked=grammar.scope.locked)
+        self.key = (key_g, term)
 
     def find_resample_points(self):
+        if not self._parsed:
+            self.parse()
         rps = []
         for p in self.parses:
             for x in p.find_resample_points(self.grammar):
@@ -30,16 +49,19 @@ class Parse(object):
         return rps
 
     def parse(self):
-        if not self._parsed:
+        try:
+            self._parses = parses[self.key]
+        except KeyError:
             self.__initialize_queue()
             self.__process_queue()
-            self._parsed = True
+            parses[self.key] = self._parses.copy()
         return self
 
     @property
     def parses(self):
         self.parse()
-        return self._parses
+        return {p for p in self._parses
+                if self.start is None or self.start == p.term}
 
     def __initialize_queue(self):
         if isinstance(self.term, V.Var):
@@ -66,16 +88,9 @@ class Parse(object):
             parse = self._queue.popleft()
         except IndexError:
             raise ParseComplete()
-        if self.start is None or parse.term == self.start:
-            self._parses.add(parse)
-        if parse.term not in self.dead_ends:
-            steps = self.__augment_parse(parse)
-            if steps == [] and \
-               self.start is not None and \
-               parse.term != self.start:
-                self.dead_ends.add(parse.term)
-            else:
-                self._queue.extend(steps)
+        self._parses.add(parse)
+        steps = self.__augment_parse(parse)
+        self._queue.extend(steps)
 
     def __parse_in_scope_variable(self, parse_step):
         nonterminal = self.grammar.scope.scope[parse_step.term]
@@ -115,7 +130,8 @@ class Parse(object):
     def __parse_branches(self, term):
         body_parses = [[p] for p in Parse(self.grammar,
                                           term.body[0],
-                                          place=self.place + [0]).parses]
+                                          place=self.place + [0],
+                                          bg=self._bg).parses]
         for i, b in enumerate(term.body[1:], 1):
             tmp = []
             for bp in body_parses:
@@ -123,37 +139,32 @@ class Parse(object):
                     new_place = self.place + [i]
                     tmp += [bp + [p]
                             for p in Parse(self.grammar, b,
-                                           place=new_place).parses]
+                                           place=new_place,
+                                           bg=self._bg).parses]
             body_parses = tmp[:]
         return body_parses
 
     def __combine_branch_parses(self, head, branch_parses):
-        parses = []
-        for body in branch_parses:
-            scope = body[-1].down_scope.copy()
-            log_p = sum(b.log_p for b in body)
-            term = A.App(head, [b.term for b in body])
-            parses.append(ParseStep(term,
-                                    log_p,
-                                    self.grammar.scope.copy(),
-                                    self.place,
-                                    down_scope=scope,
-                                    children=body))
-        return parses
+        return [ParseStep(A.App(head, [b.term for b in body]),
+                          sum(b.log_p for b in body),
+                          self.grammar.scope.copy(),
+                          self.place,
+                          down_scope=body[-1].down_scope.copy(),
+                          children=body)
+                for body in branch_parses]
 
     def __augment_parse(self, parse_step):
-        parses = []
-        for clause in self.grammar.clauses:
-            if parse_step.term == clause.rhs0:
-                log_p = parse_step.log_p - \
-                        misc.log(self.grammar.n_options(clause.lhs))
-                parses.append(ParseStep(clause.lhs,
-                                        log_p,
-                                        parse_step.up_scope.copy(),
-                                        parse_step.place,
-                                        down_scope=parse_step.down_scope.copy(),
-                                        children=[parse_step]))
-        return parses
+        try:
+            return [ParseStep(term,
+                              (parse_step.log_p -
+                               misc.log(self.grammar.n_options(term))),
+                              parse_step.up_scope.copy(),
+                              parse_step.place,
+                              down_scope=parse_step.down_scope.copy(),
+                              children=[parse_step])
+                    for term in self._bg[parse_step.term]]
+        except KeyError:
+            return []
 
 
 class ParseStep(object):
@@ -161,8 +172,8 @@ class ParseStep(object):
                  down_scope=None):
         self.log_p = log_p
         self.term = term
-        self.up_scope = scope.copy()
-        self.down_scope = scope.copy() if down_scope is None else down_scope
+        self.up_scope = scope
+        self.down_scope = scope if down_scope is None else down_scope
         self.place = place
         self.children = [] if children is None else list(children)
 
@@ -188,8 +199,9 @@ class ParseStep(object):
 
 
 class RuleParse(object):
-    def __init__(self, grammar, rule, start=None):
+    def __init__(self, grammar, rule, start=None, bg=None):
         self.grammar = grammar
+        self._bg = make_bg(grammar) if bg is None else bg
         self.start = start
         self._parses = set()
         self._parsed = False
@@ -208,17 +220,19 @@ class RuleParse(object):
         with Grammar.scope(self.grammar):
             lhs_parses = Parse(self.grammar,
                                self.rule.lhs,
-                               place=['l'],
-                               start=self.start).parses
+                               place=['lhs'],
+                               start=self.start,
+                               bg=self._bg).parses
         start_scope_combos = {(p.term, p.down_scope) for p in lhs_parses}
         for combo in start_scope_combos:
             partial_parses = []
-            for rhs in self.rule.rhs:
+            for i, rhs in enumerate(self.rule.rhs):
                 with Grammar.scope(self.grammar, scope=combo[1], lock=True):
                     partial_parses.append(Parse(self.grammar,
                                                 rhs,
-                                                place=['r', rhs],
-                                                start=combo[0]).parses)
+                                                place=['rhs', i],
+                                                start=combo[0],
+                                                bg=self._bg).parses)
             rhs_parses = set(itertools.product(*partial_parses))
             for lhs_parse in lhs_parses:
                 if lhs_parse.term == combo[0] and \

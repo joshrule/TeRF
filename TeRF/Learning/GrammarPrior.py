@@ -20,14 +20,14 @@ class Prior(object):
         -------
           self.value: from LOTlib.Hypotheses.Hypothesis
           self.prior_temperature: from LOTlib.Hypotheses.Hypothesis
-          self.p_rules: should be an argument to hypothesis' __init__
+          self.p_rule: should be an argument to hypothesis' __init__
         Returns
         -------
         float
             -inf <= x <= 0, ln p(self.value)
         """
         raw_prior = self.value.semantics.log_p(self.value.syntax,
-                                               self.p_rules)
+                                               self.p_rule)
         return raw_prior / self.prior_temperature
 
 
@@ -37,7 +37,7 @@ if __name__ == '__main__':
 
     prior = Prior()
     prior.prior_temperature = 1.0
-    prior.p_rules = 0.5
+    prior.p_rule = 0.5
 
     def test_prior(hypothesis):
             prior.value = hypothesis
