@@ -1,15 +1,9 @@
-import copy
-import itertools
 import numpy as np
 from scipy import stats
-from scipy import misc as smisc
-import TeRF.Miscellaneous as misc
 import TeRF.Types.Application as A
 import TeRF.Types.Grammar as Grammar
 import TeRF.Types.Rule as R
-import TeRF.Types.Parse as P
 import TeRF.Types.Trace as T
-import TeRF.Types.Variable as V
 
 
 class CFG(Grammar.Grammar):
@@ -59,56 +53,23 @@ class PCFG(CFG):
     ----
     - add weights to the grammar
     """
-    def log_p_grammar(self, grammar, p_rule):
-        """
-        compute the log prior probability of a grammar
 
-        Parameters
-        ----------
-        grammar: TeRF.Types.Grammar
-            the grammar whose probability we're computing
-        p_rule: float
-            the probability of adding another rule
+    def sample_grammar(self, p_rule=0.5, start=None, **kwargs):
+        """
+        sample a grammar from the grammar
 
         Returns
         -------
-        float
-            log(p(grammar | self, p_rule))
+        TeRF.Types.Grammar
+            the sampled grammar
         """
-        p_n_rules = stats.geom.logpmf(len(grammar.clauses)+1, p=p_rule)
-        p_rules = sum(rule.log_p(self) for rule in grammar)
-        return p_n_rules + p_rules
-
-    def log_p_rule(self, rule, start=None):
-        """
-        give the log prior probability of a TeRF.Types.Rule
-
-        Parameters
-        ----------
-        rule : TeRF.Types.Rule
-            the rule whose probability is being computed
-
-        Returns
-        -------
-        float
-            log(p(rule | self))
-        """
-        # get the parses for the lhs
-        with Grammar.scope(self, reset=True):
-            parse_ps = []
-            lhs_parses = self.parse(rule.lhs, start=start)
-            for lhs_parse in lhs_parses:
-                rhs_ps = []
-                for rhs in rule.rhs:
-                    with Grammar.scope(self, scope=lhs_parse.down_scope,
-                                       lock=True):
-                        rhs_ps.append(rhs.log_p(self, start=start))
-                parse_ps.append(len(rule.rhs)*lhs_parse.log_p + sum(rhs_ps))
-        return smisc.logsumexp(parse_ps) if parse_ps != [] else -np.inf
+        n_rules = stats.geom.rvs(p=p_rule)-1
+        rules = [self.sample_rule(start=start) for _ in xrange(n_rules)]
+        return Grammar.Grammar(rules, **kwargs)
 
     def sample_rule(self, start=None):
         """
-        sample a Rule from the grammar
+        sample a rule from the grammar
 
         Returns
         -------
@@ -119,33 +80,18 @@ class PCFG(CFG):
         while not isinstance(lhs, A.Application):
             with Grammar.scope(self):
                 lhs = self.sample_term(start=start)
-        with Grammar.scope(self, lock=True):
-            rhs = self.sample_term(start=start)
+                with Grammar.scope(self, lock=True):
+                    rhs = self.sample_term(start=start)
         return R.Rule(lhs, rhs)
-
-    def log_p_term(self, term, start=None):
-        """
-        give the log prior probability of a TeRF.Types.Term
-
-        Parameters
-        ----------
-        term : TeRF.Types.Term
-            the term whose log prior probability we're computing
-
-        Returns
-        -------
-        float
-            log(p(term | self))
-        """
-        try:
-            parses = self.parse(term, start=start)
-            return misc.logsumexp([p.log_p for p in parses])
-        except ValueError:
-            return -np.inf
 
     def sample_term(self, start=None, max_steps=50):
         """
         sample a term from the grammar
+
+        TODO
+        ----
+        - What if the grammar doesn't terminate? Is there a better solution
+          than a hard limit?
 
         Returns
         -------
@@ -153,80 +99,8 @@ class PCFG(CFG):
             the sampled term
         """
         start = self.start if start is None else start
-        # TODO: does the grammar terminate? How do you respond if not?
         trace = T.Trace(self, start, type='one', max_steps=max_steps)
         return trace.rewrite(states=['normal'])
-
-#    def sample_term_t(self, term, max_steps=50):
-#        # pick a subterm
-#        print 'term:', term.to_string()
-#        term = copy.deepcopy(term)
-#        places = list(term.places)
-#        print 'places:', places
-#        while places != []:
-#            place_idx = np.random.choice(len(places))
-#            place = places[place_idx]
-#            print 'place:', place
-#            subterm = term.place(place)
-#            print 'subterm:', subterm.to_string()
-#
-#            # find a non-terminal that could have generated it
-#            parses = [p for p in self.get_possible_parses(subterm)
-#                      if p[1] in self]
-#            if parses == []:
-#                places.remove(place)
-#                continue
-#            for p in parses:
-#                pterm = term.replace(place, p[1])
-#                print 'pterm', pterm
-#                parses = self.parse(pterm)
-#                print 'parses'
-#                print parses
-#                if parses == []:
-#                    parses.remove(p)
-#            parse_ps = misc.renormalize([p[0] for p in parses])
-#            i = np.random.choice(len(parses), p=parse_ps)
-#            parse = parses[i]
-#            print 'parse:', parse
-#
-#            # compute the scope for the subtree
-#            scope = self.scope.copy()
-#            for p in term.places:
-#                if p == place:
-#                    break
-#                term_at_p = term.place(p)
-#                if isinstance(term_at_p, V.Var) and \
-#                   term_at_p not in scope.scope and \
-#                   term_at_p in parse[2].scope:
-#                    scope[term_at_p] = parse[2].scope[term_at_p]
-#
-#            # generate the tree and substitute it into the new term
-#            with Grammar.scope(self, scope=scope):
-#                new_subterm = self.sample_term(start=parse[1],
-#                                               max_steps=max_steps)
-#                print 'new_subterm:', new_subterm.to_string()
-#                term = term.replace(place, new_subterm)
-#            print 'returning:', term
-#            return term
-#        raise ValueError('sample_term_t: term cannot be resampled')
-
-    def parse(self, term, start=None):
-        """
-        parse a term
-
-        Parameters
-        ----------
-        term : TeRF.Types.Term
-            the term being parsed
-
-        Returns
-        -------
-        list of (float, TeRF.Types.Term) tuples
-            the possible parses and their log probabilities
-        """
-        return list(P.Parse(grammar=self,
-                            term=term,
-                            start=start).parses)
 
 
 class FPCFG(FCFG, PCFG):
