@@ -14,23 +14,6 @@ class Variable(T.Term, A.Atom):
     def __str__(self):
         return self.name + '_'
 
-    def __len__(self):
-        return 1
-
-    def __eq__(self, other):
-        try:
-            return self.identity == other.identity
-        except AttributeError:
-            return False
-
-    def __ne__(self, other):
-        return not self == other
-
-    def __hash__(self):
-        if not hasattr(self, '_hash'):
-            self._hash = hash(self.identity)
-        return self._hash
-
     def __deepcopy__(self, memo):
         cls = self.__class__
         result = cls.__new__(cls)
@@ -43,6 +26,23 @@ class Variable(T.Term, A.Atom):
             else:
                 setattr(result, k, copy.deepcopy(v, memo))
         return result
+
+    def __eq__(self, other):
+        try:
+            return self.identity == other.identity
+        except AttributeError:
+            return False
+
+    def __hash__(self):
+        if not hasattr(self, '_hash'):
+            self._hash = hash(self.identity)
+        return self._hash
+
+    def __len__(self):
+        return 1
+
+    def __ne__(self, other):
+        return not self == other
 
     def atoms(self):
         try:
@@ -105,23 +105,8 @@ class Variable(T.Term, A.Atom):
                 return env
         return None
 
-    def parity(self, t, env=None):
-        env = {} if env is None else env
-
-        if hasattr(t, 'body'):
-            return None
-        if self in env and env[self] is t:
-            return env
-        if t not in env.values() and self not in env:
-            env[self] = t
-            return env
-        return None
-
     def single_rewrite(self, g, type='one', strategy='eager'):
         return None
-
-    def differences(self, other, top=True):
-        return [] if (self == other or not top) else [(self, other)]
 
 
 Var = Variable

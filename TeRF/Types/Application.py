@@ -14,6 +14,29 @@ class Application(T.Term):
         else:
             raise ValueError('Application: wrong number of arguments')
 
+    def __eq__(self, other):
+        try:
+            return self.head == other.head and self.body == other.body
+        except AttributeError:
+            return False
+
+    def __hash__(self):
+        if not hasattr(self, '_hash'):
+            self._hash = hash((self.head, tuple(hash(b) for b in self.body)))
+        return self._hash
+
+    def __ne__(self, other):
+        return not self == other
+
+    def __len__(self):
+        return sum(1 for _ in self.subterms)
+
+    def __repr__(self):
+        return 'Application({}, {})'.format(repr(self.head), repr(self.body))
+
+    def __str__(self):
+        return '{}[{}]'.format(self.head, ', '.join(str(x) for x in self.body))
+
     def atoms(self):
         try:
             return self._atoms
@@ -72,29 +95,6 @@ class Application(T.Term):
             body = self.body[:]
             body[place[0]] = body[place[0]].replace(place[1:], term)
             return Application(self.head, body)
-
-    def __str__(self):
-        return '{}[{}]'.format(self.head, ', '.join(str(x) for x in self.body))
-
-    def __repr__(self):
-        return 'Application({}, {})'.format(repr(self.head), repr(self.body))
-
-    def __len__(self):
-        return sum(1 for _ in self.subterms)
-
-    def __eq__(self, other):
-        try:
-            return self.head == other.head and self.body == other.body
-        except AttributeError:
-            return False
-
-    def __ne__(self, other):
-        return not self == other
-
-    def __hash__(self):
-        if not hasattr(self, '_hash'):
-            self._hash = hash((self.head, tuple(hash(b) for b in self.body)))
-        return self._hash
 
     def is_list(self):
         """
@@ -191,31 +191,6 @@ class Application(T.Term):
                 return t.unify(self, env, type)
         return None
 
-    def parity(self, t, env=None):
-        env = {} if env is None else env
-
-        try:
-            if self.head.arity is t.head.arity:
-                if t.head not in env.values() and self.head not in env:
-                    env[self.head] = t.head
-                    for (st1, st2) in it.izip(self.body, t.body):
-                        env = st1.parity(st2, env)
-                        if env is None:
-                            break
-                    return env
-                try:
-                    if env[self.head] is t.head:
-                        for (st1, st2) in it.izip(self.body, t.body):
-                            env = st1.parity(st2, env)
-                            if env is None:
-                                break
-                        return env
-                except KeyError:
-                    pass
-        except AttributeError:
-            pass
-        return None
-
     def single_rewrite(self, g, type='one', strategy='eager'):
 
         def collect_options(g, start=None):
@@ -288,20 +263,6 @@ class Application(T.Term):
             ha = [] if head_attempt is None else head_attempt
             attempts = [a for a in ha + body_attempt if a is not None]
             return attempts
-
-    def differences(self, other, top=True):
-        # TODO: What if heads have different arity?
-        if (self == other):
-            return []
-        diffs = ([(self, other)] if top else [])
-        try:
-            if self.head == other.head:
-                diffs += list(it.chain(*[st1.differences(st2)
-                                         for st1, st2 in it.izip(self.body,
-                                                                 other.body)]))
-        except AttributeError:
-            pass
-        return diffs
 
 
 App = Application
