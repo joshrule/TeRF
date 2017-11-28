@@ -1,8 +1,8 @@
-# import TeRF.Types.Application as A
+import TeRF.Types.Application as A
+import TeRF.Types.Operator as Op
 # import TeRF.Types.CFGrammar as CFG
 # import TeRF.Types.Grammar as G
 # import TeRF.Types.LOT as LOT
-# import TeRF.Types.Operator as Op
 # import TeRF.Types.Rule as R
 # import TeRF.Types.Variable as V
 
@@ -12,32 +12,45 @@ primitives = 'primitives'
 semantics = 'semantics'
 
 
-# def f(x, xs=None):
-#     if xs is None:
-#         xs = []
-#     return A.App(x, xs)
-#
-#
-# def g(x, y):
-#     return A.App(DOT, [x, y])
-#
-#
-# # make a bunch of primitives
-# START = Op.Operator('START', 0)
-# LIST = Op.Operator('list', 0)
-# NUMBER = Op.Operator('number', 0)
-# NIL = Op.Operator('nil', 0)
-# NEL = Op.Operator('nel', 0)
-# CONS = Op.Operator('cons', 0)
-# ZERO = Op.Operator('0', 0)
-# ONE = Op.Operator('1', 0)
-# TWO = Op.Operator('2', 0)
-# THREE = Op.Operator('3', 0)
-# DOT = Op.Operator('.', 2)
-# HEAD = Op.Operator('head', 0)
-# TAIL = Op.Operator('tail', 0)
-# NUMBERS = [Op.Operator(str(i), 0) for i in xrange(100)]
-#
+def f(x, xs=None):
+    if xs is None:
+        xs = []
+    return A.App(x, xs)
+
+
+def g(x, y):
+    return A.App(DOT, [x, y])
+
+
+def h(x, y):
+    return A.App(DOT, [f(x), f(y)])
+
+def j(x, y):
+    return A.App(DOT, [f(x), y])
+
+
+def k(x, y):
+    return A.App(DOT, [x, f(y)])
+
+
+# make a bunch of primitives
+START = Op.Operator('START', 0)
+LIST = Op.Operator('list', 0)
+NUMBER = Op.Operator('number', 0)
+NIL = Op.Operator('nil', 0)
+NEL = Op.Operator('nel', 0)
+CONS = Op.Operator('cons', 0)
+ZERO = Op.Operator('0', 0)
+ONE = Op.Operator('1', 0)
+TWO = Op.Operator('2', 0)
+THREE = Op.Operator('3', 0)
+DOT = Op.Operator('.', 2)
+HEAD = Op.Operator('head', 0)
+TAIL = Op.Operator('tail', 0)
+ID = Op.Operator('id', 0)
+PAIR = Op.Operator('pr', 0)
+NUMBERS = [Op.Operator(str(i), 0) for i in xrange(100)]
+
 # # make a few variables
 # X = V.Var('x')
 # Y = V.Var('y')
