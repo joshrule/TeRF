@@ -34,28 +34,19 @@ class Function(TypeOperator):
         return '(' + str(self.types[0]) + ' -> ' + str(self.types[1]) + ')'
 
 
-class List(TypeOperator):
-    def __init__(self, alpha_type):
-        super(List, self).__init__('LIST', [alpha_type])
-
-
-class Pair(TypeOperator):
-    def __init__(self, alpha_type, beta_type):
-        super(Pair, self).__init__('PAIR', [alpha_type, beta_type])
-
-
 class TypeBinding(object):
     def __init__(self, bound_variable, type):
         self.bound_variable = bound_variable
         self.type = type
 
     def __str__(self):
-        print '()' + self.bound_variable + '.' + str(type)
+        return '()' + str(self.bound_variable) + '.' + str(self.type)
 
 
 class TypeSystem(object):
     def __init__(self, env=None):
         self.default_env = {} if env is None else env
+        self.typings = {}
 
     def type(self, term, env=None):
         if env is None:
@@ -64,18 +55,35 @@ class TypeSystem(object):
             the_env = self.default_env.copy()
             the_env.update(env)
 
+        if term in self.typings:
+            return self.typings[term]
+
         if isinstance(term, V.Variable):
-            return instantiate(the_env[term])
+            the_type = generalize(instantiate(the_env[term]), env=the_env)
+            self.typings[term] = the_type
+            return the_type
 
         elif isinstance(term, A.Application):
             head_type = instantiate(the_env[term.head])
-            body_types = [self.type(t, env=the_env.copy()) for t in term.body]
+            body_types = [instantiate(self.type(t, env=the_env.copy()))
+                          for t in term.body]
             constraints, final_type = gather_constraints(head_type, body_types)
             substitution = unify(constraints)
-            return substitute(final_type, substitution)
+            the_type = generalize(substitute(final_type, substitution),
+                                  env=the_env)
+            self.typings[term] = the_type
+            return the_type
 
         else:
             raise ValueError('type: can only type terms')
+
+
+def generalize(type, env):
+    fvs = free_vars(type, env=env)
+    the_type = type
+    for v in fvs:
+        the_type = TypeBinding(v, the_type)
+    return the_type
 
 
 def instantiate(type):
@@ -143,9 +151,11 @@ def unify(cs):
             return None
 
 
-def free_vars(type):
+def free_vars(type, env=None):
     if isinstance(type, TypeVariable):
-        return {type}
+        if env is None or type not in env.values():
+            return {type}
+        return set()
     elif isinstance(type, TypeOperator):
         return {v for t in type.types for v in free_vars(t)}
     elif isinstance(type, TypeBinding):
@@ -200,6 +210,14 @@ if __name__ == '__main__':
     vH = TypeVariable()
     x = V.Variable('x')
 
+    class List(TypeOperator):
+        def __init__(self, alpha_type):
+            super(List, self).__init__('LIST', [alpha_type])
+
+    class Pair(TypeOperator):
+        def __init__(self, alpha_type, beta_type):
+            super(Pair, self).__init__('PAIR', [alpha_type, beta_type])
+
     # create a type system
     types = {tg.NIL: TypeBinding(vC, List(vC)),
              tg.ZERO: NAT,
@@ -226,6 +244,10 @@ if __name__ == '__main__':
     tsys = TypeSystem(env=types.copy())
 
     # type some terms
+    t1 = tg.g(tg.j(tg.PAIR,
+                   tg.j(tg.ID, tg.k(tg.h(tg.CONS, tg.ONE), tg.NIL))),
+              tg.h(tg.ID, tg.ZERO))
+
     for term in [tg.f(tg.NIL),
                  tg.f(tg.CONS),
                  tg.h(tg.HEAD, tg.NIL),
@@ -238,10 +260,10 @@ if __name__ == '__main__':
                  tg.g(tg.j(tg.PAIR,
                            tg.h(tg.ID, tg.NIL)),
                       tg.h(tg.ID, tg.ZERO)),
-                 tg.g(tg.j(tg.PAIR,
-                           tg.j(tg.ID, tg.k(tg.h(tg.CONS, tg.ONE), tg.NIL))),
-                      tg.h(tg.ID, tg.ZERO))
-                 ]:
+                 t1,
+                 t1,
+                 t1,
+                 tg.f(tg.PAIR)]:
         print 'term:', term.to_string()
         start = time.time()
         type = tsys.type(term)
@@ -249,3 +271,6 @@ if __name__ == '__main__':
         print 'type:', type
         print 'time:', 1e6*(stop-start)/float(len(term))
         print
+
+    for st in term.subterms:
+        print st.to_string(), tsys.type(st)
