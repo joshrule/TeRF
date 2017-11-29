@@ -77,6 +77,29 @@ class TypeSystem(object):
         else:
             raise ValueError('type: can only type terms')
 
+    def type_rule(self, rule, env=None):
+        if rule in self.typings:
+            return self.typings[rule]
+
+        lhs_type = instantiate(self.type(rule.lhs, env=env))
+
+        v_types = {v: self.type(v, env=env) for v in term.variables()}
+        if env is None:
+            env = v_types
+        else:
+            env.update(v_types)
+
+        rhs_types = [instantiate(self.type(rhs, env=env.copy()))
+                     for rhs in rule.rhs]
+
+        mapping = unify({(lhs_type, rhs_type) for rhs_type in rhs_types})
+        final_type = None
+        if mapping is not None:
+            final_type = generalize(substitute(lhs_type, mapping), env=env)
+
+        self.typings[rule] = final_type
+        return final_type
+
 
 def generalize(type, env):
     fvs = free_vars(type, env=env)
@@ -134,13 +157,15 @@ def unify(cs):
         if s == t:
             return unify(cs)
         elif isinstance(s, TypeVariable) and s not in free_vars(t):
-            return compose(unify(substitute_constraints(cs,
-                                                        {s: t})),
-                           {s: t})
+            partial = unify(substitute_constraints(cs, {s: t}))
+            if partial is None:
+                return None
+            return compose(partial, {s: t})
         elif isinstance(t, TypeVariable) and t not in free_vars(s):
-            return compose(unify(substitute_constraints(cs,
-                                                        {t: s})),
-                           {t: s})
+            partial = unify(substitute_constraints(cs, {t: s}))
+            if partial is None:
+                return None
+            return compose(partial, {t: s})
         elif (isinstance(s, TypeOperator) and
               isinstance(t, TypeOperator) and
               s.name == t.name and
@@ -195,6 +220,7 @@ def compose(sub1, sub2):
 
 if __name__ == '__main__':
     import TeRF.Test.test_grammars as tg
+    import TeRF.Types.Rule as R
     import time
 
     # setup a few helper types
@@ -274,3 +300,11 @@ if __name__ == '__main__':
 
     for st in term.subterms:
         print st.to_string(), tsys.type(st)
+
+    rule = R.Rule(tg.h(tg.HEAD, tg.NIL), [tg.f(tg.NIL), tg.k(tg.h(tg.CONS,
+                                                                  tg.TWO),
+                                                             tg.NIL)])
+    # rule = R.Rule(tg.f(tg.PAIR), tg.f(tg.ID))
+    type = tsys.type_rule(rule)
+    print 'rule:', rule
+    print 'type:', type
