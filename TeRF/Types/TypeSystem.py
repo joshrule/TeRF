@@ -1,5 +1,10 @@
+"""Much thanks to https://github.com/rob-smallshire/hindley-milner-python/"""
+
+
+import TeRF.Miscellaneous as misc
 import TeRF.Types.Variable as V
 import TeRF.Types.Application as A
+import numpy as np
 
 
 class TypeVariable(object):
@@ -56,23 +61,23 @@ class TypeSystem(object):
             the_env.update(env)
 
         if term in self.typings:
-            return self.typings[term]
+            return self.typings[term], {}
 
         if isinstance(term, V.Variable):
             the_type = generalize(instantiate(the_env[term]), env=the_env)
             self.typings[term] = the_type
-            return the_type
+            return the_type, {}
 
         elif isinstance(term, A.Application):
             head_type = instantiate(the_env[term.head])
-            body_types = [instantiate(self.type(t, env=the_env.copy()))
+            body_types = [instantiate(self.type(t, env=the_env.copy())[0])
                           for t in term.body]
             constraints, final_type = gather_constraints(head_type, body_types)
             substitution = unify(constraints)
             the_type = generalize(substitute(final_type, substitution),
                                   env=the_env)
             self.typings[term] = the_type
-            return the_type
+            return the_type, substitution
 
         else:
             raise ValueError('type: can only type terms')
@@ -81,15 +86,15 @@ class TypeSystem(object):
         if rule in self.typings:
             return self.typings[rule]
 
-        lhs_type = instantiate(self.type(rule.lhs, env=env))
+        lhs_type = instantiate(self.type(rule.lhs, env=env)[0])
 
-        v_types = {v: self.type(v, env=env) for v in term.variables()}
+        v_types = {v: self.type(v, env=env)[0] for v in term.variables()}
         if env is None:
             env = v_types
         else:
             env.update(v_types)
 
-        rhs_types = [instantiate(self.type(rhs, env=env.copy()))
+        rhs_types = [instantiate(self.type(rhs, env=env.copy())[0])
                      for rhs in rule.rhs]
 
         mapping = unify({(lhs_type, rhs_type) for rhs_type in rhs_types})
@@ -99,6 +104,101 @@ class TypeSystem(object):
 
         self.typings[rule] = final_type
         return final_type
+
+    def sample_term(self, type, env=None):
+        the_env = self.default_env.copy()
+        if env is not None:
+            the_env.update(env)
+
+        options = []
+        for atom in the_env:
+            term_env = the_env.copy()
+            term = make_dummy_term(atom, term_env)
+            sub = construct_substitution(term, type, self, term_env)
+            if sub is not None:
+                options.append((term, sub, term_env))
+
+        term, sub, term_env = options[np.random.choice(len(options))]
+        if isinstance(term, V.Variable):
+            return term
+        subterm_types = [substitute(term_env[v], sub) for v in term.body]
+        subterms = []
+        constraints = set()
+        for subterm_type in subterm_types:
+            specialized_type = substitute(subterm_type, unify(constraints))
+            subterm = self.sample_term(specialized_type, env=the_env)
+            subterms.append(subterm)
+            constraints.add((subterm_type,
+                             instantiate(self.type(subterm, env=the_env)[0])))
+        return A.Application(term.head, subterms)
+
+    def log_p_term(self, term, type, env=None):
+        the_env = self.default_env.copy()
+        if env is not None:
+            the_env.update(env)
+
+        options = []
+        matches = []
+        for atom in the_env:
+            term_env = the_env.copy()
+            dummy_term = make_dummy_term(atom, term_env)
+            sub = construct_substitution(dummy_term, type, self, term_env)
+            if sub is not None:
+                options.append((dummy_term, sub, term_env))
+            if term.head == atom:
+                matches.append((dummy_term, sub, term_env))
+        if len(matches) > 1:
+            raise ValueError('log_p_term: too many options')
+
+        log_ps = [misc.logNof(options, n=len(matches))]
+
+        d_term, sub, term_env = matches[np.random.choice(len(matches))]
+
+        if isinstance(d_term, V.Variable):
+            return log_ps[0]
+
+        subterm_types = [substitute(term_env[v], sub) for v in d_term.body]
+        constraints = set()
+        for subterm, subterm_type in zip(term.body, subterm_types):
+            specialized_type = substitute(subterm_type, unify(constraints))
+            log_ps.append(self.log_p_term(subterm,
+                                          specialized_type,
+                                          env=the_env))
+            constraints.add((subterm_type,
+                             instantiate(self.type(subterm, env=the_env)[0])))
+        return sum(log_ps)
+
+
+def make_dummy_term(atom, env):
+    if isinstance(atom, V.Variable):
+        term = atom
+    else:
+        term = A.Application(atom, [V.Variable() for _ in xrange(atom.arity)])
+        env.update({v: TypeVariable() for v in term.body})
+
+    return term
+
+
+def construct_substitution(term, target_type, typesystem, env):
+    if isinstance(term, V.Variable):
+        discovered_type = generalize(instantiate(env[term]), env=env)
+        constraints = set()
+
+    elif isinstance(term, A.Application):
+        # print 'term:', term
+        head_type = instantiate(the_env[term.head])
+        # print 'head_type:', head_type
+        body_types = [instantiate(typesystem.type(t, env=env.copy())[0])
+                      for t in term.body]
+        # print 'body_types:'
+        # for t in body_types:
+        #    print '   ', t
+        constraints, discovered_type = gather_constraints(head_type,
+                                                          body_types)
+        # print 'constraints', constraints
+        # print 'disc_type', discovered_type
+    substitution = unify(constraints | {(discovered_type, target_type)})
+    return substitution
 
 
 def generalize(type, env):
@@ -150,10 +250,14 @@ def gather_constraints(the_type, types):
 
 
 def unify(cs):
+    # print 'cs:'
+    # for k, v in cs
+    #     print '   ', k, v
     if len(cs) == 0:
         return {}
     else:
         (s, t) = cs.pop()
+        # print 's:', s, 't:', t
         if s == t:
             return unify(cs)
         elif isinstance(s, TypeVariable) and s not in free_vars(t):
@@ -292,14 +396,14 @@ if __name__ == '__main__':
                  tg.f(tg.PAIR)]:
         print 'term:', term.to_string()
         start = time.time()
-        type = tsys.type(term)
+        type = tsys.type(term)[0]
         stop = time.time()
         print 'type:', type
         print 'time:', 1e6*(stop-start)/float(len(term))
         print
 
     for st in term.subterms:
-        print st.to_string(), tsys.type(st)
+        print st.to_string(), tsys.type(st)[0]
 
     rule = R.Rule(tg.h(tg.HEAD, tg.NIL), [tg.f(tg.NIL), tg.k(tg.h(tg.CONS,
                                                                   tg.TWO),
@@ -308,3 +412,27 @@ if __name__ == '__main__':
     type = tsys.type_rule(rule)
     print 'rule:', rule
     print 'type:', type
+
+    print
+    for atom in types:
+        the_env = tsys.default_env.copy()
+        term = make_dummy_term(atom, the_env)
+        sub = construct_substitution(term, NAT, tsys, the_env)
+        print 'atom:', atom
+        print 'term:', term
+        if sub is not None:
+            print 'sub:'
+            for k, v in sub.iteritems():
+                print '   ', k, ':', v
+
+    print
+    del tsys.default_env[x]
+    del tsys.default_env[tg.ID]
+    del tsys.default_env[tg.PAIR]
+    for _ in xrange(10):
+        term = tsys.sample_term(NAT)
+        print 'term:'
+        print '   ', term.to_string()
+        print '   ', tsys.type(term)[0]
+        log_p = tsys.log_p_term(term, NAT)
+        print '   ', log_p, 1./np.exp(log_p)
