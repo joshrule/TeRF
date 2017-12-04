@@ -55,27 +55,25 @@ class TypeSystem(object):
         return the_env
 
     def type(self, term, env=None):
-        return self.type_helper(term, env=env)
+        return self._thelp(term, env=self.make_env(env), sub={})
 
-    def type_helper(self, term, env=None, sub=None):
-        env = self.make_env(env)
-        sub = {} if sub is None else sub
-
+    def _thelp(self, term, env, sub):
         if isinstance(term, V.Variable):
-            pt = substitute(specialize(env[term]), sub)
+            return substitute(specialize(env[term]), sub)
+        elif isinstance(term, A.Application) and term.head.arity == 0:
+            return substitute(specialize(env[term.head]), sub)
         elif isinstance(term, A.Application):
             head_type = substitute(specialize(env[term.head]), sub)
-            body_types = [self.type_helper(t, env=env, sub=sub)
-                          for t in term.body]
-            constraint, final_type = constrain(head_type, body_types)
-            new_sub = unify(constraint.copy())
-            if new_sub is None:
-                raise ValueError('not typable: {}'.format(term.to_string()))
-            compose(sub, new_sub)
-            pt = substitute(final_type, sub)
-        else:
-            raise ValueError('type: can only type terms')
-        return pt
+            result_type = TypeVariable()
+            body_type = functify([self._thelp(t, env, sub)
+                                  for t in term.body],
+                                 result=result_type)
+            try:
+                compose(sub, unify({(head_type, body_type)}))
+            except TypeError:
+                raise ValueError('untypable: ' + term.to_string())
+            return substitute(result_type, sub)
+        raise ValueError('can only type terms: ' + str(term))
 
     def type_rule(self, rule, env=None):
         if rule in self.typings:
@@ -176,22 +174,16 @@ def make_dummy_term(atom, env):
 
 def construct_substitution(term, target_type, typesystem, env):
     if isinstance(term, V.Variable):
-        discovered_type = generalize(specialize(env[term]), env=env)
+        result_type = generalize(specialize(env[term]), env=env)
         constraints = set()
 
     elif isinstance(term, A.Application):
-        # print 'term:', term
         head_type = specialize(env[term.head])
-        # print 'head_type:', head_type
         body_types = [specialize(typesystem.type(t, env=env.copy()))
                       for t in term.body]
-        # print 'body_types:'
-        # for t in body_types:
-        #    print '   ', t
-        constraints, discovered_type = constrain(head_type, body_types)
-        # print 'constraints', constraints
-        # print 'disc_type', discovered_type
-    substitution = unify(constraints | {(discovered_type, target_type)})
+        result_type = TypeVariable()
+        constraints = {(head_type, functify(body_types, result=result_type))}
+    substitution = unify(constraints | {(result_type, target_type)})
     return substitution
 
 
@@ -224,40 +216,34 @@ def specialize(type):
     return specrec(type)
 
 
-def constrain(head_type, arg_types):
-    t = TypeVariable()
-
-    def crec(args):
-        if len(args) == 0:
-            return t
-        else:
-            return Function(args[0], crec(args[1:]))
-
-    if len(arg_types) == 0:
-        return set(), head_type
-    return {(head_type, crec(arg_types))}, t
+def functify(arg_types, result=None):
+    f_type = TypeVariable() if result is None else result
+    while len(arg_types) > 0:
+        f_type = Function(arg_types.pop(), f_type)
+    return f_type
 
 
 def unify(cs):
-    if len(cs) == 0:
-        return {}
-    else:
+    try:
         (s, t) = cs.pop()
-        if s == t:
-            return unify(cs)
-        elif isinstance(s, TypeVariable) and s not in free_vars(t):
-            partial = unify(substitute_constraints(cs, {s: t}))
-            compose(partial, {s: t})
-            return partial
-        elif isinstance(t, TypeVariable) and t not in free_vars(s):
-            partial = unify(substitute_constraints(cs, {t: s}))
-            compose(partial, {t: s})
-            return partial
-        elif (isinstance(s, TypeOperator) and isinstance(t, TypeOperator) and
-              s.name == t.name and len(s.types) == len(t.types)):
-            return unify(cs | {(st, tt) for st, tt in zip(s.types, t.types)})
-        else:
-            return None
+    except KeyError:
+        return {}
+
+    if s == t:
+        return unify(cs)
+    elif isinstance(s, TypeVariable) and s not in free_vars(t):
+        partial = unify(substitute_constraints(cs, {s: t}))
+        compose(partial, {s: t})
+        return partial
+    elif isinstance(t, TypeVariable) and t not in free_vars(s):
+        partial = unify(substitute_constraints(cs, {t: s}))
+        compose(partial, {t: s})
+        return partial
+    elif (isinstance(s, TypeOperator) and isinstance(t, TypeOperator) and
+          s.name == t.name and len(s.types) == len(t.types)):
+        return unify(cs | {(st, tt) for st, tt in zip(s.types, t.types)})
+    else:
+        return None
 
 
 def free_vars(type, env=None):
@@ -272,9 +258,7 @@ def free_vars(type, env=None):
 
 def substitute(type, substitution):
     if isinstance(type, TypeVariable):
-        if type in substitution:
-            return substitution[type]
-        return type
+        return substitution[type] if type in substitution else type
     elif isinstance(type, Function):
         return Function(substitute(type.types[0], substitution),
                         substitute(type.types[1], substitution))
@@ -282,10 +266,13 @@ def substitute(type, substitution):
         return TypeOperator(type.name, [substitute(t, substitution)
                                         for t in type.types])
     elif isinstance(type, TypeBinding):
-        # TODO: do we need to do any sort of name checking here?
-        return TypeBinding(type.bound,
-                           substitute(type.type, substitution))
-    pass
+        return TypeBinding(type.bound, substitute(type.type, substitution))
+    raise ValueError('free_vars: bad type')
+
+
+def substitute_context(context, substitution):
+    return {substitute(k, substitution): substitute(v, substitution)
+            for k, v in context.iteritems()}
 
 
 def substitute_constraints(constraints, substitution):
@@ -393,9 +380,9 @@ if __name__ == '__main__':
         print 'time:', 1e6*(stop-start)/float(len(term))
         print
 
-#    for st in term.subterms:
-#        print st.to_string(), tsys.type(st)
-#
+#     for st in term.subterms:
+#         print st.to_string(), tsys.type(st)
+
 #    rule = R.Rule(tg.h(tg.HEAD, tg.NIL), [tg.f(tg.NIL), tg.k(tg.h(tg.CONS,
 #                                                                  tg.TWO),
 #                                                             tg.NIL)])
