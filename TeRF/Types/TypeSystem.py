@@ -1,6 +1,5 @@
 """Much thanks to https://github.com/rob-smallshire/hindley-milner-python/"""
 
-
 import TeRF.Miscellaneous as misc
 import TeRF.Types.Variable as V
 import TeRF.Types.Application as A
@@ -24,11 +23,7 @@ class TypeOperator(object):
         self.types = types
 
     def __str__(self):
-        if len(self.types) == 0:
-            addendum = ''
-        else:
-            addendum = '[' + ', '.join(str(t) for t in self.types) + ']'
-        return str(self.name) + addendum
+        return str(self.name) + misc.iter2ListStr(self.types, empty='')
 
 
 class Function(TypeOperator):
@@ -40,12 +35,12 @@ class Function(TypeOperator):
 
 
 class TypeBinding(object):
-    def __init__(self, bound_variable, type):
-        self.bound_variable = bound_variable
+    def __init__(self, bound, type):
+        self.bound = bound
         self.type = type
 
     def __str__(self):
-        return '()' + str(self.bound_variable) + '.' + str(self.type)
+        return '()' + str(self.bound) + '.' + str(self.type)
 
 
 class TypeSystem(object):
@@ -53,48 +48,48 @@ class TypeSystem(object):
         self.default_env = {} if env is None else env
         self.typings = {}
 
-    def type(self, term, env=None):
-        if env is None:
-            the_env = self.default_env.copy()
-        else:
-            the_env = self.default_env.copy()
+    def make_env(self, env=None):
+        the_env = self.default_env.copy()
+        if env is not None:
             the_env.update(env)
+        return the_env
 
-        if term in self.typings:
-            return self.typings[term], {}
+    def type(self, term, env=None):
+        return self.type_helper(term, env=env)
+
+    def type_helper(self, term, env=None, sub=None):
+        env = self.make_env(env)
+        sub = {} if sub is None else sub
 
         if isinstance(term, V.Variable):
-            the_type = generalize(instantiate(the_env[term]), env=the_env)
-            self.typings[term] = the_type
-            return the_type, {}
-
+            pt = substitute(specialize(env[term]), sub)
         elif isinstance(term, A.Application):
-            head_type = instantiate(the_env[term.head])
-            body_types = [instantiate(self.type(t, env=the_env.copy())[0])
+            head_type = substitute(specialize(env[term.head]), sub)
+            body_types = [self.type_helper(t, env=env, sub=sub)
                           for t in term.body]
-            constraints, final_type = gather_constraints(head_type, body_types)
-            substitution = unify(constraints)
-            the_type = generalize(substitute(final_type, substitution),
-                                  env=the_env)
-            self.typings[term] = the_type
-            return the_type, substitution
-
+            constraint, final_type = constrain(head_type, body_types)
+            new_sub = unify(constraint.copy())
+            if new_sub is None:
+                raise ValueError('not typable: {}'.format(term.to_string()))
+            compose(sub, new_sub)
+            pt = substitute(final_type, sub)
         else:
             raise ValueError('type: can only type terms')
+        return pt
 
     def type_rule(self, rule, env=None):
         if rule in self.typings:
             return self.typings[rule]
 
-        lhs_type = instantiate(self.type(rule.lhs, env=env)[0])
+        lhs_type = specialize(self.type(rule.lhs, env=env))
 
-        v_types = {v: self.type(v, env=env)[0] for v in term.variables()}
+        v_types = {v: self.type(v, env=env) for v in term.variables()}
         if env is None:
             env = v_types
         else:
             env.update(v_types)
 
-        rhs_types = [instantiate(self.type(rhs, env=env.copy())[0])
+        rhs_types = [specialize(self.type(rhs, env=env.copy()))
                      for rhs in rule.rhs]
 
         mapping = unify({(lhs_type, rhs_type) for rhs_type in rhs_types})
@@ -129,7 +124,7 @@ class TypeSystem(object):
             subterm = self.sample_term(specialized_type, env=the_env)
             subterms.append(subterm)
             constraints.add((subterm_type,
-                             instantiate(self.type(subterm, env=the_env)[0])))
+                             specialize(self.type(subterm, env=the_env))))
         return A.Application(term.head, subterms)
 
     def log_p_term(self, term, type, env=None):
@@ -165,7 +160,7 @@ class TypeSystem(object):
                                           specialized_type,
                                           env=the_env))
             constraints.add((subterm_type,
-                             instantiate(self.type(subterm, env=the_env)[0])))
+                             specialize(self.type(subterm, env=the_env))))
         return sum(log_ps)
 
 
@@ -181,20 +176,19 @@ def make_dummy_term(atom, env):
 
 def construct_substitution(term, target_type, typesystem, env):
     if isinstance(term, V.Variable):
-        discovered_type = generalize(instantiate(env[term]), env=env)
+        discovered_type = generalize(specialize(env[term]), env=env)
         constraints = set()
 
     elif isinstance(term, A.Application):
         # print 'term:', term
-        head_type = instantiate(the_env[term.head])
+        head_type = specialize(env[term.head])
         # print 'head_type:', head_type
-        body_types = [instantiate(typesystem.type(t, env=env.copy())[0])
+        body_types = [specialize(typesystem.type(t, env=env.copy()))
                       for t in term.body]
         # print 'body_types:'
         # for t in body_types:
         #    print '   ', t
-        constraints, discovered_type = gather_constraints(head_type,
-                                                          body_types)
+        constraints, discovered_type = constrain(head_type, body_types)
         # print 'constraints', constraints
         # print 'disc_type', discovered_type
     substitution = unify(constraints | {(discovered_type, target_type)})
@@ -209,10 +203,10 @@ def generalize(type, env):
     return the_type
 
 
-def instantiate(type):
+def specialize(type):
     mappings = {}
 
-    def instrec(t):
+    def specrec(t):
         if isinstance(t, TypeVariable):
             try:
                 return mappings[t]
@@ -220,77 +214,60 @@ def instantiate(type):
                 return t
         elif isinstance(t, TypeOperator):
             if isinstance(t, Function):
-                return Function(instrec(t.types[0]), instrec(t.types[1]))
-            return TypeOperator(t.name, [instrec(x) for x in t.types])
+                return Function(specrec(t.types[0]), specrec(t.types[1]))
+            return TypeOperator(t.name, [specrec(x) for x in t.types])
         elif isinstance(t, TypeBinding):
-            if t.bound_variable not in mappings:
-                mappings[t.bound_variable] = TypeVariable()
-            return instrec(t.type)
+            if t.bound not in mappings:
+                mappings[t.bound] = TypeVariable()
+            return specrec(t.type)
 
-    return instrec(type)
+    return specrec(type)
 
 
-def gather_constraints(the_type, types):
-    cs = set()
-    final_type = {the_type}
+def constrain(head_type, arg_types):
+    t = TypeVariable()
 
-    def gcrec(t, ts):
-        if len(ts) == 0:
-            return
-        elif isinstance(t, Function):
-            cs.add((t.types[0], ts[0]))
-            final_type.pop()
-            final_type.add(t.types[1])
-            gcrec(t.types[1], ts[1:])
+    def crec(args):
+        if len(args) == 0:
+            return t
         else:
-            raise ValueError('gather_constraints: imbalanced constraints')
+            return Function(args[0], crec(args[1:]))
 
-    gcrec(the_type, types)
-    return cs, final_type.pop()
+    if len(arg_types) == 0:
+        return set(), head_type
+    return {(head_type, crec(arg_types))}, t
 
 
 def unify(cs):
-    # print 'cs:'
-    # for k, v in cs
-    #     print '   ', k, v
     if len(cs) == 0:
         return {}
     else:
         (s, t) = cs.pop()
-        # print 's:', s, 't:', t
         if s == t:
             return unify(cs)
         elif isinstance(s, TypeVariable) and s not in free_vars(t):
             partial = unify(substitute_constraints(cs, {s: t}))
-            if partial is None:
-                return None
-            return compose(partial, {s: t})
+            compose(partial, {s: t})
+            return partial
         elif isinstance(t, TypeVariable) and t not in free_vars(s):
             partial = unify(substitute_constraints(cs, {t: s}))
-            if partial is None:
-                return None
-            return compose(partial, {t: s})
-        elif (isinstance(s, TypeOperator) and
-              isinstance(t, TypeOperator) and
-              s.name == t.name and
-              len(s.types) == len(t.types)):
-            cs |= {(st, tt) for st, tt in zip(s.types, t.types)}
-            return unify(cs)
+            compose(partial, {t: s})
+            return partial
+        elif (isinstance(s, TypeOperator) and isinstance(t, TypeOperator) and
+              s.name == t.name and len(s.types) == len(t.types)):
+            return unify(cs | {(st, tt) for st, tt in zip(s.types, t.types)})
         else:
             return None
 
 
 def free_vars(type, env=None):
     if isinstance(type, TypeVariable):
-        if env is None or type not in env.values():
-            return {type}
-        return set()
+        return {type} if env is None or type not in env.values() else set()
     elif isinstance(type, TypeOperator):
-        return {v for t in type.types for v in free_vars(t)}
+        return {v for t in type.types for v in free_vars(t, env=env)}
     elif isinstance(type, TypeBinding):
-        return free_vars(type).difference({type.bound_variable})
-    else:
-        raise ValueError('free_vars: bad type')
+        return free_vars(type, env=env).difference({type.bound})
+    raise ValueError('free_vars: bad type')
 
 
 def substitute(type, substitution):
@@ -306,7 +283,7 @@ def substitute(type, substitution):
                                         for t in type.types])
     elif isinstance(type, TypeBinding):
         # TODO: do we need to do any sort of name checking here?
-        return TypeBinding(type.bound_variable,
+        return TypeBinding(type.bound,
                            substitute(type.type, substitution))
     pass
 
@@ -317,9 +294,8 @@ def substitute_constraints(constraints, substitution):
 
 
 def compose(sub1, sub2):
-    result = sub1.copy()
-    result.update({k: substitute(sub2[k], sub1) for k in sub2})
-    return result
+    if sub1 is not None:
+        sub1.update({k: substitute(sub2[k], sub1) for k in sub2})
 
 
 if __name__ == '__main__':
@@ -339,6 +315,7 @@ if __name__ == '__main__':
     vG = TypeVariable()
     vH = TypeVariable()
     x = V.Variable('x')
+    y = V.Variable('y')
 
     class List(TypeOperator):
         def __init__(self, alpha_type):
@@ -369,7 +346,8 @@ if __name__ == '__main__':
                                                        Function(vH,
                                                                 Pair(vG,
                                                                      vH))))),
-             x: TypeVariable()}
+             x: TypeVariable(),
+             y: TypeVariable()}
 
     tsys = TypeSystem(env=types.copy())
 
@@ -378,10 +356,18 @@ if __name__ == '__main__':
                    tg.j(tg.ID, tg.k(tg.h(tg.CONS, tg.ONE), tg.NIL))),
               tg.h(tg.ID, tg.ZERO))
 
-    for term in [tg.f(tg.NIL),
+    for term in [x,
+                 tg.f(tg.NIL),
                  tg.f(tg.CONS),
                  tg.h(tg.HEAD, tg.NIL),
                  tg.h(tg.CONS, tg.ONE),
+                 tg.j(tg.CONS, x),
+                 tg.j(tg.CONS, x),
+                 tg.g(tg.j(tg.CONS, x), x),
+                 tg.g(tg.h(tg.CONS, tg.ONE), x),
+                 tg.k(tg.h(tg.CONS, tg.ONE), tg.TWO),
+                 tg.g(tg.h(tg.CONS, tg.ONE), tg.k(tg.j(tg.CONS, x),
+                                                  tg.NIL)),
                  tg.j(tg.HEAD, tg.g(tg.j(tg.CONS, tg.h(tg.HEAD, tg.NIL)),
                                     tg.g(tg.j(tg.CONS, tg.f(tg.TWO)),
                                          tg.f(tg.NIL)))),
@@ -393,46 +379,51 @@ if __name__ == '__main__':
                  t1,
                  t1,
                  t1,
-                 tg.f(tg.PAIR)]:
+                 tg.f(tg.PAIR),
+                 tg.g(tg.j(tg.CONS, x), y)
+                 ]:
         print 'term:', term.to_string()
         start = time.time()
-        type = tsys.type(term)[0]
+        try:
+            type = tsys.type(term)
+        except ValueError:
+            type = 'FAIL'
         stop = time.time()
         print 'type:', type
         print 'time:', 1e6*(stop-start)/float(len(term))
         print
 
-    for st in term.subterms:
-        print st.to_string(), tsys.type(st)[0]
-
-    rule = R.Rule(tg.h(tg.HEAD, tg.NIL), [tg.f(tg.NIL), tg.k(tg.h(tg.CONS,
-                                                                  tg.TWO),
-                                                             tg.NIL)])
-    # rule = R.Rule(tg.f(tg.PAIR), tg.f(tg.ID))
-    type = tsys.type_rule(rule)
-    print 'rule:', rule
-    print 'type:', type
-
-    print
-    for atom in types:
-        the_env = tsys.default_env.copy()
-        term = make_dummy_term(atom, the_env)
-        sub = construct_substitution(term, NAT, tsys, the_env)
-        print 'atom:', atom
-        print 'term:', term
-        if sub is not None:
-            print 'sub:'
-            for k, v in sub.iteritems():
-                print '   ', k, ':', v
-
-    print
-    del tsys.default_env[x]
-    del tsys.default_env[tg.ID]
-    del tsys.default_env[tg.PAIR]
-    for _ in xrange(10):
-        term = tsys.sample_term(NAT)
-        print 'term:'
-        print '   ', term.to_string()
-        print '   ', tsys.type(term)[0]
-        log_p = tsys.log_p_term(term, NAT)
-        print '   ', log_p, 1./np.exp(log_p)
+#    for st in term.subterms:
+#        print st.to_string(), tsys.type(st)
+#
+#    rule = R.Rule(tg.h(tg.HEAD, tg.NIL), [tg.f(tg.NIL), tg.k(tg.h(tg.CONS,
+#                                                                  tg.TWO),
+#                                                             tg.NIL)])
+#    # rule = R.Rule(tg.f(tg.PAIR), tg.f(tg.ID))
+#    type = tsys.type_rule(rule)
+#    print 'rule:', rule
+#    print 'type:', type
+#
+#    print
+#    for atom in types:
+#        the_env = tsys.default_env.copy()
+#        term = make_dummy_term(atom, the_env)
+#        sub = construct_substitution(term, NAT, tsys, the_env)
+#        print 'atom:', atom
+#        print 'term:', term
+#        if sub is not None:
+#            print 'sub:'
+#            for k, v in sub.iteritems():
+#                print '   ', k, ':', v
+#
+#    print
+#    del tsys.default_env[x]
+#    del tsys.default_env[tg.ID]
+#    del tsys.default_env[tg.PAIR]
+#    for _ in xrange(10):
+#        term = tsys.sample_term(NAT)
+#        print 'term:'
+#        print '   ', term.to_string()
+#        print '   ', tsys.type(term)
+#        log_p = tsys.log_p_term(term, NAT)
+#        print '   ', log_p, 1./np.exp(log_p)
