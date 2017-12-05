@@ -54,49 +54,34 @@ class TypeSystem(object):
             the_env.update(env)
         return the_env
 
-    def type(self, term, env=None):
-        return self._thelp(term, env=self.make_env(env), sub={})
-
-    def _thelp(self, term, env, sub):
+    def type(self, term, env, sub):
         if isinstance(term, V.Variable):
-            return substitute(specialize(env[term]), sub)
+            return update(term, env, sub)
         elif isinstance(term, A.Application) and term.head.arity == 0:
-            return substitute(specialize(env[term.head]), sub)
+            return update(term.head, env, sub)
         elif isinstance(term, A.Application):
             head_type = substitute(specialize(env[term.head]), sub)
             result_type = TypeVariable()
-            body_type = functify([self._thelp(t, env, sub)
+            body_type = functify([specialize(self.type(t, env, sub))
                                   for t in term.body],
                                  result=result_type)
             try:
                 compose(sub, unify({(head_type, body_type)}))
             except TypeError:
                 raise ValueError('untypable: ' + term.to_string())
-            return substitute(result_type, sub)
+            return generalize(substitute(result_type, sub),
+                              substitute_context(env, sub))
         raise ValueError('can only type terms: ' + str(term))
 
-    def type_rule(self, rule, env=None):
-        if rule in self.typings:
-            return self.typings[rule]
-
-        lhs_type = specialize(self.type(rule.lhs, env=env))
-
-        v_types = {v: self.type(v, env=env) for v in term.variables()}
-        if env is None:
-            env = v_types
-        else:
-            env.update(v_types)
-
-        rhs_types = [specialize(self.type(rhs, env=env.copy()))
+    def type_rule(self, rule, env, sub):
+        lhs_type = specialize(self.type(rule.lhs, env, sub))
+        rhs_types = [specialize(self.type(rhs, env.copy(), sub))
                      for rhs in rule.rhs]
-
-        mapping = unify({(lhs_type, rhs_type) for rhs_type in rhs_types})
-        final_type = None
-        if mapping is not None:
-            final_type = generalize(substitute(lhs_type, mapping), env=env)
-
-        self.typings[rule] = final_type
-        return final_type
+        new_sub = unify({(lhs_type, rhs_type) for rhs_type in rhs_types})
+        if new_sub is not None:
+            return generalize(substitute(lhs_type, new_sub),
+                              substitute_context(env, compose(new_sub, sub)))
+        raise ValueError('untypable: ' + str(rule))
 
     def sample_term(self, type, env=None):
         the_env = self.default_env.copy()
@@ -160,6 +145,12 @@ class TypeSystem(object):
             constraints.add((subterm_type,
                              specialize(self.type(subterm, env=the_env))))
         return sum(log_ps)
+
+
+def update(atom, env, sub):
+    return generalize(substitute(specialize(env[atom]),
+                                 sub),
+                      substitute_context(env, sub))
 
 
 def make_dummy_term(atom, env):
@@ -271,8 +262,7 @@ def substitute(type, substitution):
 
 
 def substitute_context(context, substitution):
-    return {substitute(k, substitution): substitute(v, substitution)
-            for k, v in context.iteritems()}
+    return {k: substitute(v, substitution) for k, v in context.iteritems()}
 
 
 def substitute_constraints(constraints, substitution):
@@ -283,6 +273,7 @@ def substitute_constraints(constraints, substitution):
 def compose(sub1, sub2):
     if sub1 is not None:
         sub1.update({k: substitute(sub2[k], sub1) for k in sub2})
+        return sub1
 
 
 if __name__ == '__main__':
@@ -301,8 +292,10 @@ if __name__ == '__main__':
     vF = TypeVariable()
     vG = TypeVariable()
     vH = TypeVariable()
+    vI = TypeVariable()
     x = V.Variable('x')
     y = V.Variable('y')
+    z = V.Variable('z')
 
     class List(TypeOperator):
         def __init__(self, alpha_type):
@@ -333,8 +326,9 @@ if __name__ == '__main__':
                                                        Function(vH,
                                                                 Pair(vG,
                                                                      vH))))),
-             x: TypeVariable(),
-             y: TypeVariable()}
+             x: vI,
+             y: TypeVariable(),
+             z: vI}
 
     tsys = TypeSystem(env=types.copy())
 
@@ -343,6 +337,7 @@ if __name__ == '__main__':
                    tg.j(tg.ID, tg.k(tg.h(tg.CONS, tg.ONE), tg.NIL))),
               tg.h(tg.ID, tg.ZERO))
 
+    print 'let\'s type some terms'
     for term in [x,
                  tg.f(tg.NIL),
                  tg.f(tg.CONS),
@@ -367,12 +362,13 @@ if __name__ == '__main__':
                  t1,
                  t1,
                  tg.f(tg.PAIR),
-                 tg.g(tg.j(tg.CONS, x), y)
+                 tg.g(tg.j(tg.CONS, x), z),
+                 tg.g(tg.j(tg.CONS, x), y),
                  ]:
         print 'term:', term.to_string()
         start = time.time()
         try:
-            type = tsys.type(term)
+            type = tsys.type(term, tsys.make_env(None), {})
         except ValueError:
             type = 'FAIL'
         stop = time.time()
@@ -380,18 +376,27 @@ if __name__ == '__main__':
         print 'time:', 1e6*(stop-start)/float(len(term))
         print
 
-#     for st in term.subterms:
-#         print st.to_string(), tsys.type(st)
+    print 'showing how subterms can easily be typed'
+    env = tsys.make_env(None)
+    sub = {}
+    for st in term.subterms:
+        print st.to_string(), tsys.type(st, env, sub)
 
-#    rule = R.Rule(tg.h(tg.HEAD, tg.NIL), [tg.f(tg.NIL), tg.k(tg.h(tg.CONS,
-#                                                                  tg.TWO),
-#                                                             tg.NIL)])
-#    # rule = R.Rule(tg.f(tg.PAIR), tg.f(tg.ID))
-#    type = tsys.type_rule(rule)
-#    print 'rule:', rule
-#    print 'type:', type
-#
-#    print
+    print '\n', 'rules can also be typed'
+    rules = [R.Rule(tg.h(tg.HEAD, tg.NIL), [tg.f(tg.NIL), tg.k(tg.h(tg.CONS,
+                                                                    tg.TWO),
+                                                               tg.NIL)]),
+             R.Rule(tg.f(tg.PAIR), tg.f(tg.ID))]
+    for rule in rules:
+        print 'rule:', rule
+        try:
+            type = tsys.type_rule(rule, tsys.make_env(None), {})
+            print 'type:', type
+        except ValueError:
+            print 'type: FAIL'
+        print
+
+            #    print
 #    for atom in types:
 #        the_env = tsys.default_env.copy()
 #        term = make_dummy_term(atom, the_env)
