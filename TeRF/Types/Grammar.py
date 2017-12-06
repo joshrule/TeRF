@@ -155,8 +155,10 @@ class Grammar(collections.MutableMapping):
                 for lhs in self._order
                 for rule in self._rules[lhs]]
 
-    def log_p(self, grammar, p_rule):
-        return grammar.log_p_grammar(self, p_rule)
+    def log_p(self, p_rule):
+        p_n_rules = stats.geom.logpmf(len(self.clauses)+1, p=p_rule)
+        p_rules = sum(rule.log_p for rule in self)
+        return p_n_rules + p_rules
 
     def __eq__(self, other):
         return self._order == other._order and \
@@ -183,7 +185,7 @@ class Grammar(collections.MutableMapping):
             del self[rule]
         return self
 
-    def __hash__(self):
+p    def __hash__(self):
         return hash((tuple(self._rules),
                      tuple(self._order),
                      self.start))

@@ -159,7 +159,7 @@ class Rule(collections.MutableSet):
             v.name = 'v' + str(i)
 
     def log_p(self, grammar, start=None):
-        return grammar.log_p_rule(self, start=start)
+        return len(self)*self.lhs.log_p+sum(r.log_p for r in self.rhs)
 
     def places(self):
         return ([['lhs'] + p for p in self.lhs.places()] +
