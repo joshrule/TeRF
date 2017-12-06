@@ -156,6 +156,10 @@ def logsumexp(xs):
     return scipy.misc.logsumexp(xs)
 
 
+def iter2ListStr(xs, empty='[]'):
+    return empty if len(xs) == 0 else '[' + ', '.join(str(x) for x in xs) + ']'
+
+
 def attrmem(name):
     """stolen from LOTlib"""
     def wrap1(f):

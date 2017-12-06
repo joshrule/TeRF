@@ -1,4 +1,11 @@
-"""Much thanks to https://github.com/rob-smallshire/hindley-milner-python/"""
+"""
+Hindley-Milner Typing for First-Order Term Rewriting Systems
+
+Much thanks to:
+- https://github.com/rob-smallshire/hindley-milner-python
+- https://en.wikipedia.org/wiki/Hindley%E2%80%93Milner_type_system
+- (Pierce, 2002, ch. 22)
+"""
 
 import TeRF.Miscellaneous as misc
 import TeRF.Types.Variable as V
@@ -44,9 +51,10 @@ class TypeBinding(object):
 
 
 class TypeSystem(object):
-    def __init__(self, env=None):
+    def __init__(self, env=None, max_depth=10):
         self.default_env = {} if env is None else env
         self.typings = {}
+        self.max_depth = max_depth
 
     def make_env(self, env=None):
         the_env = self.default_env.copy()
@@ -83,68 +91,75 @@ class TypeSystem(object):
                               substitute_context(env, compose(new_sub, sub)))
         raise ValueError('untypable: ' + str(rule))
 
-    def sample_term(self, type, env=None):
-        the_env = self.default_env.copy()
-        if env is not None:
-            the_env.update(env)
+    def sample_term(self, type, env, depth=0):
+        """samples a term with progress bounds and backtracking"""
+        if depth > self.max_depth:
+            raise ValueError('sample_term: exceeded max depth')
+        options = list_options(type, env, self)
+        while len(options) > 0:
+            choice = np.random.choice(len(options))
+            term, sub, term_env = options[choice]
+            del options[choice]
+            try:
+                if isinstance(term, V.Variable):
+                    return term
+                subterms = []
+                constraints = set()
+                for i, v in enumerate(term.body):
+                    new_sub = compose(unify(constraints.copy()), sub)
+                    subtype = specialize(self.type(v, term_env, new_sub))
+                    new_depth = (depth+1)*(i == 0)
+                    subterm = self.sample_term(subtype, env, depth=new_depth)
+                    subterms.append(subterm)
+                    final_type = specialize(self.type(subterm, env, sub))
+                    constraints.add((subtype, final_type))
+                return A.Application(term.head, subterms)
+            except ValueError:
+                pass
+        raise ValueError('sample_term: options exhausted')
 
-        options = []
-        for atom in the_env:
-            term_env = the_env.copy()
-            term = make_dummy_term(atom, term_env)
-            sub = construct_substitution(term, type, self, term_env)
-            if sub is not None:
-                options.append((term, sub, term_env))
+    def log_p_term(self, term, type, env, depth=0):
+        if depth > self.max_depth:
+            return -np.inf
 
-        term, sub, term_env = options[np.random.choice(len(options))]
-        if isinstance(term, V.Variable):
-            return term
-        subterm_types = [substitute(term_env[v], sub) for v in term.body]
-        subterms = []
-        constraints = set()
-        for subterm_type in subterm_types:
-            specialized_type = substitute(subterm_type, unify(constraints))
-            subterm = self.sample_term(specialized_type, env=the_env)
-            subterms.append(subterm)
-            constraints.add((subterm_type,
-                             specialize(self.type(subterm, env=the_env))))
-        return A.Application(term.head, subterms)
-
-    def log_p_term(self, term, type, env=None):
-        the_env = self.default_env.copy()
-        if env is not None:
-            the_env.update(env)
-
-        options = []
-        matches = []
-        for atom in the_env:
-            term_env = the_env.copy()
-            dummy_term = make_dummy_term(atom, term_env)
-            sub = construct_substitution(dummy_term, type, self, term_env)
-            if sub is not None:
-                options.append((dummy_term, sub, term_env))
-            if term.head == atom:
-                matches.append((dummy_term, sub, term_env))
+        options = list_options(type, env, self)
+        matches = [o for o in options if o[0].head == term.head]
         if len(matches) > 1:
-            raise ValueError('log_p_term: too many options')
+            raise ValueError('log_p_term: bad context')
 
-        log_ps = [misc.logNof(options, n=len(matches))]
+        log_p = misc.logNof(options, n=len(matches))
 
-        d_term, sub, term_env = matches[np.random.choice(len(matches))]
+        if log_p == -np.inf:
+            return log_p
+
+        d_term, sub, term_env = matches[0]
 
         if isinstance(d_term, V.Variable):
-            return log_ps[0]
+            return log_p
 
-        subterm_types = [substitute(term_env[v], sub) for v in d_term.body]
+        log_ps = [log_p]
         constraints = set()
-        for subterm, subterm_type in zip(term.body, subterm_types):
-            specialized_type = substitute(subterm_type, unify(constraints))
-            log_ps.append(self.log_p_term(subterm,
-                                          specialized_type,
-                                          env=the_env))
-            constraints.add((subterm_type,
-                             specialize(self.type(subterm, env=the_env))))
+        for i, (subterm, v) in enumerate(zip(term.body, d_term.body)):
+            new_sub = compose(unify(constraints.copy()), sub)
+            subtype = specialize(self.type(v, term_env, new_sub))
+            new_depth = (depth+1)*(i == 0)
+            log_ps.append(self.log_p_term(subterm, subtype, env,
+                                          depth=new_depth))
+            final_type = specialize(self.type(subterm, env, sub))
+            constraints.add((subtype, final_type))
+        log_p = sum(log_ps)
         return sum(log_ps)
+
+
+def list_options(type, env, typesystem):
+    options = []
+    for atom in env:
+        term_env = env.copy()
+        term = make_dummy_term(atom, term_env)
+        sub = construct_substitution(term, type, typesystem, term_env)
+        if sub is not None:
+            options.append((term, sub, term_env))
+    return options
 
 
 def update(atom, env, sub):
@@ -170,12 +185,11 @@ def construct_substitution(term, target_type, typesystem, env):
 
     elif isinstance(term, A.Application):
         head_type = specialize(env[term.head])
-        body_types = [specialize(typesystem.type(t, env=env.copy()))
+        body_types = [specialize(typesystem.type(t, env.copy(), {}))
                       for t in term.body]
         result_type = TypeVariable()
         constraints = {(head_type, functify(body_types, result=result_type))}
-    substitution = unify(constraints | {(result_type, target_type)})
-    return substitution
+    return unify(constraints | {(result_type, specialize(target_type))})
 
 
 def generalize(type, env):
@@ -307,6 +321,7 @@ if __name__ == '__main__':
 
     # create a type system
     types = {tg.NIL: TypeBinding(vC, List(vC)),
+             # tg.NIL: List(NAT),
              tg.ZERO: NAT,
              tg.ONE: NAT,
              tg.TWO: NAT,
@@ -315,10 +330,14 @@ if __name__ == '__main__':
                                   Function(vD,
                                            Function(List(vD),
                                                     List(vD)))),
+             # tg.CONS: Function(NAT,
+             #                   Function(List(NAT),
+             #                            List(NAT))),
              tg.DOT: TypeBinding(vA, TypeBinding(vB,
                                                  Function(Function(vA, vB),
                                                           Function(vA, vB)))),
              tg.HEAD: TypeBinding(vE, Function(List(vE), vE)),
+             # tg.HEAD: Function(List(NAT), NAT),
              tg.ID: TypeBinding(vF, Function(vF, vF)),
              tg.PAIR: TypeBinding(vG,
                                   TypeBinding(vH,
@@ -344,7 +363,6 @@ if __name__ == '__main__':
                  tg.h(tg.HEAD, tg.NIL),
                  tg.h(tg.CONS, tg.ONE),
                  tg.j(tg.CONS, x),
-                 tg.j(tg.CONS, x),
                  tg.g(tg.j(tg.CONS, x), x),
                  tg.g(tg.h(tg.CONS, tg.ONE), x),
                  tg.k(tg.h(tg.CONS, tg.ONE), tg.TWO),
@@ -358,8 +376,6 @@ if __name__ == '__main__':
                  tg.g(tg.j(tg.PAIR,
                            tg.h(tg.ID, tg.NIL)),
                       tg.h(tg.ID, tg.ZERO)),
-                 t1,
-                 t1,
                  t1,
                  tg.f(tg.PAIR),
                  tg.g(tg.j(tg.CONS, x), z),
@@ -396,26 +412,31 @@ if __name__ == '__main__':
             print 'type: FAIL'
         print
 
-            #    print
-#    for atom in types:
-#        the_env = tsys.default_env.copy()
-#        term = make_dummy_term(atom, the_env)
-#        sub = construct_substitution(term, NAT, tsys, the_env)
-#        print 'atom:', atom
-#        print 'term:', term
-#        if sub is not None:
-#            print 'sub:'
-#            for k, v in sub.iteritems():
-#                print '   ', k, ':', v
-#
-#    print
-#    del tsys.default_env[x]
-#    del tsys.default_env[tg.ID]
-#    del tsys.default_env[tg.PAIR]
-#    for _ in xrange(10):
-#        term = tsys.sample_term(NAT)
-#        print 'term:'
-#        print '   ', term.to_string()
-#        print '   ', tsys.type(term)
-#        log_p = tsys.log_p_term(term, NAT)
-#        print '   ', log_p, 1./np.exp(log_p)
+    print 'substitutions necessary to unify two types can be computed'
+    for atom in types:
+        the_env = tsys.default_env.copy()
+        term = make_dummy_term(atom, the_env)
+        sub = construct_substitution(term, NAT, tsys, the_env)
+        print 'atom:', atom
+        print 'term:', term
+        if sub is not None:
+            print 'sub:'
+            for k, v in sub.iteritems():
+                print '   ', k, ':', v
+
+    print '\n', 'terms can be sampled'
+    del tsys.default_env[x]
+    del tsys.default_env[y]
+    del tsys.default_env[z]
+    del tsys.default_env[tg.ID]
+    del tsys.default_env[tg.PAIR]
+    for _ in xrange(40):
+        try:
+            term = tsys.sample_term(List(NAT), tsys.make_env(None))
+            t = term.to_string()
+            t_type = tsys.type(term, tsys.make_env(None), {})
+            t_lp = tsys.log_p_term(term, List(NAT), tsys.make_env(None))
+            print t, '::', t_type,
+            print ':: {} :: {}'.format(t_lp, 1./np.exp(t_lp))
+        except ValueError:
+            print 'FAIL'
