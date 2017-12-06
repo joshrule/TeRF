@@ -1,3 +1,25 @@
+import contextlib
+
+
+@contextlib.contextmanager
+def scope(grammar, scope=None, lock=None, reset=False, extend=None):
+    stored_scope = grammar.scope.copy()
+    if scope is not None:
+        grammar.scope = scope.copy()
+    if extend is not None:
+        grammar.scope.scope.update(extend.scope)
+    if reset:
+        grammar.scope.reset()
+    if lock is False:
+        grammar.scope.unlock()
+    elif lock is True:
+        grammar.scope.lock()
+    try:
+        yield
+    finally:
+        grammar.scope = stored_scope
+
+
 class Scope(object):
     def __init__(self, locked=True):
         self.locked = locked

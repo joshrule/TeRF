@@ -9,12 +9,8 @@ import TeRF.Types.Trace as T
 class CFG(Grammar.Grammar):
     def __init__(self, rules=None, **kwargs):
         super(CFG, self).__init__(rules=rules, **kwargs)
-
         if rules is not None:
-            for rule in rules:
-                if rule.lhs.head.arity != 0:
-                    err_str = 'CFG: context-sensitive rule -> {}'
-                    raise ValueError(err_str.format(rule))
+            self.update(rules)
 
     def __setitem__(self, index, value):
         if value.lhs.head.arity != 0:
