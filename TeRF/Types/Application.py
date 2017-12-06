@@ -63,11 +63,10 @@ class Application(T.Term):
                                if hasattr(o, 'arity')}
             return self._operators
 
-    @property
     def subterms(self):
         yield self
         for term in self.body:
-            for subterm in term.subterms:
+            for subterm in term.subterms():
                 yield subterm
 
     def places(self):
@@ -176,7 +175,7 @@ class Application(T.Term):
         return App(self.head, [t.substitute(sub) for t in self.body])
 
     def unify(self, t, env=None, type='simple'):
-        # see wikipedia.org/wiki/Unification_(computer_science)
+        """see wikipedia.org/wiki/Unification_(computer_science)"""
         env = {} if env is None else env
 
         try:

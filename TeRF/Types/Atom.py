@@ -26,6 +26,8 @@ class Atom(object):
         for k, v in self.__dict__.items():
             if k == 'identity':
                 setattr(result, k, v)
+            elif k[0] == '_':
+                pass
             else:
                 setattr(result, k, copy.deepcopy(v, memo))
         return result

@@ -14,19 +14,6 @@ class Variable(T.Term, A.Atom):
     def __str__(self):
         return self.name + '_'
 
-    def __deepcopy__(self, memo):
-        cls = self.__class__
-        result = cls.__new__(cls)
-        memo[id(self)] = result
-        for k, v in self.__dict__.items():
-            if k == 'identity':
-                setattr(result, k, v)
-            elif k in ['_atoms', '_places', '_variables', '_operators']:
-                pass
-            else:
-                setattr(result, k, copy.deepcopy(v, memo))
-        return result
-
     def __eq__(self, other):
         try:
             return self.identity == other.identity
@@ -61,7 +48,6 @@ class Variable(T.Term, A.Atom):
     def operators(self):
         return set()
 
-    @property
     def subterms(self):
         yield self
 
@@ -89,7 +75,7 @@ class Variable(T.Term, A.Atom):
             return self
 
     def unify(self, t, env=None, type='simple'):
-        # see wikipedia.org/wiki/Unification_(computer_science)
+        """https://wikipedia.org/wiki/Unification_(computer_science)"""
         env = {} if env is None else env
 
         if self == t:

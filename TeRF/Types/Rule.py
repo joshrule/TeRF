@@ -6,7 +6,7 @@ import TeRF.Types.Application as A
 
 
 class Rule(collections.MutableSet):
-    def __init__(self, lhs, rhs, background=False):
+    def __init__(self, lhs, rhs):
         if isinstance(lhs, A.Application):
             self.lhs = lhs
             # ensure rhs is iterable of RHSs
@@ -25,8 +25,6 @@ class Rule(collections.MutableSet):
                     raise ValueError('Rule: rhs isn\'t a term' + str(case))
         else:
             raise ValueError('Rule: lhs must be an application')
-
-        self.background = background
 
     def variables(self):
         return self.lhs.variables()
@@ -89,9 +87,6 @@ class Rule(collections.MutableSet):
     def __hash__(self):
         return hash((self.lhs, tuple(self.rhs)))
 
-    def toggle(self):
-        self.background = not self.background
-
     def add(self, item):
         # assume item is a rule
         try:
@@ -130,16 +125,6 @@ class Rule(collections.MutableSet):
             return env
         return None
 
-    def parity(self, other, env=None):
-        env = self.lhs.parity(other.lhs, env)
-        if len(self.rhs) == len(other.rhs):
-            for srhs, orhs in itertools.izip(self.rhs, other.rhs):
-                if env is None:
-                    break
-                env = srhs.parity(orhs, env)
-            return env
-        return None
-
     def substitute(self, env):
         return Rule(self.lhs.substitute(env),
                     [rhs.substitute(env) for rhs in self.rhs])
@@ -158,8 +143,10 @@ class Rule(collections.MutableSet):
         for i, v in enumerate(self.variables()):
             v.name = 'v' + str(i)
 
-    def log_p(self, grammar, start=None):
-        return len(self)*self.lhs.log_p+sum(r.log_p for r in self.rhs)
+    def log_p(self, typesystem, type):
+        lhs_log_p = len(self)*self.lhs.log_p(typesystem, type)
+        rhs_log_p = sum(r.log_p(typesystem, type) for r in self.rhs)
+        return lhs_log_p + rhs_log_p
 
     def places(self):
         return ([['lhs'] + p for p in self.lhs.places()] +
@@ -177,7 +164,7 @@ class Rule(collections.MutableSet):
             lhs = self.lhs.replace(place[1:], term)
             rhs = copy.deepcopy(self.rhs)
             return Rule(lhs, rhs)
-        
+
         lhs = copy.deepcopy(self.lhs)
         rhs = self.rhs[place[1]].replace(place[2:], term)
         return Rule(lhs, rhs)
