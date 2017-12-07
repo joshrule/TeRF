@@ -53,8 +53,14 @@ class TypeBinding(object):
 class TypeSystem(object):
     def __init__(self, env=None, max_depth=10):
         self.default_env = {} if env is None else env
-        self.typings = {}
         self.max_depth = max_depth
+
+    def __str__(self):
+        return '\n'.join('{}: {}'.format(k, v)
+                         for k, v in self.default_env.iteritems())
+
+    def make_tv(self):
+        return TypeVariable()
 
     def make_env(self, env=None):
         the_env = self.default_env.copy()
@@ -395,7 +401,7 @@ if __name__ == '__main__':
     print 'showing how subterms can easily be typed'
     env = tsys.make_env(None)
     sub = {}
-    for st in term.subterms:
+    for st in term.subterms():
         print st.to_string(), tsys.type(st, env, sub)
 
     print '\n', 'rules can also be typed'

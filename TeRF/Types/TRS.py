@@ -1,22 +1,16 @@
 import collections
 import copy
+import scipy.stats as stats
 import TeRF.Types.Application as A
 import TeRF.Types.Operator as Op
 import TeRF.Types.Rule as R
 
 
 class TRS(collections.MutableMapping):
-    def __init__(self, rules=None, start=None, locked=True):
-        if start is None:
-            self.start = A.App(Op.Operator('START', 0), [])
-        elif start.head.arity != 0:
-            raise ValueError('start symbol has non-zero arity')
-        else:
-            self.start = start
-
+    def __init__(self, rule_type, rules=None):
+        self.rule_type = rule_type
         self._order = []
         self._rules = {}
-
         if rules is not None:
             self.update(rules)
 
@@ -133,16 +127,14 @@ class TRS(collections.MutableMapping):
                 for lhs in self._order
                 for rule in self._rules[lhs]]
 
-    # def log_p(self, p_rule):
-    #     p_n_rules = stats.geom.logpmf(len(self.clauses)+1, p=p_rule)
-    #     p_rules = sum(rule.log_p for rule in self)
-    #     return p_n_rules + p_rules
+    def log_p(self, typesystem, p_rule):
+        p_n_rules = stats.geom.logpmf(len(self.clauses)+1, p=p_rule)
+        p_rules = sum(rule.log_p(typesystem, self.rule_type)
+                      for rule in self)
+        return p_n_rules + p_rules
 
     def __eq__(self, other):
-        return self._order == other._order and \
-            self._rules == other._rules and \
-            self.start == other.start and \
-            self.scope == other.scope
+        return self._order == other._order and self._rules == other._rules
 
     def __ne__(self, other):
         return not self == other
@@ -164,9 +156,7 @@ class TRS(collections.MutableMapping):
         return self
 
     def __hash__(self):
-        return hash((tuple(self._rules),
-                     tuple(self._order),
-                     self.start))
+        return hash((tuple(self._rules), tuple(self._order)))
 
 
 if __name__ == '__main__':
@@ -194,7 +184,7 @@ if __name__ == '__main__':
     rule_s = R.Rule(lhs_s, rhs_s)
     rule_k = R.Rule(lhs_k, rhs_k)
 
-    g = TRS(rules={rule_s, rule_k})
+    g = TRS(rules={rule_s, rule_k}, rule_type='blah')
 
     print '\nGrammar:\n', g
 

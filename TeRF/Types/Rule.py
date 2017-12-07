@@ -143,9 +143,14 @@ class Rule(collections.MutableSet):
         for i, v in enumerate(self.variables()):
             v.name = 'v' + str(i)
 
-    def log_p(self, typesystem, type):
-        lhs_log_p = len(self)*self.lhs.log_p(typesystem, type)
-        rhs_log_p = sum(r.log_p(typesystem, type) for r in self.rhs)
+    def log_p(self, typesystem, target_type=None):
+        if target_type is None:
+            env = {v: typesystem.make_tv() for v in self.lhs.variables()}
+            target_type = typesystem.type_rule(self,
+                                               typesystem.make_env(env),
+                                               {})
+        lhs_log_p = len(self)*self.lhs.log_p(typesystem, target_type)
+        rhs_log_p = sum(r.log_p(typesystem, target_type) for r in self.rhs)
         return lhs_log_p + rhs_log_p
 
     def places(self):

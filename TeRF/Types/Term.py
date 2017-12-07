@@ -1,5 +1,4 @@
 import TeRF.Types.Trace as T
-import TeRF.Types.TypeSystem as TS
 
 
 class Term(object):
@@ -57,5 +56,5 @@ class Term(object):
             v.name = 'v' + str(i)
 
     def log_p(self, typesystem, type):
-        env = {v: TS.TypeVariable() for v in self.variables()}
+        env = {v: typesystem.make_tv() for v in self.variables()}
         return typesystem.log_p_term(self, type, typesystem.make_env(env))
