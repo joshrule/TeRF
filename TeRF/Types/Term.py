@@ -1,4 +1,8 @@
-import TeRF.Types.Trace as T
+import TeRF.Miscellaneous as misc
+
+
+class TermError(Exception):
+    pass
 
 
 class Term(object):
@@ -12,49 +16,25 @@ class Term(object):
     """
     def __init__(self, head, **kwargs):
         self.head = head
-        self._types = {}
-        super(Term, self).__init__(**kwargs)
+        super(Term, self).__init__()
 
-    def operators(self):
-        raise NotImplementedError
+    def __deepcopy__(self, memo):
+        return misc.empty_cache_deepcopy(self, memo)
 
-    def variables(self):
-        raise NotImplementedError
+    def __eq__(self, other):
+        try:
+            return self.head == other.head
+        except AttributeError:
+            return False
 
-    def atoms(self):
-        raise NotImplementedError
+    def __hash__(self):
+        return hash((self.head,))
 
-    def subterms(self):
-        raise NotImplementedError
+    def __ne__(self, other):
+        return not self == other
 
-    def places(self):
-        raise NotImplementedError
+    def __repr__(self):
+        return 'Term(head={!r})'.format(self.head)
 
-    def to_string(self, verbose=0):
-        raise NotImplementedError
-
-    def substitute(self, env):
-        raise NotImplementedError
-
-    def unify(self, t, env=None, type='simple'):
-        raise NotImplementedError
-
-    def single_rewrite(self, trs, type='one', strategy='eager'):
-        raise NotImplementedError
-
-    def place(self, place):
-        raise NotImplementedError
-
-    def replace(self, place, term):
-        raise NotImplementedError
-
-    def rewrite(self, g, trace=False, states=None, **kwargs):
-        return T.Trace(g, self, **kwargs).rewrite(trace, states=states)
-
-    def rename_variables(self):
-        for i, v in enumerate(self.variables()):
-            v.name = 'v' + str(i)
-
-    def log_p(self, typesystem, type):
-        env = {v: typesystem.make_tv() for v in self.variables()}
-        return typesystem.log_p_term(self, type, typesystem.make_env(env))
+    def __len__(self):
+        return 1
