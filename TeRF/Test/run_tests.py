@@ -6,14 +6,16 @@ import os
 import pandas
 import dill
 import sys
+import tempfile
 import TeRF.Language.parser as parser
-import TeRF.Learning.TRSHypothesis as TRSH
+import TeRF.Learning.LOTHypothesis as LOTH
+import TeRF.Types.LOT as LOT
+import TeRF.Types.CFGrammar as CFG
 import TeRF.Miscellaneous as misc
 import TeRF.Test.make_tests as mt
 import TeRF.Test.test_sampler as ts
 import TeRF.Types.Application as A
 import TeRF.Types.Rule as R
-import TeRF.Types.TRS as TRS
 import time
 
 
@@ -215,66 +217,73 @@ def summarize_test(rc, hs, h_star, data):
     return results
 
 
-def make_hypothesis(p_partial, p_operator, p_arity, p_rule, p_r, data=None,
-                    trs=None):
-    if trs is not None:
-        hyp = trs
-    elif data is not None:
-        hyp = TRS.TRS()
-        for rule in data:
-            for op in rule.operators:
-                hyp.signature.add(op)
-    else:
-        raise ValueError('run_tests.make_hypothesis: no value!')
+def load_datum(datum_filename):
+    with open(datum_filename, 'rb') as dill_f:
+        return dill.load(dill_f)
 
-    return TRSH.TRSHypothesis(value=hyp,
+
+def load_data(data_dir):
+    data_fs = misc.find_files(misc.mkdir(data_dir))
+    return [load_datum(data_f) for data_f in data_fs]
+
+
+def save_data(data, data_dir):
+    for datum in data:
+        save_datum(datum, data_dir)
+
+
+def save_datum(datum, data_dir):
+    tempfile.tempdir = data_dir
+    with tempfile.NamedTemporaryFile(delete=False) as temp:
+        dill.dump(datum, temp)
+
+
+def make_hypothesis(p_partial, p_rule, data=None, lot=None, syntax=None):
+    if lot is not None:
+        value = lot
+    elif syntax is not None:
+        g = CFG.FPCFG({op for rule in syntax for op in rule.operators()})
+        value = LOT.LOT(primitives=g, syntax=syntax)
+    elif data is not None:
+        g = CFG.FPCFG({op for datum in data for op in datum.operators()})
+        value = LOT.LOT(primitives=g, syntax=g)
+    else:
+        raise ValueError('make_hypothesis: cannot make hypothesis!')
+
+    return LOTH.LOTHypothesis(value=value,
                               data=data,
-                              privileged_ops=hyp.signature.operators,
                               p_partial=p_partial,
-                              p_operators=p_operator,
-                              p_arity=p_arity,
-                              p_rules=p_rule,
-                              p_r=p_r,
+                              p_rule=p_rule,
                               prior_temperature=1.,
                               likelihood_temperature=1.)
 
 
-def make_data(e_trs, g_trs, data_dir, reqs, start, ops_to_change):
-    data = TRS.TRS()
-    data.signature = e_trs.signature.copy(parent=data)
-
-    # load & test the existing data
-    data_fs = misc.find_files(misc.mkdir(data_dir))
-    for datum_f in data_fs:
-        with open(datum_f, 'rb') as dill_f:
-            datum = dill.load(dill_f)
-        meet_reqs = [r(datum) for r in reqs]
-        if any(meet_reqs):
-            data.add(datum)
-        else:
-            os.remove(datum_f)
-        reqs = [r for p, r in zip(meet_reqs, reqs) if not p]
-
-    # sample any data we still need
+def make_data(e_g, g_g, data_dir, reqs):
+    data = []
+    candidates = load_data(data_dir)
     while reqs != []:
-        trace = start.rewrite(g_trs, max_steps=100, type='one',
-                              trace=True, strategy='eager')
-        terms = [s.term for s in trace.root.leaves(states=['normal'])]
-        try:
-            lhs = terms[0]
-        except IndexError:
-            continue
-        rhs = lhs.rewrite(e_trs, max_steps=100, type='one')
-        datum = R.Rule(lhs, rhs)
+        datum = candidates.pop() if candidates else sample_datum(e_g, g_g)
         meet_reqs = [r(datum) for r in reqs]
         if any(meet_reqs):
-            data.add(datum)
-            datum_f = os.path.join(data_dir, str(data.num_rules()) + '.pkl')
-            with open(datum_f, 'wb') as dill_f:
-                dill.dump(datum, dill_f)
+            data.append(datum)
             reqs = [r for p, r in zip(meet_reqs, reqs) if not p]
+    return data
 
-    human_data = copy.deepcopy(data)
-    human_data.prettify(change=ops_to_change)
 
-    return list(data.rules()), list(human_data.rules())
+def sample_datum(e_g, g_g):
+    rule = None
+    while rule is None:
+        try:
+            lhs = g_g.start.rewrite(g_g, max_steps=100, type='one',
+                                    trace=False, strategy='eager',
+                                    states=['normal'])
+        except IndexError:
+            pass
+
+        rhs = lhs.rewrite(e_g, max_steps=100, type='one')
+
+        try:
+            rule = R.Rule(lhs, rhs)
+        except ValueError:
+            pass
+    return rule

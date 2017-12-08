@@ -1,8 +1,9 @@
+import copy
 import TeRF.Types.Atom as A
 import TeRF.Types.Term as T
 
 
-class Variable(A.Atom, T.Term):
+class Variable(T.Term, A.Atom):
     """an unspecified term"""
     def __init__(self, name=None, **kwargs):
         super(Variable, self).__init__(name=name,
@@ -13,42 +14,53 @@ class Variable(A.Atom, T.Term):
     def __str__(self):
         return self.name + '_'
 
-    def __len__(self):
-        return 1
-
     def __eq__(self, other):
         try:
             return self.identity == other.identity
         except AttributeError:
             return False
 
-    def __ne__(self, other):
-        return not self == other
-
     def __hash__(self):
         if not hasattr(self, '_hash'):
             self._hash = hash(self.identity)
         return self._hash
 
-    @property
-    def atoms(self):
-        yield self
+    def __len__(self):
+        return 1
 
-    @property
+    def __ne__(self, other):
+        return not self == other
+
+    def atoms(self):
+        try:
+            return self._atoms
+        except AttributeError:
+            self._atoms = {self}
+            return self._atoms
+
+    def variables(self):
+        try:
+            return self._variables
+        except AttributeError:
+            self._variables = {self}
+            return self._variables
+
+    def operators(self):
+        return set()
+
     def subterms(self):
         yield self
 
-    @property
     def places(self):
-        yield []
+        return []
 
     def place(self, place):
-        if place != []:
+        if list(place) != []:
             raise ValueError('place: non-empty place')
         return self
 
     def replace(self, place, term):
-        if place == []:
+        if list(place) == []:
             return term
         else:
             raise ValueError('replace: non-empty place')
@@ -63,13 +75,13 @@ class Variable(A.Atom, T.Term):
             return self
 
     def unify(self, t, env=None, type='simple'):
-        # see wikipedia.org/wiki/Unification_(computer_science)
+        """https://wikipedia.org/wiki/Unification_(computer_science)"""
         env = {} if env is None else env
 
         if self == t:
             return env
         if (type is not 'alpha' or not hasattr(t, 'body')) and\
-           self not in t.variables:
+           self not in t.variables():
             if self not in env:
                 for var in env:
                     env[var] = env[var].substitute({self: t})
@@ -79,23 +91,8 @@ class Variable(A.Atom, T.Term):
                 return env
         return None
 
-    def parity(self, t, env=None):
-        env = {} if env is None else env
-
-        if hasattr(t, 'body'):
-            return None
-        if self in env and env[self] is t:
-            return env
-        if t not in env.values() and self not in env:
-            env[self] = t
-            return env
-        return None
-
     def single_rewrite(self, g, type='one', strategy='eager'):
         return None
-
-    def differences(self, other, top=True):
-        return [] if (self == other or not top) else [(self, other)]
 
 
 Var = Variable

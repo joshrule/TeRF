@@ -4,23 +4,30 @@ import LOTlib.Hypotheses.Proposers as P
 import TeRF.Miscellaneous as misc
 import numpy as np
 import TeRF.Types.Rule as R
-import TeRF.Test.test_grammars as tg
 import inspect
 
 
 def test_a_proposer(propose_value, give_proposal_log_p, lot=None):
-    for i in xrange(20):
+    import TeRF.Test.test_grammars as tg
+    failures = 0
+    successes = 0
+    while successes < 20 and failures < 10:
         if lot is None:
             value = tg.head_lot
         elif lot is 'headtail':
             value = tg.headtail_lot
-        if i == 0:
+        if successes == 0 and failures == 0:
             print 'initial hypothesis:\n', value, '\n'
-        hyp = propose_value(value)
-        log_p = give_proposal_log_p(value, hyp)
-        fb = log_p - give_proposal_log_p(hyp, value)
-        print '{:d}: fb={:.2f}, log_p={:.2f}'.format(i, fb, log_p)
-        print hyp.semantics, '\n'
+        try:
+            hyp = propose_value(value)
+            log_p = give_proposal_log_p(value, hyp)
+            fb = log_p - give_proposal_log_p(hyp, value)
+            print '{:d}: fb={:.2f}, log_p={:.2f}'.format(successes, fb, log_p)
+            print hyp.semantics, '\n'
+            successes += 1
+        except P.ProposalFailedException:
+            print 'failed ({:d})!\n'.format(failures)
+            failures += 1
 
 
 def choose_a_rule(g, f=None):
@@ -81,9 +88,10 @@ def there_was_a_move(g1, g2):
             return True
         return False
 
-# def find_difference(self, other):
-#     s_rules = {rule for rule in self.rules() if rule not in other}
-#     o_rules = {rule for rule in other.rules() if rule not in self}
-#     if len(s_rules) == len(o_rules) == 1:
-#         return s_rules.pop(), o_rules.pop()
-#     return (None, None)
+
+def find_difference(g1, g2):
+    g1_rules = {rule for rule in g1.clauses if rule not in g2}
+    g2_rules = {rule for rule in g2.clauses if rule not in g1}
+    if len(g1_rules) == len(g2_rules) == 1:
+        return g1_rules.pop(), g2_rules.pop()
+    return (None, None)
