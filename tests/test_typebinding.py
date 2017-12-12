@@ -13,9 +13,9 @@ def atoms():
     y = TVar.TVar()
     Bool = TOp.TOp('Bool', [])
     Nat = TOp.TOp('Nat', [])
-    Bool_to_Nat = TOp.F(Bool, Nat)
-    x_to_Bool = TOp.F(x, Bool)
-    x_to_y = TOp.F(x, y)
+    Bool_to_Nat = TOp.TOp('->', [Bool, Nat])
+    x_to_Bool = TOp.TOp('->', [x, Bool])
+    x_to_y = TOp.TOp('->', [x, y])
 
     return (x, y, Bool, Nat, Bool_to_Nat, x_to_Bool, x_to_y)
 
@@ -24,7 +24,7 @@ def atoms():
 def bindings(atoms):
     import TeRF.Types.TypeBinding as TBind
     reload(TBind)
-    x, y, b, n, bn, xb, xy = atoms    
+    x, y, b, n, bn, xb, xy = atoms
 
     return (TBind.TBind(x, x),
             TBind.TBind(x, y),
@@ -145,6 +145,7 @@ def test_application_str_yy(bindings):
 def test_application_xx_eq_xx(bindings):
     xx, xy, xb, xn, xbn, xxb, xxy, yx, yy = bindings
     assert (xx == xx) is True
+
 
 def test_application_xx_eq_xy(bindings):
     xx, xy, xb, xn, xbn, xxb, xxy, yx, yy = bindings

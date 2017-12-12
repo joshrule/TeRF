@@ -13,10 +13,10 @@ def atoms():
     Bool = TOp.TOp('Bool', [])
     Nat = TOp.TOp('Nat', [])
     List_of_Nat = TOp.TOp('List', [Nat])
-    Bool_to_Bool1 = TOp.F(Bool, Bool)
-    Bool_to_Bool2 = TOp.F(Bool, Bool)
-    x_to_Bool = TOp.F(x, Bool)
-    Bool_to_Nat = TOp.F(Bool, Nat)
+    Bool_to_Bool1 = TOp.TOp('->', [Bool, Bool])
+    Bool_to_Bool2 = TOp.TOp('->', [Bool, Bool])
+    x_to_Bool = TOp.TOp('->', [x, Bool])
+    Bool_to_Nat = TOp.TOp('->', [Bool, Nat])
 
     return (Bool, Nat, List_of_Nat, Bool_to_Bool1,
             Bool_to_Bool2, x_to_Bool, Bool_to_Nat, x)

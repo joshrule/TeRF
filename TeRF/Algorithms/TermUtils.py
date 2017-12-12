@@ -19,7 +19,7 @@ def term_decorator(f):
     def wrapper(term, *args, **kwargs):
         if isinstance(term, T.Term):
             return f(term, *args, **kwargs)
-        raise TypeError('not a term')
+        raise TypeError('not a term: {!r}'.format(term))
     return wrapper
 
 
@@ -98,7 +98,7 @@ def rename_variables(term):
 def to_string(term, verbose=0):
     def list_terms(xs):
         try:
-            return [xs.body[0].args[1]] + list_terms(xs.args[1])
+            return [xs.args[0].args[1]] + list_terms(xs.args[1])
         except IndexError:
             return []
 
@@ -143,11 +143,11 @@ def is_list(term):
     try:
         return (term.head.name == '.' and
                 term.head.arity == 2 and
-                term.body[0].head.name == '.' and
-                term.body[0].head.arity == 2 and
-                term.body[0].body[0].head.name == 'cons' and
-                term.body[0].body[0].head.arity == 0 and
-                is_list(term.body[1])) or \
+                term.args[0].head.name == '.' and
+                term.args[0].head.arity == 2 and
+                term.args[0].args[0].head.name == 'cons' and
+                term.args[0].args[0].head.arity == 0 and
+                is_list(term.args[1])) or \
                (term.head.name == 'nil' and
                 term.head.arity == 0)
     except AttributeError:
@@ -159,7 +159,7 @@ def is_number(term):
     try:
         return (term.head.name == 'S' and
                 term.head.arity == 1 and
-                is_number(term.body[0])) or \
+                is_number(term.args[0])) or \
                (term.head.name == '0' and
                 term.head.arity == 0)
     except AttributeError:

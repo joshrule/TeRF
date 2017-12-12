@@ -34,18 +34,9 @@ class TypeOperator(Type.Type):
                                                            self.args)
 
     def __str__(self):
+        if self.head == '->' and len(self.args) == 2:
+            return misc.iter2ListStr(self.args, l='(', r=')', sep=' -> ')
         return str(self.head) + misc.iter2ListStr(self.args, empty='')
 
 
 TOp = TypeOperator
-
-
-class Function(TypeOperator):
-    def __init__(self, alpha_type, beta_type):
-        super(Function, self).__init__('->', [alpha_type, beta_type])
-
-    def __str__(self):
-        return misc.iter2ListStr(self.args, l='(', r=')', sep=' -> ')
-
-
-F = Function
