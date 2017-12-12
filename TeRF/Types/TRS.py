@@ -1,9 +1,5 @@
 import collections
 import copy
-import scipy.stats as stats
-import TeRF.Types.Application as A
-import TeRF.Types.Operator as Op
-import TeRF.Types.Rule as R
 
 
 class TRS(collections.MutableMapping):
@@ -13,14 +9,6 @@ class TRS(collections.MutableMapping):
         self._rules = {}
         if rules is not None:
             self.update(rules)
-
-    def __iter__(self):
-        order = self._order[:]
-        for lhs in order:
-                yield self._rules[lhs]
-
-    def __len__(self):
-        return sum(1 for _ in self)
 
     def __delitem__(self, key):
         # assume it's a rule
@@ -55,6 +43,9 @@ class TRS(collections.MutableMapping):
         del self._rules[self._order[key]]
         del self._order[key]
 
+    def __eq__(self, other):
+        return self._order == other._order and self._rules == other._rules
+
     def __getitem__(self, key):
         try:
             the_lhs = None
@@ -82,6 +73,20 @@ class TRS(collections.MutableMapping):
         except TypeError:
             raise KeyError
 
+    def __hash__(self):
+        return hash((tuple(self._rules), tuple(self._order)))
+
+    def __iter__(self):
+        order = self._order[:]
+        for lhs in order:
+                yield self._rules[lhs]
+
+    def __len__(self):
+        return sum(1 for _ in self)
+
+    def __ne__(self, other):
+        return not self == other
+
     def __setitem__(self, index, value):
         """
         Args:
@@ -104,40 +109,23 @@ class TRS(collections.MutableMapping):
             self._order.remove(the_lhs)
         self._order.insert(index, the_lhs)
 
-    def update(self, rules):
-        for rule in rules:
-            self.add(rule)
+    def __repr__(self):
+        string = 'TRS(rule_type={!r}, rules={!r})'
+        return string.format(self.rule_type, [self._rules[lhs]
+                                              for lhs in self._order])
 
-    def add(self, rule):
-        try:
-            self[rule.lhs].add(rule)
-        except KeyError:
-            self[0] = rule
+    def __str__(self):
+        return '\n'.join(str(rule) for rule in self)
 
     @property
     def operators(self):
         return {op for rule in self for op in rule.operators}
-
-    def __str__(self):
-        return '\n'.join(str(rule) for rule in self)
 
     @property
     def clauses(self):
         return [rule
                 for lhs in self._order
                 for rule in self._rules[lhs]]
-
-    def log_p(self, typesystem, p_rule):
-        p_n_rules = stats.geom.logpmf(len(self.clauses)+1, p=p_rule)
-        p_rules = sum(rule.log_p(typesystem, self.rule_type)
-                      for rule in self)
-        return p_n_rules + p_rules
-
-    def __eq__(self, other):
-        return self._order == other._order and self._rules == other._rules
-
-    def __ne__(self, other):
-        return not self == other
 
     def move(self, i1, i2):
         key = self._order[i1]
@@ -155,83 +143,12 @@ class TRS(collections.MutableMapping):
             del self[rule]
         return self
 
-    def __hash__(self):
-        return hash((tuple(self._rules), tuple(self._order)))
+    def add(self, rule, idx=0):
+        try:
+            self[rule.lhs].add(rule)
+        except KeyError:
+            self[idx] = rule
 
-
-if __name__ == '__main__':
-    import TeRF.Types.Variable as V
-
-    def f(x, xs=None):
-        if xs is None:
-            xs = []
-        return A.App(x, xs)
-
-    # test Grammar
-    s = Op.Operator('S', 0)
-    K = Op.Operator('K', 0)
-    i = Op.Operator('I', 0)
-    x = V.Variable('x')
-    y = V.Variable('y')
-    z = V.Variable('z')
-    a = Op.Operator('.', 2)
-
-    lhs_s = f(a, [f(a, [f(a, [f(s), x]), y]), z])
-    rhs_s = f(a, [f(a, [x, z]), f(a, [y, z])])
-    lhs_k = f(a, [f(a, [f(K), x]), y])
-    rhs_k = x
-
-    rule_s = R.Rule(lhs_s, rhs_s)
-    rule_k = R.Rule(lhs_k, rhs_k)
-
-    g = TRS(rules={rule_s, rule_k}, rule_type='blah')
-
-    print '\nGrammar:\n', g
-
-    # test rewriting
-    term = f(a, [f(a, [f(K), f(a, [f(a, [f(K), f(i)]), f(s)])]), f(s)])
-
-    print '\nterm:\n', term.to_string()
-    print '\nrewrite:'
-    print '\n'.join(t.to_string() for t in term.rewrite(g)), '\n'
-
-
-#    @property
-#    def size(self):
-#        return sum(r.size for r in self)
-#
-#    def index(self, value):
-#        return self._order.index(value)
-#
-#    def clear(self):
-#        self._order = []
-#        self._rules = {}
-#
-#    def unifies(self, other, env=None, type='alpha'):
-#        if len(self) == len(other):
-#            for r_self, r_other in ittl.izip_longest(self, other):
-#                if r_self.unify(r_other, env=env, type=type) is None:
-#                    return False
-#            return True
-#        return False
-#
-#    def prettify(self, change=None):
-#        self.rename_operators(change)
-#        for rule in self:
-#            rule.rename_variables()
-#
-#    def rename_operators(self, change=None):
-#        if change is not None:
-#            to_rename = [op for op in self.operators if op in change]
-#            new_names = np.random.choice(P.pseudowords,
-#                                         size=len(to_rename),
-#                                         replace=False)
-#            for op, name in ittl.izip(to_rename, new_names):
-#                for rule in self.rules():
-#                    for term in rule.lhs.subterms:
-#                        if term.head == op:
-#                            term.head.name = name
-#                    for term in rule.rhs0.subterms:
-#                        if term.head == op:
-#                            term.head.name = name
-#                op.name = name
+    def update(self, rules):
+        for rule in rules:
+            self.add(rule)
