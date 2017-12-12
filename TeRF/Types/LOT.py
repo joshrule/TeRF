@@ -15,11 +15,10 @@ class LOT(object):
         self.syntax = typesystem
         self.semantics = trs
 
+    def __repr__(self):
+        return 'LOT(typesystem={!r}, trs={!r})'.format(self.syntax,
+                                                       self.semantics)
+
     def __str__(self):
         return '\n\n'.join([str(self.syntax),
                             str(self.semantics)])
-
-
-if __name__ == '__main__':
-    import TeRF.Test.test_grammars as tg
-    print LOT(tg.syntax, tg.semantics)

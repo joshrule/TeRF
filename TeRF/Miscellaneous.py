@@ -1,3 +1,4 @@
+import copy
 from itertools import repeat, product, izip
 import os
 import numpy as np
@@ -156,8 +157,8 @@ def logsumexp(xs):
     return scipy.misc.logsumexp(xs)
 
 
-def iter2ListStr(xs, empty='[]'):
-    return empty if len(xs) == 0 else '[' + ', '.join(str(x) for x in xs) + ']'
+def iter2ListStr(xs, empty='[]', l='[', r=']', sep=', '):
+    return empty if len(xs) == 0 else l + sep.join(str(x) for x in xs) + r
 
 
 def attrmem(name):
@@ -169,3 +170,16 @@ def attrmem(name):
             return v
         return wrap2
     return wrap1
+
+
+def empty_cache_deepcopy(obj, memo):
+    """custom __deepcopy__ skipping cached values"""
+    cls = obj.__class__
+    result = cls.__new__(cls)
+    memo[id(obj)] = result
+    for k, v in obj.__dict__.items():
+        if k == '_cache':
+            pass
+        else:
+            setattr(result, k, copy.deepcopy(v, memo))
+    return result

@@ -1,45 +1,32 @@
-import copy
+import TeRF.Miscellaneous as misc
 
 
 class Atom(object):
-    """
-    the smallest units in terms
+    """the smallest units in terms"""
+    next_id = 0
 
-    Parameters
-    ----------
-    terminal : bool
-        True if this atom is considered a terminal of the language, else False
-    name : string (default: None)
-        the name of the atom. If None, the name comes from the identity.
-    """
-    def __init__(self, terminal, name=None, **kwargs):
-        self.terminal = terminal
-        self.identity = object()
-        self.name = str(id(self.identity)) if name is None else name
+    def __init__(self, identity=None, **kwargs):
+        self.identity = Atom.next_id
+        Atom.next_id += 1
         super(Atom, self).__init__(**kwargs)
 
     def __deepcopy__(self, memo):
-        """custom __deepcopy__ preserving identity attributes"""
-        cls = self.__class__
-        result = cls.__new__(cls)
-        memo[id(self)] = result
-        for k, v in self.__dict__.items():
-            if k == 'identity':
-                setattr(result, k, v)
-            elif k[0] == '_':
-                pass
-            else:
-                setattr(result, k, copy.deepcopy(v, memo))
-        return result
+        return misc.empty_cache_deepcopy(self, memo)
 
     def __eq__(self, other):
-        raise NotImplementedError
+        try:
+            return self.identity == other.identity
+        except AttributeError:
+            return False
 
     def __hash__(self):
-        raise NotImplementedError
+        return hash((self.identity,))
 
     def __ne__(self, other):
-        raise NotImplementedError
+        return not self == other
+
+    def __repr__(self):
+        return 'Atom(identity={!r})'.format(self.identity)
 
     def __str__(self):
-        raise NotImplementedError
+        return 'atom_{!r}'.format(self.identity)
