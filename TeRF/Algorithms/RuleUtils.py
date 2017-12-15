@@ -32,9 +32,15 @@ def replace(rule, place, term):
     return Rule(rule.lhs, te.replace(rule.rhs[place[1]], place[2:], term))
 
 
-def unify(r1, r2, env=None, kind='unification'):
+def unify(r1, r2, kind='unification'):
     return u.unify({(r1.lhs, r2.lhs)} |
                    {(rhs1, rhs2) for rhs1, rhs2 in zip(r1.rhs, r2.rhs)})
+
+
+def alpha(r1, r2):
+    result = unify(r1, r2, kind='match')
+    if result is not None and unify(r2, r1, kind='match') is not None:
+        return result
 
 
 def substitute(rule, env):

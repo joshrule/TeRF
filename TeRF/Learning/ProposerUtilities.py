@@ -8,14 +8,16 @@ import inspect
 
 
 def test_a_proposer(propose_value, give_proposal_log_p, lot=None):
-    import TeRF.Test.test_grammars as tg
+    import TeRF.Examples as tg
     failures = 0
     successes = 0
     while successes < 20 and failures < 10:
         if lot is None:
             value = tg.head_lot
-        elif lot is 'headtail':
-            value = tg.headtail_lot
+        elif lot is 'tail':
+            value = tg.tail_lot
+        elif lot is 'simple':
+            value = tg.simple_head_lot
         if successes == 0 and failures == 0:
             print 'initial hypothesis:\n', value, '\n'
         try:
@@ -44,14 +46,11 @@ def make_a_rule(lhs, rhs):
         raise P.ProposalFailedException('make_a_rule: bad rule')
 
 
-def validate_syntax_and_primitives(proposal_log_p):
+def validate_syntax(proposal_log_p):
     def wrapper(old, new, **kwargs):
-        if old.primitives == new.primitives and \
-           old.syntax == new.syntax:
-            val = proposal_log_p(old, new, **kwargs)
-        if val is None:
-            val = misc.log(0)
-        return val
+        if old.syntax == new.syntax:
+            return proposal_log_p(old, new, **kwargs)
+        return misc.log(0)
     return wrapper
 
 

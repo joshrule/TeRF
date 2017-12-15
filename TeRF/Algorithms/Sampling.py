@@ -89,7 +89,14 @@ def log_p_term(term, target_type, env, sub=None, invent=False, max_d=5, d=0):
     if d > max_d:
         return -np.inf, env, sub
 
-    options = list(gen_options(target_type, env, sub, invent))
+    options = list(gen_options(target_type, env, sub, False))
+    if invent:
+        if isinstance(term, Var.Var) and term not in env:
+            env2 = env.copy()
+            env2[term] = target_type
+            options.append([term, [], env2, sub])
+        else:
+            options.append([Var.Var('BOGUS'), [], env, sub])
     matches = [o for o in options if o[0] == term.head]
     if len(matches) > 1:
         raise ValueError('bad environment: {!r}'.format(env))
@@ -128,3 +135,12 @@ def sample_rule(target_type, env, sub=None, invent=False, max_d=5, d=0):
     rhs, _, _ = sample_term(target_type, env2, sub2, invent=False,
                             max_d=max_d, d=d)
     return Rule.Rule(lhs, rhs)
+
+
+def log_p_rule(rule, target_type, env, sub=None, invent=False, max_d=5, d=0):
+    sub = {} if sub is None else sub
+    log_p_lhs, env, sub = log_p_term(rule.lhs, target_type, env, sub, invent,
+                                     max_d, d)
+    log_p_rhs, _, _ = log_p_term(rule.rhs0, target_type, env, sub, invent,
+                                 max_d, d)
+    return log_p_lhs + log_p_rhs

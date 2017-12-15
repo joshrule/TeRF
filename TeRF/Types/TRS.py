@@ -1,5 +1,6 @@
 import collections
 import copy
+import TeRF.Algorithms.Unify as u
 
 
 class TRS(collections.MutableMapping):
@@ -15,7 +16,7 @@ class TRS(collections.MutableMapping):
         try:
             the_lhs = None
             for lhs in self._rules.keys():
-                if lhs.unify(key.lhs, type='alpha') is not None:
+                if u.alpha(lhs, key.lhs) is not None:
                     the_lhs = lhs
                     break
             self._rules[the_lhs].discard(key)
@@ -30,7 +31,7 @@ class TRS(collections.MutableMapping):
         try:
             the_lhs = None
             for lhs in self._rules.keys():
-                if lhs.unify(key, type='alpha'):
+                if u.alpha(lhs, key):
                     the_lhs = lhs
                     break
             self._order.remove(the_lhs)
@@ -50,7 +51,7 @@ class TRS(collections.MutableMapping):
         try:
             the_lhs = None
             for lhs in self._order:
-                if lhs.unify(key.lhs, type='alpha') is not None:
+                if u.alpha(lhs, key.lhs) is not None:
                     the_lhs = lhs
                     break
             if the_lhs is not None:
@@ -98,7 +99,7 @@ class TRS(collections.MutableMapping):
         value = copy.deepcopy(value)
         the_lhs = None
         for lhs in self._rules.keys():
-            if lhs.unify(value.lhs, type='alpha') is not None:
+            if u.alpha(lhs, value.lhs) is not None:
                 the_lhs = lhs
                 break
         if the_lhs is None:

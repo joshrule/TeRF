@@ -103,8 +103,8 @@ class Rule(collections.MutableSet):
     def discard(self, item):
         # assume item is a rule
         try:
-            env = u.unify(item.lhs, self.lhs, kind='match')
-            env2 = u.unify(self.lhs, item.lhs, kind='match')
+            env = u.unify({(item.lhs, self.lhs)}, kind='match')
+            env2 = u.unify({(self.lhs, item.lhs)}, kind='match')
             rhss = item.rhs[:]
             if env is not None and env2 is not None:
                 for rhs in rhss:

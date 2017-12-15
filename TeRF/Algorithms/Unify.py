@@ -17,7 +17,6 @@ def unify(cs, kind='unification'):
         partial = unify(substitute(cs, {s: t}), kind=kind)
         return compose(partial, {s: t})
     elif isinstance(t, V.Var) and t not in free_vars(s) and kind != 'match':
-        print 'what?'
         partial = unify(substitute(cs, {t: s}), kind=kind)
         return compose(partial, {t: s})
     elif isinstance(s, A.App) and isinstance(t, A.App) and s.head == t.head:
@@ -39,8 +38,8 @@ def free_vars(type, env=None):
 
 def compose(sub1, sub2):
     """compose two substitutions"""
-    print sub1
-    print sub2
+    if sub1 is None or sub2 is None:
+        return None
     sub = sub1.copy()
     sub.update({k: S.substitute(sub2[k], sub1) for k in sub2})
     return sub
@@ -49,3 +48,9 @@ def compose(sub1, sub2):
 def substitute(cs, sub):
     """substitution for a set of pairs"""
     return {(S.substitute(s, sub), S.substitute(t, sub)) for s, t in cs}
+
+
+def alpha(t1, t2):
+    result = unify({(t1, t2)}, kind='match')
+    if result is not None and unify({(t2, t1)}, kind='match') is not None:
+        return result

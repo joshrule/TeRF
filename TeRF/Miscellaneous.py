@@ -179,6 +179,7 @@ def empty_cache_deepcopy(obj, memo):
     memo[id(obj)] = result
     for k, v in obj.__dict__.items():
         if k == '_cache':
+            result._cache = {}
             pass
         else:
             setattr(result, k, copy.deepcopy(v, memo))
