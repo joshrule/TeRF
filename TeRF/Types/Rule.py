@@ -89,8 +89,8 @@ class Rule(collections.MutableSet):
     def add(self, item):
         # assume item is a rule
         try:
-            env = u.unify(item.lhs, self.lhs, kind='match')
-            env2 = u.unify(self.lhs, item.lhs, kind='match')
+            env = u.unify({(item.lhs, self.lhs)}, kind='match')
+            env2 = u.unify({(self.lhs, item.lhs)}, kind='match')
         # assume item is a term
         except AttributeError:
             if te.variables(self.lhs) >= te.variables(item):

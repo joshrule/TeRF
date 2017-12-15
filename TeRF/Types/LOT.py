@@ -20,5 +20,6 @@ class LOT(object):
                                                        self.semantics)
 
     def __str__(self):
-        return '\n\n'.join([str(self.syntax),
-                            str(self.semantics)])
+        syntax = '\n'.join('{}: {}'.format(k, v)
+                           for k, v in self.syntax.items())
+        return '\n\n'.join([syntax, str(self.semantics)])

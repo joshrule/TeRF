@@ -14,4 +14,4 @@ def substitute(term, sub):
         if sub is None:
             raise ValueError('bad substitution: None')
         return App.App(term.head, [substitute(a, sub) for a in term.args])
-    raise TypeError('not a term')
+    raise TypeError('not a term {!r}'.format(term))
