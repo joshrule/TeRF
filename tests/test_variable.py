@@ -14,6 +14,16 @@ def objs():
     return(a, b, a2)
 
 
+@pytest.fixture(scope="module")
+def objs2():
+    import TeRF.Types.Atom as Atom
+    import TeRF.Types.Variable as Variable
+    reload(Atom)
+    reload(Variable)
+    v = Variable.Variable()
+    return v
+
+
 def test_variable_repr_a(objs):
     a, b, a2 = objs
     assert repr(a) == 'Variable(name=\'a\', identity=0)'
@@ -42,6 +52,10 @@ def test_variable_str_b(objs):
 def test_variable_str_a2(objs):
     a, b, a2 = objs
     assert str(a2) == 'a_'
+
+
+def test_variable_str_empty(objs2):
+    assert str(objs2) == 'v0_'
 
 
 def test_variable_a_eq_a(objs):

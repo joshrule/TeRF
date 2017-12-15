@@ -1,10 +1,7 @@
-"""
-TODO: Neither of these routines manage variables at all
-"""
-
 import numpy as np
 import TeRF.Miscellaneous as misc
 import TeRF.Types.Application as App
+import TeRF.Types.Operator as Op
 import TeRF.Types.Rule as Rule
 import TeRF.Types.Variable as Var
 import TeRF.Types.TypeVariable as TVar
@@ -13,107 +10,121 @@ import TeRF.Algorithms.TypeUtils as ty
 import TeRF.Algorithms.TypeUnify as tu
 
 
-def sample_rule(typesystem, target_type, env):
-    return Rule.Rule(sample_term(typesystem, target_type, env),
-                     sample_term(typesystem, target_type, env))
+class SampleError(Exception):
+    pass
 
 
-def sample_term(target_type, env, sub, max_depth, depth=0):
-    """samples a term with progress bounds and backtracking"""
-    if depth > max_depth:
-        raise ValueError('sample_term: exceeded max depth')
-    options = list_options(target_type, env, sub)
-    while len(options) > 0:
-        choice = np.random.choice(len(options))
-        term, sub, term_env = options[choice]
-        del options[choice]
+def sample_term(target_type, env, sub=None, invent=False, max_d=5, d=0):
+    sub = {} if sub is None else sub
+    if d > max_d:
+        raise SampleError('depth bound {} < {}'.format(max_d, d))
+    options = np.random.permutation(list(gen_options(target_type, env, sub,
+                                                     invent)))
+    for o in options:
         try:
-            if isinstance(term, Var.Var):
-                return term
-            subterms = []
-            constraints = set()
-            for i, v in enumerate(term.body):
-                new_sub = tu.compose(tu.unify(constraints.copy()), sub)
-                subtype = ty.specialize(tc.typecheck(v, term_env, new_sub))
-                new_depth = (depth+1)*(i == 0)
-                subterm = sample_term(subtype, env, sub, max_depth,
-                                      depth=new_depth)
-                subterms.append(subterm)
-                final_type = ty.specialize(tc.typecheck(subterm, env, sub))
-                constraints.add((subtype, final_type))
-            return App.App(term.head, subterms)
-        except ValueError:
+            return try_option(*o, invent=invent, max_d=max_d, d=d)
+        except SampleError:
             pass
-    raise ValueError('sample_term: options exhausted')
+    raise SampleError('failed to sample term')
 
 
-def list_options(type, env, sub):
-    options = []
+def try_option(atom, body_types, env, sub, invent, max_d, d):
+    if isinstance(atom, Var.Var):
+        return atom, env, sub
+    subterms = []
+    constraints = set()
+    for i, bt in enumerate(body_types):
+        sub = tu.compose(tu.unify(constraints.copy()), sub)
+        subtype = ty.substitute(bt, sub)
+        d_i = (d+1)*(i == 0)
+        subterm, env, sub = sample_term(subtype, env, sub, invent, max_d, d_i)
+        subterms.append(subterm)
+        final_type = ty.specialize(tc.typecheck(subterm, env, sub))
+        constraints.add((subtype, final_type))
+    sub = tu.compose(tu.unify(constraints.copy()), sub)
+    return App.App(atom, subterms), env, sub
+
+
+def gen_options(target_type, env, sub, invent):
     for atom in env:
-        a_env = env.copy()
-        a_sub = sub.copy()
-        term = make_dummy_term(atom, a_env)
-        sub = construct_substitution(term, type, a_env, a_sub)
-        if sub is not None:
-            options.append((term, sub, a_env))
-    return options
+        option = check_option(atom, target_type, env, sub)
+        if option is not None:
+            yield option
+    if invent:
+        yield invent_variable(target_type, env, sub)
 
 
-def log_p_term(term, type, env, sub, max_depth, depth=0):
-    if depth > max_depth:
-        return -np.inf
+def invent_variable(target_type, env, sub):
+    var = Var.Var()
+    env2 = env.copy()
+    env2[var] = target_type
+    return var, [], env2, sub
 
-    options = list_options(type, env, sub)
-    matches = [o for o in options if o[0].head == term.head]
+
+def check_option(atom, target_type, env, sub):
+    if isinstance(atom, Var.Var):
+        result_type = ty.update(env[atom], env, sub)
+        body_types = []
+        constraints = set()
+
+    elif isinstance(atom, Op.Op):
+        head_type = ty.specialize(ty.update(env[atom], env, sub))
+        body_types = [TVar.TVar() for _ in xrange(atom.arity)]
+        result_type = TVar.TVar()
+        constraints = {(head_type,
+                        ty.multi_argument_function(body_types,
+                                                   result=result_type))}
+
+    spec_type = ty.specialize(target_type)
+    try:
+        unification = tu.unify(constraints | {(result_type, spec_type)})
+        sub2 = tu.compose(unification, sub)
+    except TypeError:
+        return None
+    return atom, body_types, env, sub2
+
+
+def log_p_term(term, target_type, env, sub=None, invent=False, max_d=5, d=0):
+    sub = {} if sub is None else sub
+    if d > max_d:
+        return -np.inf, env, sub
+
+    options = list(gen_options(target_type, env, sub, invent))
+    matches = [o for o in options if o[0] == term.head]
     if len(matches) > 1:
-        raise ValueError('log_p_term: bad context')
+        raise ValueError('bad environment: {!r}'.format(env))
 
     log_p = misc.logNof(options, n=len(matches))
 
     if log_p == -np.inf:
-        return log_p
+        return log_p, env, sub
 
-    d_term, sub, term_env = matches[0]
+    atom, body_types, env, sub = matches[0]
 
-    if isinstance(d_term, Var.Var):
-        return log_p
+    if isinstance(atom, Var.Var):
+        return log_p, env, sub
 
     log_ps = [log_p]
     constraints = set()
-    for i, (subterm, v) in enumerate(zip(term.body, d_term.body)):
-        new_sub = tu.compose(tu.unify(constraints.copy()), sub)
-        subtype = ty.specialize(tc.typecheck(v, term_env, new_sub))
-        new_depth = (depth+1)*(i == 0)
-        log_ps.append(log_p_term(subterm, subtype, env, sub, max_depth,
-                                 depth=new_depth))
+    for i, (subterm, body_type) in enumerate(zip(term.args, body_types)):
+        sub = tu.compose(tu.unify(constraints.copy()), sub)
+        subtype = ty.substitute(body_type, sub)
+        d_i = (d+1)*(i == 0)
+        log_p, env, sub = log_p_term(subterm, subtype, env, sub,
+                                     invent, max_d, d_i)
+        log_ps.append(log_p)
         final_type = ty.specialize(tc.typecheck(subterm, env, sub))
         constraints.add((subtype, final_type))
-    log_p = sum(log_ps)
-    return sum(log_ps)
+    sub = tu.compose(tu.unify(constraints.copy()), sub)
+    return sum(log_ps), env, sub
 
 
-def make_dummy_term(atom, env):
-    if isinstance(atom, Var.Var):
-        term = atom
-    else:
-        term = App.App(atom, [Var.Var() for _ in xrange(atom.arity)])
-        env.update({v: TVar.TVar() for v in term.body})
-    return term
-
-
-def construct_substitution(term, target_type, env, sub):
-    if isinstance(term, Var.Var):
-        result_type = tu.update(term, env, sub)
-        constraints = set()
-
-    elif isinstance(term, App.App):
-        head_type = tu.specialize(tu.update(term.head, env, sub))
-        body_types = [tu.specialize(tc.typecheck(t, env.copy(), sub))
-                      for t in term.body]
-        result_type = TVar.TVar()
-        constraints = {(head_type,
-                        tu.multi_argument_function(body_types,
-                                                   result=result_type))}
-    return tu.compose(tu.unify(constraints |
-                               {(result_type, ty.specialize(target_type))}),
-                      sub)
+def sample_rule(target_type, env, sub=None, invent=False, max_d=5, d=0):
+    sub = {} if sub is None else sub
+    lhs = None
+    while not isinstance(lhs, App.App):
+        lhs, env2, sub2 = sample_term(target_type, env.copy(), sub.copy(),
+                                      invent, max_d, d)
+    rhs, _, _ = sample_term(target_type, env2, sub2, invent=False,
+                            max_d=max_d, d=d)
+    return Rule.Rule(lhs, rhs)

@@ -239,7 +239,7 @@ def test_update_x_zx_xy(atoms):
     z = Var.Var('z')
     env = {z: x}
     sub = {x: y}
-    t1 = ty.update(x, env, {x: y})
+    t1 = ty.update(x, env, sub)
     assert t1 == ty.substitute(x, sub)
 
 

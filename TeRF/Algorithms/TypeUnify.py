@@ -36,8 +36,8 @@ def free_vars(type, env=None):
     elif isinstance(type, TOp.TOp):
         return {var for arg in type.args for var in free_vars(arg, env=env)}
     elif isinstance(type, TBind.TBind):
-        return free_vars(type, env=env).difference({type.bound})
-    raise TypeError('not a term')
+        return free_vars(type.body, env=env).difference({type.variable})
+    raise TypeError('not a type: {!r}'.format(type))
 
 
 def compose(sub1, sub2):

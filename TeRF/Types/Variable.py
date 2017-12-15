@@ -12,9 +12,9 @@ class Variable(Atom.Atom, Term.Term):
         The name of the variable
     """
     def __init__(self, name=None, **kwargs):
-        self.name = name
-        self._cache = {}
         super(Variable, self).__init__(head=self, **kwargs)
+        self._cache = {}
+        self.name = (name if name is not None else 'v' + str(self.identity))
 
     def __hash__(self):
         try:

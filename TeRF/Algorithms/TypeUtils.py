@@ -4,6 +4,7 @@ import TeRF.Types.TypeBinding as TBind
 
 
 def multi_argument_function(arg_types, result='var'):
+    arg_types = arg_types[:]
     if result == 'last':
         f_type = arg_types.pop()
     elif result == 'var':
@@ -70,17 +71,8 @@ def substitute(type, sub):
 
 
 def update(type, env, sub):
-    print 'env 1', env
     for k in env:
         env[k] = substitute(env[k], sub)
-    print 'env 2', env
-    print 'sub', sub
-    sptype = specialize(type)
-    print 'spec. type', sptype
-    sutype = substitute(sptype, sub)
-    print 'sub. type', sutype
-    getype = generalize(sutype, env)
-    print 'gen. type', getype
     bounds = {v for v in env.values() if isinstance(v, TVar.TVar)}
     return generalize(substitute(specialize(type), sub), bounds)
 
