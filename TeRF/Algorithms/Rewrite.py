@@ -1,6 +1,5 @@
 import TeRF.Types.Application as App
 import TeRF.Types.Variable as Var
-import TeRF.Types.Trace as Trace
 import TeRF.Algorithms.Unify as u
 import TeRF.Algorithms.Substitute as s
 import numpy as np
@@ -8,7 +7,7 @@ import numpy as np
 
 def rewrite_head(term, trs, number):
     for rule in trs:
-        sub = u.unify({(rule.lhs, term)}, number='match')
+        sub = u.unify({(rule.lhs, term)}, kind='match')
         if sub is not None:
             options = rule.rhs
             if number == 'one':
@@ -38,15 +37,11 @@ def rewrite_eager(term, trs, number):
 
 
 def single_rewrite(term, trs, number='one', strategy='eager'):
-    if isinstance(Var.Var, term):
+    if isinstance(term, Var.Var):
         return None
-    elif isinstance(App.App, term):
+    elif isinstance(term, App.App):
         if strategy in ['normal', 'lo', 'leftmost-outermost']:
             return rewrite_normal(term, trs, number)
         if strategy in ['eager', 'li', 'leftmost-innermost']:
             return rewrite_eager(term, trs, number)
     raise TypeError('not a term')
-
-
-def rewrite(term, trs, trace=False, states=None, **kwargs):
-    return Trace.Trace(trs, term, **kwargs).rewrite(trace, states=states)
