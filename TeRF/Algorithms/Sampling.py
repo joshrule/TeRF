@@ -1,4 +1,5 @@
 import numpy as np
+import scipy.stats as stats
 import TeRF.Miscellaneous as misc
 import TeRF.Types.Application as App
 import TeRF.Types.Operator as Op
@@ -84,7 +85,7 @@ def check_option(atom, target_type, env, sub):
     return atom, body_types, env, sub2
 
 
-def log_p_term(term, target_type, env, sub=None, invent=False, max_d=5, d=0):
+def lp_term(term, target_type, env, sub=None, invent=False, max_d=5, d=0):
     sub = {} if sub is None else sub
     if d > max_d:
         return -np.inf, env, sub
@@ -101,29 +102,31 @@ def log_p_term(term, target_type, env, sub=None, invent=False, max_d=5, d=0):
     if len(matches) > 1:
         raise ValueError('bad environment: {!r}'.format(env))
 
-    log_p = misc.logNof(options, n=len(matches))
+    lp = misc.logNof(options, n=len(matches))
 
-    if log_p == -np.inf:
-        return log_p, env, sub
+    if lp == -np.inf:
+        return lp, env, sub
 
     atom, body_types, env, sub = matches[0]
 
     if isinstance(atom, Var.Var):
-        return log_p, env, sub
+        return lp, env, sub
 
-    log_ps = [log_p]
+    lps = [lp]
     constraints = set()
     for i, (subterm, body_type) in enumerate(zip(term.args, body_types)):
-        sub = tu.compose(tu.unify(constraints.copy()), sub)
+        try:
+            sub = tu.compose(tu.unify(constraints.copy()), sub)
+        except TypeError:
+            return -np.inf, env, sub
         subtype = ty.substitute(body_type, sub)
         d_i = (d+1)*(i == 0)
-        log_p, env, sub = log_p_term(subterm, subtype, env, sub,
-                                     invent, max_d, d_i)
-        log_ps.append(log_p)
+        lp, env, sub = lp_term(subterm, subtype, env, sub, invent, max_d, d_i)
+        lps.append(lp)
         final_type = ty.specialize(tc.typecheck(subterm, env, sub))
         constraints.add((subtype, final_type))
     sub = tu.compose(tu.unify(constraints.copy()), sub)
-    return sum(log_ps), env, sub
+    return sum(lps), env, sub
 
 
 def sample_rule(target_type, env, sub=None, invent=False, max_d=5, d=0):
@@ -137,10 +140,18 @@ def sample_rule(target_type, env, sub=None, invent=False, max_d=5, d=0):
     return Rule.Rule(lhs, rhs)
 
 
-def log_p_rule(rule, target_type, env, sub=None, invent=False, max_d=5, d=0):
+def lp_rule(rule, target_type, env, sub=None, invent=False, max_d=5, d=0):
     sub = {} if sub is None else sub
-    log_p_lhs, env, sub = log_p_term(rule.lhs, target_type, env, sub, invent,
-                                     max_d, d)
-    log_p_rhs, _, _ = log_p_term(rule.rhs0, target_type, env, sub, invent,
-                                 max_d, d)
-    return log_p_lhs + log_p_rhs
+    lp_lhs, env, sub = lp_term(rule.lhs, target_type, env.copy(), sub, invent,
+                               max_d, d)
+    lp_rhs, _, _ = lp_term(rule.rhs0, target_type, env, sub, False, max_d, d)
+    return lp_lhs + lp_rhs
+
+
+def lp_trs(trs, env, p_rule, invent=False):
+    p_n_rules = stats.geom.logpmf(len(trs.clauses)+1, p=p_rule)
+    p_rules = 0
+    p_rules = sum(misc.logsumexp([lp_rule(rule, rt, env, invent=invent)
+                                  for rt in trs.rule_types])
+                  for rule in trs.clauses)
+    return p_n_rules + p_rules

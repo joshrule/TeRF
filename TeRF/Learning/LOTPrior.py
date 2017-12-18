@@ -1,7 +1,8 @@
 import LOTlib.Miscellaneous as misc
+import TeRF.Algorithms.Sampling as sampling
 
 
-class Prior(object):
+class LOTPrior(object):
     @misc.attrmem('prior')
     def compute_prior(self):
         """
@@ -10,11 +11,8 @@ class Prior(object):
         Notes
         -----
         - This prior focuses exclusively on the semantic grammar but should be
-          adapted as learning increases to consider the other grammars. It
-          should assume a way to sample the LOT from scratch by first sampling
-          the primitive grammar, then the syntax, then the semantics.
-
-        Given the assumptions below, it should be part of a TeRF LOTHypothesis.
+          adapted as learning increases to consider the syntax.
+        - Given the assumptions below, use it as part of a TeRF LOTHypothesis.
 
         Assumes
         -------
@@ -26,16 +24,18 @@ class Prior(object):
         float
             -inf <= x <= 0, ln p(self.value)
         """
-        raw_prior = self.value.semantics.log_p(self.value.syntax,
-                                               self.p_rule)
+        raw_prior = sampling.lp_trs(self.value.semantics,
+                                    self.value.syntax,
+                                    self.p_rule,
+                                    invent=True)
         return raw_prior / self.prior_temperature
 
 
 if __name__ == '__main__':
     import numpy as np
-    import TeRF.Test.test_grammars as tg
+    import TeRF.Examples as tg
 
-    prior = Prior()
+    prior = LOTPrior()
     prior.prior_temperature = 1.0
     prior.p_rule = 0.5
 
@@ -45,10 +45,6 @@ if __name__ == '__main__':
             log_p = prior.compute_prior()
             print '\nprior:\n', log_p
             print '\n1/exp(prior):\n', 1./np.exp(log_p)
-
-    # should give -40.0076235013, or 2.37e17
-    lot_with_no_vars = tg.list_lot
-    test_prior(lot_with_no_vars)
 
     # should give -9.93962659915, or 20736.0
     lot_with_vars = tg.head_lot
