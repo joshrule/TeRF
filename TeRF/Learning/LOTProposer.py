@@ -7,7 +7,7 @@ import TeRF.Learning.MoveRuleProposer as mrp
 import TeRF.Learning.AddExceptionProposer as aep
 
 
-class TestProposer(MixtureProposer):
+class LOTProposer(MixtureProposer):
     def __init__(self, data=None, **kwargs):
         proposal_fns = [
             (arp.propose_value,
@@ -24,5 +24,5 @@ class TestProposer(MixtureProposer):
 
         weights = [1.0/len(proposal_fns)]*len(proposal_fns)
 
-        super(TestProposer, self).__init__(
+        super(LOTProposer, self).__init__(
             proposal_fns=proposal_fns, weights=weights, **kwargs)

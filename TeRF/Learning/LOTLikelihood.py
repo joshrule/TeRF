@@ -3,7 +3,7 @@ import TeRF.Miscellaneous as misc
 import TeRF.Types.Trace as T
 
 
-class Likelihood(object):
+class LOTLikelihood(object):
     def compute_single_likelihood(self, datum):
         """
         the log likelihood of the hypothesis for a single datum
@@ -47,7 +47,7 @@ class Likelihood(object):
 if __name__ == '__main__':
     import TeRF.Examples as tg
 
-    ll = Likelihood()
+    ll = LOTLikelihood()
     ll.temperature = 0.0
     ll.p_partial = 0.0
 
