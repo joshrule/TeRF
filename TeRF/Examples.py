@@ -1,3 +1,5 @@
+import copy
+import TeRF.Miscellaneous as misc
 import TeRF.Algorithms.TypeUtils as ty
 import TeRF.Types.Application as App
 import TeRF.Types.Operator as Op
@@ -44,6 +46,7 @@ DOT = Op.Op('.', 2)
 HEAD = Op.Op('head', 0)
 TAIL = Op.Op('tail', 0)
 ID = Op.Op('id', 0)
+numbers = [Op.Op(str(n), 0) for n in xrange(100)]
 
 
 # Variables ###################################################################
@@ -75,7 +78,7 @@ vJ = TVar.TVar()
 
 
 # TypeSystem ##################################################################
-syntax = {
+syntax = misc.edict({
     NIL: TBind.TBind(vC, List(vC)),
     ZERO: NAT,
     ONE: NAT,
@@ -90,7 +93,24 @@ syntax = {
                                                  ty.function(vA, vB)))),
     ID: TBind.TBind(vC, ty.function(vC, vC)),
     HEAD: TBind.TBind(vE, ty.function(List(vE), vE)),
-    TAIL: TBind.TBind(vJ, ty.function(List(vJ), List(vJ)))}
+    TAIL: TBind.TBind(vJ, ty.function(List(vJ), List(vJ)))})
+syntax.fvs = ty.free_vars_in_env(syntax)
+
+head_syntax = misc.edict({
+    NIL: TBind.TBind(vC, List(vC)),
+    CONS: TBind.TBind(vD,
+                      ty.function(vD,
+                                  ty.function(List(vD),
+                                              List(vD)))),
+    DOT: TBind.TBind(vA, TBind.TBind(vB,
+                                     ty.function(ty.function(vA, vB),
+                                                 ty.function(vA, vB)))),
+    HEAD: TBind.TBind(vE, ty.function(List(vE), vE))})
+head_syntax.fvs = ty.free_vars_in_env(head_syntax)
+
+head_syntax_with_numbers = copy.copy(head_syntax)
+head_syntax_with_numbers.update({n: NAT for n in numbers})
+head_syntax_with_numbers.fvs = ty.free_vars_in_env(head_syntax_with_numbers)
 
 
 # TRS #########################################################################

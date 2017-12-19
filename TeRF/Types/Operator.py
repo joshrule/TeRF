@@ -20,14 +20,13 @@ class Operator(A.Atom):
     def __eq__(self, other):
         try:
             return self.arity == other.arity and \
-                self.name == other.name and \
-                self.identity == other.identity
+                self.name == other.name
         except AttributeError:
             return False
 
     def __hash__(self):
         if not hasattr(self, '_hash'):
-            self._hash = hash((self.name, self.arity, self.identity))
+            self._hash = hash((self.name, self.arity))
         return self._hash
 
     def __repr__(self):

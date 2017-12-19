@@ -18,7 +18,6 @@ class TypeOperator(Type.Type):
     def __init__(self, head, args):
         self.head = head
         self.args = args
-        super(TypeOperator, self).__init__()
 
     def __eq__(self, other):
         try:
@@ -37,6 +36,10 @@ class TypeOperator(Type.Type):
         if self.head == '->' and len(self.args) == 2:
             return misc.iter2ListStr(self.args, l='(', r=')', sep=' -> ')
         return str(self.head) + misc.iter2ListStr(self.args, empty='')
+
+    def __ne__(self, other):
+        return not self == other
+
 
 
 TOp = TypeOperator

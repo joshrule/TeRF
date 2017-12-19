@@ -184,3 +184,7 @@ def empty_cache_deepcopy(obj, memo):
         else:
             setattr(result, k, copy.deepcopy(v, memo))
     return result
+
+
+class edict(dict):
+    pass

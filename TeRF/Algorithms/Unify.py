@@ -1,5 +1,4 @@
 import TeRF.Types.Application as A
-import TeRF.Types.Binding as B
 import TeRF.Types.Variable as V
 import TeRF.Algorithms.Substitute as S
 
@@ -14,26 +13,20 @@ def unify(cs, kind='unification'):
     if s == t:
         return unify(cs, kind=kind)
     elif isinstance(s, V.Variable) and s not in free_vars(t):
-        partial = unify(substitute(cs, {s: t}), kind=kind)
-        return compose(partial, {s: t})
+        return compose(unify(substitute(cs, {s: t}), kind=kind), {s: t})
     elif isinstance(t, V.Var) and t not in free_vars(s) and kind != 'match':
-        partial = unify(substitute(cs, {t: s}), kind=kind)
-        return compose(partial, {t: s})
+        return compose(unify(substitute(cs, {t: s}), kind=kind), {t: s})
     elif isinstance(s, A.App) and isinstance(t, A.App) and s.head == t.head:
-        arg_cs = {(st, tt) for st, tt in zip(s.args, t.args)}
-        return unify(cs | arg_cs, kind=kind)
+        return unify(cs | set(zip(s.args, t.args)), kind=kind)
     return None
 
 
-def free_vars(type, env=None):
+def free_vars(term):
     """compute the free variables in a term"""
-    if isinstance(type, V.Variable):
-        return {type} if env is None or type not in env.values() else set()
-    elif isinstance(type, A.Application):
-        return {var for arg in type.args for var in free_vars(arg, env=env)}
-    elif isinstance(type, B.Binding):
-        return free_vars(type, env=env).difference({type.bound})
-    raise TypeError('not a term')
+    try:
+        return {var for arg in term.args for var in free_vars(arg)}
+    except AttributeError:
+        return {term}
 
 
 def compose(sub1, sub2):

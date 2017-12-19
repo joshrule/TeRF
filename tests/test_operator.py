@@ -76,12 +76,12 @@ def test_operator_b_eq_a2(objs):
 
 def test_operator_hash_a(objs):
     a, b, a2 = objs
-    assert hash(a) == hash(('A', 0, 0))
+    assert hash(a) == hash(('A', 0))
 
 
 def test_operator_hash_a2(objs):
     a, b, a2 = objs
-    assert hash(a2) == hash(('A', 2, 2))
+    assert hash(a2) == hash(('A', 2))
 
 
 def test_operator_a_ne_a(objs):

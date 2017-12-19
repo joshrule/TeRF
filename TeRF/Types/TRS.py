@@ -128,6 +128,10 @@ class TRS(collections.MutableMapping):
                 for lhs in self._order
                 for rule in self._rules[lhs]]
 
+    @property
+    def size(self):
+        return sum(s.size for s in self)
+
     def move(self, i1, i2):
         key = self._order[i1]
         del self._order[i1]
@@ -153,3 +157,6 @@ class TRS(collections.MutableMapping):
     def update(self, rules):
         for rule in rules:
             self.add(rule)
+
+    def index(self, value):
+        return self._order.index(value)

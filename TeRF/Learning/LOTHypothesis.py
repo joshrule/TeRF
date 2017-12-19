@@ -1,10 +1,11 @@
 import LOTlib.Hypotheses.Hypothesis as H
-import TeRF.Learning.LOTPrior as p
+import TeRF.Learning.LOTSimplePrior as p
 import TeRF.Learning.LOTLikelihood as L
 import TeRF.Learning.LOTProposer as P
 
 
-class LOTHypothesis(p.LOTPrior, L.LOTLikelihood, P.LOTProposer, H.Hypothesis):
+class LOTHypothesis(p.LOTSimplePrior, L.LOTLikelihood, P.LOTProposer,
+                    H.Hypothesis):
     """
     hypothesis over Languages of Thought (LOTs)
 

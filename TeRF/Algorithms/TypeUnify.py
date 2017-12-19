@@ -1,3 +1,4 @@
+import itertools
 import TeRF.Types.TypeOperator as TOp
 import TeRF.Types.TypeBinding as TBind
 import TeRF.Types.TypeVariable as TVar
@@ -44,10 +45,17 @@ def compose(sub1, sub2):
     """compose two substitutions"""
     if sub1 is None or sub2 is None:
         raise TypeError('invalid substitution')
-    sub1.update({k: ty.substitute(sub2[k], sub1) for k in sub2})
+    sub1.update(dict(itertools.izip(sub2.iterkeys(),
+                                    ty.substitute(sub2.itervalues(), sub1))))
     return sub1
 
 
 def substitute(cs, sub):
     """substitution for a set of pairs"""
-    return {(ty.substitute(s, sub), ty.substitute(t, sub)) for s, t in cs}
+    try:
+        ss, ts = zip(*cs)
+        idx = len(cs)
+        results = ty.substitute(ss + ts, sub)
+        return set(zip(results[:idx], results[idx:]))
+    except ValueError:
+        return cs

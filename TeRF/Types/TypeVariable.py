@@ -8,7 +8,6 @@ class TypeVariable(Type.Type):
     def __init__(self):
         self.id = TypeVariable.next_id
         TypeVariable.next_id += 1
-        super(TypeVariable, self).__init__()
 
     def __eq__(self, other):
         try:
@@ -18,6 +17,9 @@ class TypeVariable(Type.Type):
 
     def __hash__(self):
         return hash((self.id,))
+
+    def __ne__(self, other):
+        return not self == other
 
     def __repr__(self):
         return 'TypeVariable(id={!r})'.format(self.id)

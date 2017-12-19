@@ -19,29 +19,17 @@ def rewrite_args(term, trs, number, strategy):
     for i, arg in enumerate(term.args):
         part = single_rewrite(arg, trs, number, strategy)
         if part is not None:
-            return [App.App(
-                term.head,
-                term.args[:max(0, i)] + [p] + term.args[max(1, i+1):])
+            return [App.App(term.head,
+                            term.args[:i] + [p] + term.args[(i+1):])
                     for p in part]
-    return None
-
-
-def rewrite_normal(term, trs, number):
-    return (rewrite_head(term, trs, number) or
-            rewrite_args(term, trs, number, strategy='normal'))
-
-
-def rewrite_eager(term, trs, number):
-    return (rewrite_args(term, trs, number, strategy='eager') or
-            rewrite_head(term, trs, number))
 
 
 def single_rewrite(term, trs, number='one', strategy='eager'):
     if isinstance(term, Var.Var):
         return None
-    elif isinstance(term, App.App):
-        if strategy in ['normal', 'lo', 'leftmost-outermost']:
-            return rewrite_normal(term, trs, number)
-        if strategy in ['eager', 'li', 'leftmost-innermost']:
-            return rewrite_eager(term, trs, number)
-    raise TypeError('not a term')
+    if strategy in ['normal', 'lo', 'leftmost-outermost']:
+        return (rewrite_head(term, trs, number) or
+                rewrite_args(term, trs, number, strategy='normal'))
+    if strategy in ['eager', 'li', 'leftmost-innermost']:
+        return (rewrite_args(term, trs, number, strategy='eager') or
+                rewrite_head(term, trs, number))

@@ -2,11 +2,13 @@ import LOTlib.Hypotheses.Proposers as P
 import numpy as np
 import TeRF.Learning.ProposerUtilities as utils
 import TeRF.Algorithms.Sampling as s
+import TeRF.Miscellaneous as misc
 
 
 @utils.propose_value_template
 def propose_value(value, **kwargs):
-    rule = s.sample_rule(value.semantics.rule_type, value.syntax, invent=True)
+    target_type = np.random.choice(value.semantics.rule_types)
+    rule = s.sample_rule(target_type, value.syntax, invent=True)
     if rule in value.semantics:
         raise P.ProposalFailedException('AddRule: rule already exists')
     value.semantics.add(rule)
@@ -16,8 +18,8 @@ def propose_value(value, **kwargs):
 def give_proposal_log_p(old, new, **kwargs):
     rule = utils.find_insertion(new.semantics, old.semantics)
     try:
-        return s.log_p_rule(rule, old.semantics.rule_type, old.syntax,
-                            invent=True)
+        return misc.logsumexp([s.lp_rule(rule, rt, old.syntax, invent=True)
+                               for rt in old.semantics.rule_types])
     except AttributeError:
         return -np.inf
 

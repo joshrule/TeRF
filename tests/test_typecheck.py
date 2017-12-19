@@ -1,4 +1,5 @@
 import pytest
+import TeRF.Miscellaneous as misc
 import TeRF.Algorithms.TermUtils as te
 import TeRF.Algorithms.TypeUtils as ty
 import TeRF.Algorithms.Typecheck as tc
@@ -83,33 +84,36 @@ def typesystem(makers, operators, variables):
         def __init__(self, alpha_type, beta_type):
             super(Pair, self).__init__('PAIR', [alpha_type, beta_type])
 
-    return {o['NIL']: TBind.TBind(vC, List(vC)),
-            o['ZERO']: NAT,
-            o['ONE']: NAT,
-            o['TWO']: NAT,
-            o['THREE']: NAT,
-            o['CONS']: TBind.TBind(vD,
-                                   ty.function(vD,
-                                               ty.function(List(vD),
-                                                           List(vD)))),
-            o['DOT']: TBind.TBind(vA,
-                                  TBind.TBind(vB,
-                                              ty.function(
-                                                  ty.function(vA, vB),
-                                                  ty.function(vA, vB)))),
-            o['ID']: TBind.TBind(vC, ty.function(vC, vC)),
-            o['PAIR']: TBind.TBind(vF,
-                                   TBind.TBind(
-                                       vG,
+    env = misc.edict({
+        o['NIL']: TBind.TBind(vC, List(vC)),
+        o['ZERO']: NAT,
+        o['ONE']: NAT,
+        o['TWO']: NAT,
+        o['THREE']: NAT,
+        o['CONS']: TBind.TBind(vD,
+                               ty.function(vD,
+                                           ty.function(List(vD),
+                                                       List(vD)))),
+        o['DOT']: TBind.TBind(vA,
+                              TBind.TBind(vB,
+                                          ty.function(
+                                              ty.function(vA, vB),
+                                              ty.function(vA, vB)))),
+        o['ID']: TBind.TBind(vC, ty.function(vC, vC)),
+        o['PAIR']: TBind.TBind(vF,
+                               TBind.TBind(
+                                   vG,
+                                   ty.function(
+                                       vF,
                                        ty.function(
-                                           vF,
-                                           ty.function(
-                                               vG,
-                                               Pair(vF, vG))))),
-            o['HEAD']: TBind.TBind(vE, ty.function(List(vE), vE)),
-            variables['X']: vH,
-            variables['Y']: vI,
-            variables['Z']: vH}
+                                           vG,
+                                           Pair(vF, vG))))),
+        o['HEAD']: TBind.TBind(vE, ty.function(List(vE), vE)),
+        variables['X']: vH,
+        variables['Y']: vI,
+        variables['Z']: vH})
+    env.fvs = ty.free_vars_in_env(env)
+    return env
 
 
 def test_typecheck_1(makers, operators, variables, typesystem):
@@ -122,7 +126,6 @@ def test_typecheck_1(makers, operators, variables, typesystem):
 def test_typecheck_2(makers, operators, variables, typesystem):
     f, g, h, j, k = makers
     o = operators
-    v = variables
     term = f(o['NIL'])
     result = tc.typecheck(term, typesystem, {})
     expected = typesystem[o['NIL']]
@@ -132,7 +135,6 @@ def test_typecheck_2(makers, operators, variables, typesystem):
 def test_typecheck_3(makers, operators, variables, typesystem):
     f, g, h, j, k = makers
     o = operators
-    v = variables
     term = f(o['CONS'])
     result = tc.typecheck(term, typesystem, {})
     expected = typesystem[o['CONS']]
@@ -154,7 +156,7 @@ def test_typecheck_5(makers, operators, variables, typesystem):
     o = operators
     term = h(o['CONS'], o['ONE'])
     result = tc.typecheck(term, typesystem, {})
-    natlist = TOp.TOp('LIST', [typesystem[o['ONE']]])
+    natlist = TOp.TOp('LIST', [TOp.TOp('NAT', [])])
     expected = ty.function(natlist, natlist)
     assert ty.alpha(result, expected) is not None
 
@@ -165,10 +167,12 @@ def test_typecheck_6(makers, operators, variables, typesystem):
     v = variables
     term = j(o['CONS'], v['X'])
     sub = {}
-    result = tc.typecheck(term, typesystem, sub)
-    x = ty.substitute(typesystem[v['X']], sub)
+    result, sub = tc.typecheck_full(term, typesystem, sub)
+    x = ty.substitute([typesystem[v['X']]], sub)[0]
     expected = TOp.TOp('->', [TOp.TOp('LIST', [x]),
                               TOp.TOp('LIST', [x])])
+    print 'result', result
+    print 'expected', expected
     assert ty.alpha(result, expected) is not None
 
 
@@ -221,15 +225,14 @@ def test_typecheck_11(makers, operators, variables, typesystem):
     assert ty.alpha(result, expected) is not None
 
 
-# TODO: Is this test right? Should it generalize?
 def test_typecheck_12(makers, operators, variables, typesystem):
     f, g, h, j, k = makers
     o = operators
     v = variables
     term = k(j(o['CONS'], v['X']), o['NIL'])
     sub = {}
-    result = tc.typecheck(term, typesystem, sub)
-    x = ty.substitute(typesystem[v['X']], sub)
+    result, sub = tc.typecheck_full(term, typesystem, sub)
+    x = ty.substitute([typesystem[v['X']]], sub)[0]
     expected = TOp.TOp('LIST', [x])
     assert ty.alpha(result, expected) is not None
 
@@ -262,9 +265,11 @@ def test_typecheck_15(makers, operators, variables, typesystem):
     v = variables
     term = g(j(o['CONS'], v['X']), v['Y'])
     sub = {}
-    result = tc.typecheck(term, typesystem, sub)
-    x = ty.substitute(typesystem[v['X']], sub)
+    result, sub = tc.typecheck_full(term, typesystem, sub)
+    x = ty.substitute([typesystem[v['X']]], sub)[0]
     expected = TOp.TOp('LIST', [x])
+    print 'result', result
+    print 'expected', expected
     assert ty.alpha(result, expected) is not None
 
 
@@ -295,5 +300,5 @@ def test_typecheck_17(makers, operators, variables, typesystem):
              typesystem[o['NIL']]]
     sub = {}
     for subterm, expected in zip(te.subterms(term), types):
-        result = tc.typecheck(subterm, typesystem, sub)
+        result, sub = tc.typecheck_full(subterm, typesystem, sub)
         assert ty.alpha(result, expected) is not None

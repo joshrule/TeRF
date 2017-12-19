@@ -1,4 +1,5 @@
 import pytest
+import TeRF.Miscellaneous as misc
 import TeRF.Algorithms.TypeUtils as ty
 import TeRF.Algorithms.Sampling as s
 import TeRF.Types.TypeVariable as TVar
@@ -83,33 +84,36 @@ def typesystem(makers, operators, variables):
         def __init__(self, alpha_type, beta_type):
             super(Pair, self).__init__('PAIR', [alpha_type, beta_type])
 
-    return {o['NIL']: TBind.TBind(vC, List(vC)),
-            o['ZERO']: NAT,
-            o['ONE']: NAT,
-            o['TWO']: NAT,
-            o['THREE']: NAT,
-            o['CONS']: TBind.TBind(vD,
-                                   ty.function(vD,
-                                               ty.function(List(vD),
-                                                           List(vD)))),
-            o['DOT']: TBind.TBind(vA,
-                                  TBind.TBind(vB,
-                                              ty.function(
-                                                  ty.function(vA, vB),
-                                                  ty.function(vA, vB)))),
-            o['ID']: TBind.TBind(vC, ty.function(vC, vC)),
-            o['PAIR']: TBind.TBind(vF,
-                                   TBind.TBind(
-                                       vG,
+    env = misc.edict({
+        o['NIL']: TBind.TBind(vC, List(vC)),
+        o['ZERO']: NAT,
+        o['ONE']: NAT,
+        o['TWO']: NAT,
+        o['THREE']: NAT,
+        o['CONS']: TBind.TBind(vD,
+                               ty.function(vD,
+                                           ty.function(List(vD),
+                                                       List(vD)))),
+        o['DOT']: TBind.TBind(vA,
+                              TBind.TBind(vB,
+                                          ty.function(
+                                              ty.function(vA, vB),
+                                              ty.function(vA, vB)))),
+        o['ID']: TBind.TBind(vC, ty.function(vC, vC)),
+        o['PAIR']: TBind.TBind(vF,
+                               TBind.TBind(
+                                   vG,
+                                   ty.function(
+                                       vF,
                                        ty.function(
-                                           vF,
-                                           ty.function(
-                                               vG,
-                                               Pair(vF, vG))))),
-            o['HEAD']: TBind.TBind(vE, ty.function(List(vE), vE)),
-            variables['X']: vH,
-            variables['Y']: vI,
-            variables['Z']: vH}
+                                           vG,
+                                           Pair(vF, vG))))),
+        o['HEAD']: TBind.TBind(vE, ty.function(List(vE), vE)),
+        variables['X']: vH,
+        variables['Y']: vI,
+        variables['Z']: vH})
+    env.fvs = ty.free_vars_in_env(env)
+    return env
 
 
 def test_sampling_1(typesystem, capsys):

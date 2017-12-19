@@ -20,6 +20,11 @@ class LOT(object):
                                                        self.semantics)
 
     def __str__(self):
-        syntax = '\n'.join('{}: {}'.format(k, v)
-                           for k, v in self.syntax.items())
+        # syntax = '\n'.join('{}: {}'.format(k, v)
+        #                    for k, v in self.syntax.items())
+        syntax = 'some typesystem'
         return '\n\n'.join([syntax, str(self.semantics)])
+
+    @property
+    def size(self):
+        return self.semantics.size

@@ -56,10 +56,16 @@ def rename_variables(rule):
 
 
 def typecheck(self, env, sub):
-    lhs_type = ty.specialize(tc.typecheck(self.lhs, env, sub))
-    rhs_types = [ty.specialize(tc.typecheck(rhs, env.copy(), sub))
+    return typecheck_full(self, env, sub)[0]
+
+
+def typecheck_full(self, env, sub):
+    lhs_type_scheme, sub = tc.typecheck_full(self.lhs, env, sub)
+    lhs_type = ty.specialize(lhs_type_scheme)
+    rhs_types = []
+    rhs_types = [ty.specialize(tc.typecheck(rhs, env, sub.copy()))
                  for rhs in self.rhs]
     new_sub = u.unify({(lhs_type, rhs_type) for rhs_type in rhs_types})
     if new_sub is not None:
-        return ty.update(lhs_type, env, u.compose(new_sub, sub))
+        return ty.update(lhs_type, env, u.compose(new_sub, sub)), sub
     raise ValueError('untypable: ' + str(self))

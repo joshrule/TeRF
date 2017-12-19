@@ -39,9 +39,10 @@ class LOTLikelihood(object):
         partial_credit = self.p_partial + self.temperature
 
         if ll == -np.inf:
-            return misc.log(partial_credit)
+            result = misc.log(partial_credit)
         else:
-            return misc.log(1.-partial_credit) + ll
+            result = misc.log(1.-partial_credit) + ll
+        return result
 
 
 if __name__ == '__main__':

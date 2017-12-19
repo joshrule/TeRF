@@ -11,7 +11,7 @@ def test_a_proposer(propose_value, give_proposal_log_p, lot=None):
     import TeRF.Examples as tg
     failures = 0
     successes = 0
-    while successes < 20 and failures < 10:
+    while successes < 50 and failures < 20:
         if lot is None:
             value = tg.head_lot
         elif lot is 'tail':
