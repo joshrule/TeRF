@@ -3,11 +3,13 @@ import numpy as np
 import scipy.stats as stats
 import TeRF.Miscellaneous as misc
 import TeRF.Types.Application as App
+import TeRF.Types.Hole as Hole
 import TeRF.Types.Operator as Op
 import TeRF.Types.Rule as Rule
 import TeRF.Types.Variable as Var
 import TeRF.Types.TypeVariable as TVar
 import TeRF.Algorithms.Typecheck as tc
+import TeRF.Algorithms.RuleUtils as ru
 import TeRF.Algorithms.TypeUtils as ty
 import TeRF.Algorithms.TypeUnify as tu
 
@@ -159,3 +161,37 @@ def lp_trs(trs, env, p_rule, types, invent=False):
                                   for t in types])
                   for rule in trs.clauses)
     return p_n_rules + p_rules
+
+
+def fill_template(template, env, sub):
+    rule = copy.deepcopy(template)
+    t_type, sub = ru.typecheck_full(rule, env, sub)
+    replacements = []
+    for place in ru.places(rule):
+        subterm = ru.place(rule, place)
+        if isinstance(subterm, Hole.Hole):
+            invent = place[0] == 'lhs'
+            target_type, sub = tc.typecheck_full(subterm, env, sub)
+            term, env, sub = sample_term(target_type, env, sub, invent=invent)
+            replacements.append((place, term))
+    for place, term in replacements:
+        rule = ru.replace(rule, place, term)
+    return rule
+
+
+def lp_template(rule, template, env, sub, invent=False):
+    t_type, sub = ru.typecheck_full(template, env, sub)
+    for place in ru.places(template):
+        subtemplate = ru.place(template, place)
+        try:
+            subrule = ru.place(rule, place)
+        except ValueError:
+            return -np.inf
+        lp = 0
+        if isinstance(subtemplate, Hole.Hole):
+            invent = place[0] == 'lhs'
+            target_type, sub = tc.typecheck_full(subtemplate, env, sub)
+            lt, env, sub = lp_term(subrule, target_type, env, sub,
+                                   invent=invent)
+            lp += lt
+    return lp
