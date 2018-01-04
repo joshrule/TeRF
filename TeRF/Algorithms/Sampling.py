@@ -152,10 +152,10 @@ def lp_rule(rule, target_type, env, sub=None, invent=False, max_d=5, d=0):
     return lp_lhs + lp_rhs
 
 
-def lp_trs(trs, env, p_rule, invent=False):
+def lp_trs(trs, env, p_rule, types, invent=False):
     p_n_rules = stats.geom.logpmf(len(trs.clauses)+1, p=p_rule)
     p_rules = 0
-    p_rules = sum(misc.logsumexp([lp_rule(rule, rt, env, invent=invent)
-                                  for rt in trs.rule_types])
+    p_rules = sum(misc.logsumexp([lp_rule(rule, t, env, invent=invent)
+                                  for t in types])
                   for rule in trs.clauses)
     return p_n_rules + p_rules

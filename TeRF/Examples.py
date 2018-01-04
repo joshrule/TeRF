@@ -128,8 +128,7 @@ tail_lhs_2 = h(TAIL, NIL)
 tail_rhs_2 = f(NIL)
 tail_rule_2 = Rule.Rule(tail_lhs_2, tail_rhs_2)
 
-semantics = TRS.TRS(rules={head_rule_1, tail_rule_1, tail_rule_2},
-                    rule_types=[NAT, List(NAT)])
+semantics = TRS.TRS(rules={head_rule_1, tail_rule_1, tail_rule_2})
 
 
 # LOT #########################################################################
