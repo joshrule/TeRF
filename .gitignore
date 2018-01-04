@@ -1,8 +1,9 @@
 # python detritus
 *pyc
 Pipfile*
-*_env
+*env
 *.egg-info
+*.cache
 
 # PLY detritus
 parsetab.py
@@ -13,3 +14,5 @@ parser.out
 
 # personal detritus
 debug.log
+old/*
+ideas/*
