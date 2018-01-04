@@ -1,10 +1,11 @@
 import collections
 import copy
+import TeRF.Algorithms.Unify as u
 
 
 class TRS(collections.MutableMapping):
-    def __init__(self, rule_type, rules=None):
-        self.rule_type = rule_type
+    def __init__(self, rule_types, rules=None):
+        self.rule_types = list(rule_types)
         self._order = []
         self._rules = {}
         if rules is not None:
@@ -15,7 +16,7 @@ class TRS(collections.MutableMapping):
         try:
             the_lhs = None
             for lhs in self._rules.keys():
-                if lhs.unify(key.lhs, type='alpha') is not None:
+                if u.alpha(lhs, key.lhs) is not None:
                     the_lhs = lhs
                     break
             self._rules[the_lhs].discard(key)
@@ -30,7 +31,7 @@ class TRS(collections.MutableMapping):
         try:
             the_lhs = None
             for lhs in self._rules.keys():
-                if lhs.unify(key, type='alpha'):
+                if u.alpha(lhs, key):
                     the_lhs = lhs
                     break
             self._order.remove(the_lhs)
@@ -50,7 +51,7 @@ class TRS(collections.MutableMapping):
         try:
             the_lhs = None
             for lhs in self._order:
-                if lhs.unify(key.lhs, type='alpha') is not None:
+                if u.alpha(lhs, key.lhs) is not None:
                     the_lhs = lhs
                     break
             if the_lhs is not None:
@@ -98,7 +99,7 @@ class TRS(collections.MutableMapping):
         value = copy.deepcopy(value)
         the_lhs = None
         for lhs in self._rules.keys():
-            if lhs.unify(value.lhs, type='alpha') is not None:
+            if u.alpha(lhs, value.lhs) is not None:
                 the_lhs = lhs
                 break
         if the_lhs is None:
@@ -110,9 +111,9 @@ class TRS(collections.MutableMapping):
         self._order.insert(index, the_lhs)
 
     def __repr__(self):
-        string = 'TRS(rule_type={!r}, rules={!r})'
-        return string.format(self.rule_type, [self._rules[lhs]
-                                              for lhs in self._order])
+        string = 'TRS(rule_types={!r}, rules={!r})'
+        return string.format(self.rule_types, [self._rules[lhs]
+                                               for lhs in self._order])
 
     def __str__(self):
         return '\n'.join(str(rule) for rule in self)
@@ -126,6 +127,10 @@ class TRS(collections.MutableMapping):
         return [rule
                 for lhs in self._order
                 for rule in self._rules[lhs]]
+
+    @property
+    def size(self):
+        return sum(s.size for s in self)
 
     def move(self, i1, i2):
         key = self._order[i1]
@@ -152,3 +157,6 @@ class TRS(collections.MutableMapping):
     def update(self, rules):
         for rule in rules:
             self.add(rule)
+
+    def index(self, value):
+        return self._order.index(value)

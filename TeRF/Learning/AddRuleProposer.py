@@ -1,27 +1,27 @@
 import LOTlib.Hypotheses.Proposers as P
-import numpy.random as random
-from scipy import misc as smisc
+import numpy as np
 import TeRF.Learning.ProposerUtilities as utils
+import TeRF.Algorithms.Sampling as s
+import TeRF.Miscellaneous as misc
 
 
 @utils.propose_value_template
 def propose_value(value, **kwargs):
-    start = random.choice([rule.lhs for rule in value.syntax])
-    print 'starting at', start.to_string()
-    rule = value.syntax.sample_rule(start=start)
+    target_type = np.random.choice(value.semantics.rule_types)
+    rule = s.sample_rule(target_type, value.syntax, invent=True)
     if rule in value.semantics:
         raise P.ProposalFailedException('AddRule: rule already exists')
     value.semantics.add(rule)
 
 
-@utils.validate_syntax_and_primitives
+@utils.validate_syntax
 def give_proposal_log_p(old, new, **kwargs):
     rule = utils.find_insertion(new.semantics, old.semantics)
     try:
-        ps = [rule.log_p(old.syntax, start=r.lhs) for r in old.syntax]
-        return smisc.logsumexp(ps)
+        return misc.logsumexp([s.lp_rule(rule, rt, old.syntax, invent=True)
+                               for rt in old.semantics.rule_types])
     except AttributeError:
-        pass
+        return -np.inf
 
 
 class AddRuleProposer(P.Proposer):

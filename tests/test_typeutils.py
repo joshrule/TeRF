@@ -1,4 +1,5 @@
 import pytest
+import TeRF.Miscellaneous as misc
 import TeRF.Algorithms.TypeUtils as ty
 import TeRF.Types.TypeBinding as TBind
 import TeRF.Types.TypeOperator as TOp
@@ -197,39 +198,43 @@ def test_specialize_xxb(atoms):
 
 def test_substitute_x_b(atoms):
     x, y, b, n = atoms
-    assert ty.substitute(x, {x: b}) == b
+    assert ty.substitute([x], {x: b})[0] == b
 
 
 def test_substitute_xx_b(atoms):
     x, y, b, n = atoms
     t1 = TOp.TOp('->', [x, x])
     t2 = TOp.TOp('->', [b, b])
-    assert ty.substitute(t1, {x: b}) == t2
+    assert ty.substitute([t1], {x: b})[0] == t2
 
 
 def test_substitute_xxx_b(atoms):
     x, y, b, n = atoms
     t = TBind.TBind(x, TOp.TOp('->', [x, x]))
-    assert ty.substitute(t, {x: b}) == t
+    assert ty.substitute([t], {x: b})[0] == t
 
 
 def test_substitute_xxy_b(atoms):
     x, y, b, n = atoms
     t1 = TBind.TBind(x, TOp.TOp('->', [x, y]))
     t2 = TBind.TBind(x, TOp.TOp('->', [x, b]))
-    assert ty.substitute(t1, {y: b}) == t2
+    assert ty.substitute([t1], {y: b})[0] == t2
 
 
 def test_update_x(atoms):
     x, y, b, n = atoms
-    t1 = ty.update(x, {}, {})
+    env = misc.edict()
+    env.fvs = ty.free_vars_in_env(env)
+    t1 = ty.update(x, env, {})
     assert isinstance(t1, TBind.TBind) and \
         t1.variable == x and t1.body == x
 
 
 def test_update_x__xy(atoms):
     x, y, b, n = atoms
-    t1 = ty.update(x, {}, {x: y})
+    env = misc.edict()
+    env.fvs = ty.free_vars_in_env(env)
+    t1 = ty.update(x, env, {x: y})
     assert isinstance(t1, TBind.TBind) and \
         t1.variable == y and t1.body == y
 
@@ -237,16 +242,18 @@ def test_update_x__xy(atoms):
 def test_update_x_zx_xy(atoms):
     x, y, b, n = atoms
     z = Var.Var('z')
-    env = {z: x}
+    env = misc.edict({z: x})
+    env.fvs = ty.free_vars_in_env(env)
     sub = {x: y}
     t1 = ty.update(x, env, sub)
-    assert t1 == ty.substitute(x, sub)
+    assert t1 == ty.substitute([x], sub)[0]
 
 
 def test_update_b_zx_xy(atoms):
     x, y, b, n = atoms
     z = Var.Var('z')
-    env = {z: b}
+    env = misc.edict({z: b})
+    env.fvs = ty.free_vars_in_env(env)
     t1 = ty.update(b, env, {x: y})
     assert t1 == b
 

@@ -3,7 +3,7 @@ import TeRF.Miscellaneous as misc
 import TeRF.Types.Trace as T
 
 
-class Likelihood(object):
+class LOTLikelihood(object):
     def compute_single_likelihood(self, datum):
         """
         the log likelihood of the hypothesis for a single datum
@@ -12,7 +12,9 @@ class Likelihood(object):
         datum.lhs and then asks how likely datum.rhs0 is to be generated
         from datum.lhs given the rules and assumed observation frequency.
 
-        compute_likelihood manages likelihood_temperature. It's ignored here.
+        Notes
+        -----
+        - compute_likelihood manages likelihood_temperature. It's ignored here.
 
         Assumes
         -------
@@ -37,15 +39,16 @@ class Likelihood(object):
         partial_credit = self.p_partial + self.temperature
 
         if ll == -np.inf:
-            return misc.log(partial_credit)
+            result = misc.log(partial_credit)
         else:
-            return misc.log(1.-partial_credit) + ll
+            result = misc.log(1.-partial_credit) + ll
+        return result
 
 
 if __name__ == '__main__':
-    import TeRF.Test.test_grammars as tg
-    
-    ll = Likelihood()
+    import TeRF.Examples as tg
+
+    ll = LOTLikelihood()
     ll.temperature = 0.0
     ll.p_partial = 0.0
 
@@ -60,10 +63,6 @@ if __name__ == '__main__':
                 print '1/exp(ll): inf'
             else:
                 print '1/exp(ll):', 1./np.exp(log_p)
-
-    lot_with_no_vars = tg.list_lot
-    test_likelihood(lot_with_no_vars, [tg.list_datum_T,
-                                       tg.list_datum_F])
 
     lot_with_vars = tg.head_lot
     test_likelihood(lot_with_vars, [tg.head_datum_T,

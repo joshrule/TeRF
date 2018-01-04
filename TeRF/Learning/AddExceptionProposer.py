@@ -2,6 +2,7 @@ import copy
 import LOTlib.Hypotheses.Proposers as P
 import numpy as np
 import TeRF.Miscellaneous as misc
+import TeRF.Algorithms.RuleUtils as ru
 import TeRF.Learning.ProposerUtilities as utils
 
 
@@ -19,16 +20,17 @@ def propose_value_maker(data):
 
 
 def give_proposal_log_p_maker(data):
-    @utils.validate_syntax_and_primitives
+    @utils.validate_syntax
     def give_proposal_log_p(old, new, **kwargs):
         rule = utils.find_insertion(new.semantics, old.semantics)
         try:
-            ok_data = [(d, d.unify(rule, type='alpha') is not None)
-                       for d in data if d not in old.semantics]
-            ps = misc.renormalize([1./float(d[0].size) for d in ok_data])
-            return misc.log(sum(p for p, d in zip(ps, ok_data) if d[1]))
+            ok = [(d, ru.alpha(d, rule) is not None)
+                  for d in data
+                  if d not in old.semantics]
+            ps = misc.renormalize([1./float(d.size) for d, _ in ok])
+            return misc.log(sum(p for p, (d, x) in zip(ps, ok) if x))
         except (ValueError, TypeError, AttributeError):
-            pass
+            return -np.inf
     return give_proposal_log_p
 
 
@@ -47,10 +49,10 @@ class AddExceptionProposer(P.Proposer):
 
 
 if __name__ == "__main__":
-    import TeRF.Test.test_grammars as tg
-    data = [tg.head_datum_T,
-            tg.head_datum_T2,
-            tg.head_datum_T3]
-    
+    import TeRF.Examples as e
+    data = [e.head_datum_T,
+            e.head_datum_T2,
+            e.head_datum_T3]
+
     utils.test_a_proposer(propose_value_maker(data),
                           give_proposal_log_p_maker(data))

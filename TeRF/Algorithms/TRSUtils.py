@@ -1,5 +1,21 @@
-# def log_p(self, typesystem, p_rule):
-#     p_n_rules = stats.geom.logpmf(len(self.clauses)+1, p=p_rule)
-#     p_rules = sum(rule.log_p(typesystem, self.rule_type)
-#                   for rule in self)
-#     return p_n_rules + p_rules
+import itertools
+import TeRF.Algorithms.RuleUtils as ru
+
+
+def size(trs):
+    return sum(r.size for r in trs)
+
+
+def unifies(trs1, trs2, kind='unification'):
+    if len(trs1) == len(trs2):
+        for r1, r2 in itertools.zip_longest(trs1, trs2):
+            if ru.unify(r1, r2, kind=kind) is None:
+                return False
+        return True
+    return False
+
+
+def alphas(trs1, trs2):
+    result = unifies(trs1, trs2, kind='match')
+    if result is not None and unifies(trs2, trs1, kind='match') is not None:
+        return result

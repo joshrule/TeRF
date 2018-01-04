@@ -1,4 +1,5 @@
 import pytest
+import TeRF.Miscellaneous as misc
 import TeRF.Algorithms.TypeUtils as ty
 import TeRF.Algorithms.Sampling as s
 import TeRF.Types.TypeVariable as TVar
@@ -83,33 +84,36 @@ def typesystem(makers, operators, variables):
         def __init__(self, alpha_type, beta_type):
             super(Pair, self).__init__('PAIR', [alpha_type, beta_type])
 
-    return {o['NIL']: TBind.TBind(vC, List(vC)),
-            o['ZERO']: NAT,
-            o['ONE']: NAT,
-            o['TWO']: NAT,
-            o['THREE']: NAT,
-            o['CONS']: TBind.TBind(vD,
-                                   ty.function(vD,
-                                               ty.function(List(vD),
-                                                           List(vD)))),
-            o['DOT']: TBind.TBind(vA,
-                                  TBind.TBind(vB,
-                                              ty.function(
-                                                  ty.function(vA, vB),
-                                                  ty.function(vA, vB)))),
-            o['ID']: TBind.TBind(vC, ty.function(vC, vC)),
-            o['PAIR']: TBind.TBind(vF,
-                                   TBind.TBind(
-                                       vG,
+    env = misc.edict({
+        o['NIL']: TBind.TBind(vC, List(vC)),
+        o['ZERO']: NAT,
+        o['ONE']: NAT,
+        o['TWO']: NAT,
+        o['THREE']: NAT,
+        o['CONS']: TBind.TBind(vD,
+                               ty.function(vD,
+                                           ty.function(List(vD),
+                                                       List(vD)))),
+        o['DOT']: TBind.TBind(vA,
+                              TBind.TBind(vB,
+                                          ty.function(
+                                              ty.function(vA, vB),
+                                              ty.function(vA, vB)))),
+        o['ID']: TBind.TBind(vC, ty.function(vC, vC)),
+        o['PAIR']: TBind.TBind(vF,
+                               TBind.TBind(
+                                   vG,
+                                   ty.function(
+                                       vF,
                                        ty.function(
-                                           vF,
-                                           ty.function(
-                                               vG,
-                                               Pair(vF, vG))))),
-            o['HEAD']: TBind.TBind(vE, ty.function(List(vE), vE)),
-            variables['X']: vH,
-            variables['Y']: vI,
-            variables['Z']: vH}
+                                           vG,
+                                           Pair(vF, vG))))),
+        o['HEAD']: TBind.TBind(vE, ty.function(List(vE), vE)),
+        variables['X']: vH,
+        variables['Y']: vI,
+        variables['Z']: vH})
+    env.fvs = ty.free_vars_in_env(env)
+    return env
 
 
 def test_sampling_1(typesystem, capsys):
@@ -171,56 +175,56 @@ def test_sampling_4(operators, variables, typesystem, capsys):
         assert term is not None
 
 
-def test_log_p_1(operators, variables, typesystem):
+def test_lp_1(operators, variables, typesystem):
     v = variables
     nat = TOp.TOp('NAT', [])
     term = v['X']
-    log_p, _, _ = s.log_p_term(term, nat, typesystem, invent=False, max_d=5)
-    assert np.round(1./np.exp(log_p)) == 8.0
+    lp, _, _ = s.lp_term(term, nat, typesystem, invent=False, max_d=5)
+    assert np.round(1./np.exp(lp)) == 8.0
 
 
-def test_log_p_2(makers, operators, typesystem):
+def test_lp_2(makers, operators, typesystem):
     f, g, h, j, k = makers
     o = operators
     nat = TOp.TOp('NAT', [])
     term = f(o['ONE'])
-    log_p, _, _ = s.log_p_term(term, nat, typesystem, invent=False, max_d=5)
-    assert np.round(1./np.exp(log_p)) == 8.0
+    lp, _, _ = s.lp_term(term, nat, typesystem, invent=False, max_d=5)
+    assert np.round(1./np.exp(lp)) == 8.0
 
 
-def test_log_p_3(operators, variables, typesystem):
+def test_lp_3(operators, variables, typesystem):
     v = variables
     nat = TOp.TOp('NAT', [])
     term = v['X']
-    log_p, _, _ = s.log_p_term(term, nat, typesystem, invent=True, max_d=5)
-    assert np.round(1./np.exp(log_p)) == 9.0
+    lp, _, _ = s.lp_term(term, nat, typesystem, invent=True, max_d=5)
+    assert np.round(1./np.exp(lp)) == 9.0
 
 
-def test_log_p_4(makers, operators, typesystem):
+def test_lp_4(makers, operators, typesystem):
     f, g, h, j, k = makers
     o = operators
     nat = TOp.TOp('NAT', [])
     term = f(o['ONE'])
-    log_p, _, _ = s.log_p_term(term, nat, typesystem, invent=True, max_d=5)
-    assert np.round(1./np.exp(log_p)) == 9.0
+    lp, _, _ = s.lp_term(term, nat, typesystem, invent=True, max_d=5)
+    assert np.round(1./np.exp(lp)) == 9.0
 
 
-def test_log_p_5(makers, operators, typesystem):
+def test_lp_5(makers, operators, typesystem):
     f, g, h, j, k = makers
     o = operators
     nat = TOp.TOp('NAT', [])
     term = h(o['HEAD'], o['NIL'])
-    log_p, _, _ = s.log_p_term(term, nat, typesystem, invent=False, max_d=5)
-    assert np.round(1./np.exp(log_p)) == (8.0 * 6.0 * 5.0)
+    lp, _, _ = s.lp_term(term, nat, typesystem, invent=False, max_d=5)
+    assert np.round(1./np.exp(lp)) == (8.0 * 6.0 * 5.0)
 
 
-def test_log_p_6(makers, operators, typesystem):
+def test_lp_6(makers, operators, typesystem):
     f, g, h, j, k = makers
     o = operators
     nat = TOp.TOp('NAT', [])
     term = h(o['HEAD'], o['NIL'])
-    log_p, _, _ = s.log_p_term(term, nat, typesystem, invent=True, max_d=5)
-    assert np.round(1./np.exp(log_p)) == (9.0 * 7.0 * 6.0)
+    lp, _, _ = s.lp_term(term, nat, typesystem, invent=True, max_d=5)
+    assert np.round(1./np.exp(lp)) == (9.0 * 7.0 * 6.0)
 
 
 def test_sample_rule(operators, variables, typesystem, capsys):

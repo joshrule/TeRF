@@ -2,78 +2,116 @@ import copy
 import LOTlib.Hypotheses.Proposers as P
 import numpy as np
 import TeRF.Learning.ProposerUtilities as utils
+import TeRF.Algorithms.RuleUtils as ru
+import TeRF.Algorithms.Sampling as s
+import TeRF.Algorithms.Typecheck as tc
+import TeRF.Algorithms.TermUtils as te
+import TeRF.Algorithms.TypeUtils as ty
 import TeRF.Miscellaneous as misc
-import TeRF.Types.Grammar as Grammar
-import TeRF.Types.Parse as Parse
+import TeRF.Types.TypeVariable as TVar
+import TeRF.Types.Variable as Var
 
 
 @utils.propose_value_template
 def propose_value(value, **kwargs):
     rule = utils.choose_a_rule(value.semantics)
 
-    triples = list(Parse.RuleParse(value.syntax, rule, start=None)
-                   .find_resample_points())
+    env = copy.copy(value.syntax)
+    env.update({v: TVar.TVar() for v in ru.variables(rule) if v not in env})
+    sub = {}
+    full_type, sub = ru.typecheck_full(rule, env, sub)
+    print 'full_type', full_type
+
+    places = list(np.random.permutation(ru.places(rule)))
 
     new_rule = copy.deepcopy(rule)
-    tries = 0
-    while new_rule.unify(rule, type='alpha') is not None and tries < 5:
-        tries += 1
+    while ru.alpha(new_rule, rule) is not None:
         try:
-            t = triples[np.random.choice(len(triples))]
-        except ValueError:
+            place = places.pop()
+        except IndexError:
             raise P.ProposalFailedException('RegenerateRule: proposal failed')
 
+        term = ru.place(rule, place)
+        resampling_rhs = (place[0] == 'rhs')
+
+        new_sub = sub.copy()
+        subtype, new_sub = tc.typecheck_full(term, env, new_sub)
+        print 'subtype', subtype
+
+        if resampling_rhs:
+            forbidden = {}
+        else:
+            forbidden = ru.variables(rule) - vars_to_place(rule.lhs, place[1:])
+        new_env = misc.edict({k: v for k, v in env.items()
+                              if k not in forbidden})
+        new_env.fvs = ty.free_vars_in_env(new_env)
+        new_term, _, _ = s.sample_term(subtype, new_env, sub=new_sub,
+                                       invent=resampling_rhs)
+
         try:
-            resampling_rhs = (t[0][0] == 'rhs')
-        except:
-            print 'triples', triples
-            print 't', t
-            print 't[0]', t[0]
-            raise ValueError
-        with Grammar.scope(value.syntax, scope=t[2], lock=resampling_rhs):
-            new_term = value.syntax.sample_term(start=t[1])
-        try:
-            new_rule = copy.deepcopy(rule).replace(t[0], new_term)
-        except ValueError as e:
-            print e
+            new_rule = ru.replace(new_rule, place, new_term)
+        except ValueError:
             pass
 
     value.semantics.replace(rule, new_rule)
 
 
-def p_resample(grammar, new, old, triple):
-    with Grammar.scope(grammar, scope=triple[2]):
-        try:
-            old_subterm = old.place(triple[0])
-            new_subterm = new.place(triple[0])
-        except ValueError:
-            p_resample = -np.inf
+def vars_to_place(term, place):
+    result = set()
+    for p in te.places(term):
+        if p == place:
+            break
+        subterm = te.subterm(term, p)
+        if isinstance(subterm, Var.Var):
+            result.add(subterm)
+    return result
+
+
+def p_resample(env, new, old, place):
+    try:
+        t_old = ru.place(old, place)
+        t_new = ru.place(new, place)
+    except ValueError:
+        return -np.inf
+    if t_old != t_new:
+        env2 = copy.copy(env)
+        env2.update({v: TVar.TVar() for v in ru.variables(old)
+                     if v not in env2})
+
+        resampling_rhs = (place[0] == 'rhs')
+        sub = {}
+        _, sub = ru.typecheck_full(old, env2, sub)
+
+        subtype = tc.typecheck(t_old, env2, sub)
+
+        if resampling_rhs:
+            forbidden_vars = {}
         else:
-            if old_subterm != new_subterm:
-                p_resample = new_subterm.log_p(grammar, start=triple[1])
-            else:
-                p_resample = -np.inf
-    return p_resample
+            forbidden_vars = ru.variables(old) - vars_to_place(old.lhs,
+                                                               place[1:])
+        env3 = misc.edict({k: v for k, v in env2.items()
+                           if k not in forbidden_vars})
+        env3.fvs = ty.free_vars_in_env(env3)
+        return s.lp_term(t_new, subtype, env3, invent=resampling_rhs)[0]
+    return -np.inf
 
 
-@utils.validate_syntax_and_primitives
+@utils.validate_syntax
 def give_proposal_log_p(old, new, **kwargs):
     new_rule, old_rule = utils.find_difference(new.semantics, old.semantics)
     try:
         p_rule = misc.logNof(list(old.semantics.clauses))
 
-        triples = (Parse.RuleParse(old.syntax, old_rule, start=None)
-                   .find_resample_points())
+        places = ru.places(old_rule)
 
-        p_t = misc.logNof(triples)
+        p_t = misc.logNof(places)
 
-        p_resamples = [(p_t + p_resample(old.syntax, new_rule, old_rule, t))
-                       for t in triples]
+        p_resamples = [p_t + p_resample(old.syntax, new_rule, old_rule, p)
+                       for p in places]
 
         return p_rule + misc.logsumexp(p_resamples)
     except AttributeError as e:
-        print e
-        pass
+        return -np.inf
 
 
 class RegenerateRuleProposer(P.Proposer):

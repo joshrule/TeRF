@@ -4,6 +4,8 @@ import scipy as sp
 import scipy.misc as sm
 import numpy.random as random
 import TeRF.Miscellaneous as M
+import TeRF.Algorithms.Rewrite as r
+import TeRF.Algorithms.Unify as u
 
 
 class TraceComplete(Exception):
@@ -122,8 +124,8 @@ class Trace(object):
            (not hasattr(self, 'min_p')
             or np.exp(state.log_p) > self.min_p) or \
            hasattr(self, 'max_steps') or hasattr(self, 'total_p'):
-            rewrites = state.term.single_rewrite(self.g, type='all',
-                                                 strategy=self.strategy)
+            rewrites = r.single_rewrite(state.term, self.g,
+                                        number='all', strategy=self.strategy)
 
             if rewrites is None or rewrites == []:
                 state.state = 'normal'
@@ -152,7 +154,7 @@ class Trace(object):
         # NOTE: we only use tree equality and don't consider tree edit distance
         self.run()
         terms = [l.log_p for l in self.root.leaves()
-                 if l.term.unify(term, type='alpha') is not None]
+                 if u.alpha(l.term, term) is not None]
         return sp.misc.logsumexp(terms) if terms else -np.inf
 
 

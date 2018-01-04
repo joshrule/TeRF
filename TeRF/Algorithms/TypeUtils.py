@@ -1,3 +1,4 @@
+import itertools
 import TeRF.Types.TypeVariable as TVar
 import TeRF.Types.TypeOperator as TOp
 import TeRF.Types.TypeBinding as TBind
@@ -20,77 +21,96 @@ def function(arg1, arg2):
     return TOp.TOp('->', [arg1, arg2])
 
 
-def is_function(type):
+def is_function(target_type):
     try:
-        return type.head == '->' and len(type.args) == 2
+        return target_type.head == '->' and len(target_type.args) == 2
     except AttributeError:
         return False
 
 
-def result_type(type, final=True):
-    if is_function(type):
-        f_type = type
+def result_type(target_type, final=True):
+    if is_function(target_type):
+        f_type = target_type
         while is_function(f_type):
             f_type = f_type.args[1]
         return f_type
-    raise ValueError('not a function {!r}'.format(type))
+    raise ValueError('not a function {!r}'.format(target_type))
 
 
-def generalize(type, bound=None):
-    the_type = type
-    for v in free_vars(type, bound):
+def generalize(target_type, bound=None):
+    the_type = target_type
+    for v in free_vars(target_type, bound):
         the_type = TBind.TBind(v, the_type)
     return the_type
 
 
-def specialize(type, env=None):
+def specialize(target_type, env=None):
     env = {} if env is None else env
-    if isinstance(type, TVar.TVar):
+    if isinstance(target_type, TVar.TVar):
         try:
-            return env[type]
+            return env[target_type]
         except KeyError:
-            return type
-    if isinstance(type, TOp.TOp):
-        return TOp.TOp(type.head, [specialize(arg, env) for arg in type.args])
-    if isinstance(type, TBind.TBind):
-        if type.variable not in env:
-            env[type.variable] = TVar.TVar()
-        return specialize(type.body, env)
-    return TypeError('not a type')
+            return target_type
+    if isinstance(target_type, TOp.TOp):
+        return TOp.TOp(target_type.head, [specialize(arg, env)
+                                          for arg in target_type.args])
+    if isinstance(target_type, TBind.TBind):
+        if target_type.variable not in env:
+            env[target_type.variable] = TVar.TVar()
+        return specialize(target_type.body, env)
+    raise TypeError('not a type: {!r}'.format(target_type))
 
 
-def substitute(type, sub):
-    if isinstance(type, TVar.TVar):
-        return sub[type] if type in sub else type
-    if isinstance(type, TOp.TOp):
-        return TOp.TOp(type.head, [substitute(arg, sub) for arg in type.args])
-    if isinstance(type, TBind.TBind):
-        new_sub = {k: sub[k] for k in sub if k != type.variable}
-        return TBind.TBind(type.variable, substitute(type.body, new_sub))
-    return TypeError('not a type')
+def substitute(types, sub):
+    ress = []
+    for t in types:
+        try:
+            if t.args == []:
+                ress.append(t)
+                continue
+            ress.append(TOp.TOp(t.head, substitute(t.args, sub)))
+            continue
+        except AttributeError:
+            pass
+
+        try:
+            new_sub = sub.copy()
+            new_sub.pop(t.variable, None)
+            ress.append(TBind.TBind(t.variable,
+                                    substitute([t.body], new_sub)[0]))
+            continue
+        except AttributeError:
+            ress.append(sub.get(t, t))
+            continue
+    return ress
 
 
-def update(type, env, sub):
-    for k in env:
-        env[k] = substitute(env[k], sub)
-    bounds = {v for v in env.values() if isinstance(v, TVar.TVar)}
-    return generalize(substitute(specialize(type), sub), bounds)
+def update(target_type, env, sub):
+    # hard-coded variable substitution here saves time
+    fvs = {sub.get(x, x) for x in env.fvs}
+    return generalize(substitute([specialize(target_type)], sub)[0], fvs)
+
+
+def free_vars_in_env(env):
+        return set(itertools.chain(*[free_vars(v) for v in env.values()]))
 
 
 def free_vars(type, bound=None):
-    if isinstance(type, TVar.TVar):
-        return {type} if bound is None or type not in bound else set()
-    if isinstance(type, TOp.TOp):
-        return {v for a in type.args for v in free_vars(a, bound)}
-    if isinstance(type, TBind.TBind):
+    try:
+        return set(itertools.chain(*[free_vars(a, bound) for a in type.args]))
+    except AttributeError:
+        pass
+
+    try:
         return free_vars(type.body, bound).difference({type.variable})
-    return TypeError('not a type')
+    except AttributeError:
+        return {type} if bound is None or type not in bound else set()
 
 
 def alpha(t1, t2, sub=None):
     sub = {} if sub is None else sub
     if isinstance(t1, TVar.TVar) and isinstance(t2, TVar.TVar):
-        return sub if t2 == substitute(t1, sub) else None
+        return sub if t2 == substitute([t1], sub)[0] else None
     elif (isinstance(t1, TOp.TOp) and isinstance(t2, TOp.TOp) and
           t1.head == t2.head and len(t1.args) == len(t2.args)):
         for st1, st2 in zip(t1.args, t2.args):

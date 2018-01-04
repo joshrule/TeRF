@@ -26,6 +26,9 @@ class TypeBinding(Type.Type):
     def __hash__(self):
         return hash((self.variable, self.body))
 
+    def __ne__(self, other):
+        return not self == other
+
     def __repr__(self):
         return 'TypeBinding(variable={!r}, body={!r})'.format(self.variable,
                                                               self.body)

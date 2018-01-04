@@ -14,11 +14,13 @@ def propose_value(value, **kwargs):
     value.semantics.move(old_idx, new_idx)
 
 
-@utils.validate_syntax_and_primitives
+@utils.validate_syntax
 def give_proposal_log_p(old, new, **kwargs):
+    # TODO: fix the underestimation that occurs when moves are adjacent
     if utils.there_was_a_move(old.semantics, new.semantics):
         return misc.logNof([1]*len(old.semantics)) + \
             misc.logNof([1]*(len(old.semantics)-1))
+    return -np.inf
 
 
 class MoveRuleProposer(P.Proposer):
@@ -34,4 +36,4 @@ class MoveRuleProposer(P.Proposer):
 
 
 if __name__ == "__main__":
-    utils.test_a_proposer(propose_value, give_proposal_log_p, 'headtail')
+    utils.test_a_proposer(propose_value, give_proposal_log_p)

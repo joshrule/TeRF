@@ -3,8 +3,7 @@ from TeRF.Language.lexer import tokens
 from TeRF.Types.Operator import Op
 from TeRF.Types.Variable import Var
 from TeRF.Types.Application import App
-import TeRF.Types.Grammar as Grammar
-import TeRF.Types.CFGrammar as CFG
+from TeRF.Types.TRS import TRS
 from TeRF.Types.Rule import R
 
 
@@ -133,28 +132,18 @@ def p_error(p):
 parser = yacc.yacc()
 
 
-def make_grammar(ss, g=None, path=None, type='Grammar'):
-    if g is None:
-        if type == 'Grammar':
-            g = Grammar.Grammar()
-        elif type == 'PCFG':
-            g = CFG.PCFG()
-        elif type == 'CFG':
-            g = CFG.CFG()
-        elif type == 'FCFG':
-            g = CFG.FCFG()
-        elif type == 'FPCFG':
-            g = CFG.FPCFG()
-
+def make_trs(ss, trs=None, path=None):
+    if trs is None:
+        trs = TRS([])
     for s in ss:
         if s[0] == 'rule':
-            add_rule(g, s[1], s[2])
+            add_rule(trs, s[1], s[2])
         elif s[0] == 'assumption':
-            add_assumption(g, s[1], path=path)
-    return g
+            add_assumption(trs, s[1], path=path)
+    return trs
 
 
-def add_assumption(g, s, path=None):
+def add_assumption(trs, s, path=None):
     s += '.terf' if len(s) <= 5 or s[-5:] != '.terf' else ''
     if path is None:
         path = ['./']
@@ -163,52 +152,54 @@ def add_assumption(g, s, path=None):
             filename = lib + s
             with open(filename) as file:
                 ss = parser.parse(file.read())
-                return make_grammar(ss, g=g, path=path)
+                return make_trs(ss, trs=trs, path=path)
         except IOError:
             pass
     print 'Can\'t find {}'.format(s)
 
 
-def add_rule(g, lhst, rhsts):
-    with Grammar.scope(g):
-        lhs = make_term(lhst[1], g=g)
-        rhs = [make_term(t[1], g=g) for t in rhsts]
-    g[len(g)] = R(lhs, rhs)
+def add_rule(trs, lhst, rhsts):
+    scope = set()
+    lhs = make_term(lhst[1], scope=scope, trs=trs)
+    rhs = [make_term(t[1], scope=scope, trs=trs) for t in rhsts]
+    trs[len(trs)] = R(lhs, rhs)
 
 
-def make_term(t, g=None):
+def make_term(t, trs=None, scope=None):
+    scope = set() if scope is None else scope
     if t[0] == 'variable':
-        return make_variable(t, g=g)
+        return make_variable(t, scope, trs=trs)
     if t[0] == 'application':
-        return make_application(t, g=g)
+        return make_application(t, scope, trs=trs)
 
 
-def make_variable(t, g=None):
+def make_variable(t, scope, trs=None):
     name = t[1][:-1]
-    if g is not None and name in [v.name for v in g.scope.scope]:
-        return v
+    for v in scope:
+        if name == v.name:
+            return v
     var = Var(name) if name != '' else Var()
-    if g is not None:
-        g.scope.scope[var] = None
+    scope.add(var)
     return var
 
 
-def make_application(t, g=None):
+def make_application(t, scope, trs=None):
     head = Op(t[1], len(t[2]))
-    body = [make_term(b[1], g=g) for b in t[2]]
+    body = [make_term(b[1], scope=scope, trs=trs) for b in t[2]]
     return App(head, body)
 
 
-def load_string(string, path=None, type='Grammar'):
+def load_string(string, path=None):
         ss = parser.parse(string)
-        g = make_grammar(ss, path=path, type=type)
-        terms = [make_term(s[1]) for s in ss if s[0] == 'term']
-        return g, terms
+        trs = make_trs(ss, path=path)
+        scope = set()
+        terms = [make_term(s[1], scope=scope) for s in ss if s[0] == 'term']
+        return trs, terms
 
 
-def load_source(filename, path=None, type='Grammar'):
-    with open(filename) as file:
-        return load_string(file.read(), path=path, type=type)
+def load_source(filename, path=None):
+    with open(filename) as f:
+        return load_string(f.read(), path=path)
 
 
 if __name__ == '__main__':
