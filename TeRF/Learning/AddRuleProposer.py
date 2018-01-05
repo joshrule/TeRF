@@ -5,24 +5,24 @@ import TeRF.Algorithms.Sampling as s
 import TeRF.Miscellaneous as misc
 
 
-@utils.propose_value_template
 def propose_value_maker(templates):
+    @utils.propose_value_template
     def propose_value(value, **kwargs):
         template = np.random.choice(templates)
-        rule = s.fill_template(template, value.syntax, invent=True)
+        rule = s.fill_template(template, value.syntax, {}, invent=True)
         if rule in value.semantics:
             raise P.ProposalFailedException('AddRule: rule already exists')
         value.semantics.add(rule)
     return propose_value
 
 
-@utils.validate_syntax
 def give_proposal_log_p_maker(templates):
+    @utils.validate_syntax
     def give_proposal_log_p(old, new, **kwargs):
         rule = utils.find_insertion(new.semantics, old.semantics)
         try:
             return misc.logsumexp([s.lp_template(rule, t,
-                                                 old.syntax, invent=True)
+                                                 old.syntax, {}, invent=True)
                                    for t in templates])
         except AttributeError:
             return -np.inf

@@ -163,24 +163,35 @@ def lp_trs(trs, env, p_rule, types, invent=False):
     return p_n_rules + p_rules
 
 
-def fill_template(template, env, sub):
+def fill_template(template, env, sub, invent=False):
     rule = copy.deepcopy(template)
-    t_type, sub = ru.typecheck_full(rule, env, sub)
+    temp_env = copy.deepcopy(env)
+    for place in ru.places(rule):
+        subterm = ru.place(rule, place)
+        if isinstance(subterm, Hole.Hole) and subterm not in temp_env:
+            temp_env[subterm] = TVar.TVar()
+            temp_env.fvs.add(temp_env[subterm])
+    t_type, sub = ru.typecheck_full(rule, temp_env, sub)
     replacements = []
     for place in ru.places(rule):
         subterm = ru.place(rule, place)
         if isinstance(subterm, Hole.Hole):
-            invent = place[0] == 'lhs'
-            target_type, sub = tc.typecheck_full(subterm, env, sub)
-            term, env, sub = sample_term(target_type, env, sub, invent=invent)
+            i_here = place[0] == 'lhs' and invent
+            target_type, sub = tc.typecheck_full(subterm, temp_env, sub)
+            term, env, sub = sample_term(target_type, env, sub, invent=i_here)
             replacements.append((place, term))
     for place, term in replacements:
-        rule = ru.replace(rule, place, term)
+        rule = ru.replace(rule, place, term, True)
     return rule
 
 
 def lp_template(rule, template, env, sub, invent=False):
-    t_type, sub = ru.typecheck_full(template, env, sub)
+    temp_env = copy.deepcopy(env)
+    for place in ru.places(template):
+        subterm = ru.place(template, place)
+        if isinstance(subterm, Hole.Hole) and subterm not in temp_env:
+            temp_env[subterm] = TVar.TVar()
+    t_type, sub = ru.typecheck_full(template, temp_env, sub)
     for place in ru.places(template):
         subtemplate = ru.place(template, place)
         try:
@@ -190,7 +201,7 @@ def lp_template(rule, template, env, sub, invent=False):
         lp = 0
         if isinstance(subtemplate, Hole.Hole):
             invent = place[0] == 'lhs'
-            target_type, sub = tc.typecheck_full(subtemplate, env, sub)
+            target_type, sub = tc.typecheck_full(subtemplate, temp_env, sub)
             lt, env, sub = lp_term(subrule, target_type, env, sub,
                                    invent=invent)
             lp += lt

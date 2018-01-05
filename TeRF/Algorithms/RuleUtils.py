@@ -28,10 +28,12 @@ def place(rule, place):
     return te.subterm(rule.rhs[place[1]], place[2:])
 
 
-def replace(rule, place, term):
+def replace(rule, place, term, template=False):
     if place[0] == 'lhs':
-        return Rule.Rule(te.replace(rule.lhs, place[1:], term), rule.rhs[:])
-    return Rule.Rule(rule.lhs, te.replace(rule.rhs[place[1]], place[2:], term))
+        return Rule.Rule(te.replace(rule.lhs, place[1:], term), rule.rhs[:],
+                         template)
+    return Rule.Rule(rule.lhs, te.replace(rule.rhs[place[1]], place[2:], term),
+                     template)
 
 
 def unify(r1, r2, kind='unification'):
@@ -66,6 +68,7 @@ def typecheck_full(self, env, sub):
     rhs_types = [ty.specialize(tc.typecheck(rhs, env, sub.copy()))
                  for rhs in self.rhs]
     new_sub = u.unify({(lhs_type, rhs_type) for rhs_type in rhs_types})
-    if new_sub is not None:
-        return ty.update(lhs_type, env, u.compose(new_sub, sub)), sub
+    final_sub = u.compose(new_sub, sub)
+    if final_sub is not None:
+        return ty.update(lhs_type, env, final_sub), final_sub
     raise ValueError('untypable: ' + str(self))

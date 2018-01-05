@@ -29,8 +29,8 @@ class LOTHypothesis(p.LOTSimplePrior, L.LOTLikelihood, P.LOTProposer,
     weights: list of floats
         the weights of the mixture components
     """
-    def __init__(self, templates, temperature=0.0, **kwargs):
+    def __init__(self, templates=None, temperature=0.0, **kwargs):
         self.templates = templates
         self.temperature = temperature
         self.__dict__.update(kwargs)
-        super(LOTHypothesis, self).__init__(**kwargs)
+        super(LOTHypothesis, self).__init__(templates=templates, **kwargs)

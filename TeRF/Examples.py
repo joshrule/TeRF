@@ -2,6 +2,7 @@ import copy
 import TeRF.Miscellaneous as misc
 import TeRF.Algorithms.TypeUtils as ty
 import TeRF.Types.Application as App
+import TeRF.Types.Hole as Hole
 import TeRF.Types.Operator as Op
 import TeRF.Types.Rule as Rule
 import TeRF.Types.TypeBinding as TBind
@@ -33,6 +34,10 @@ def j(x, y):
 
 def k(x, y):
     return App.App(DOT, [x, f(y)])
+
+
+def hole():
+    return Hole.Hole()
 
 
 # Operators ###################################################################
@@ -163,3 +168,11 @@ head_datum_F = Rule.Rule(g(f(HEAD),
                                  g(g(f(CONS), f(THREE)),
                                    f(NIL)))))),
                          f(NIL))
+
+
+# Templates ###################################################################
+head_template = Rule.Rule(j(HEAD, hole()),
+                          hole(), True)
+
+tail_template = Rule.Rule(j(TAIL, hole()),
+                          hole(), True)
