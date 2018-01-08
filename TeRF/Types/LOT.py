@@ -19,6 +19,13 @@ class LOT(object):
         return 'LOT(typesystem={!r}, trs={!r})'.format(self.syntax,
                                                        self.semantics)
 
+    def __eq__(self, other):
+        return (self.semantics == other.semantics and
+                self.syntax == other.syntax)
+
+    def __ne__(self, other):
+        return self != other
+
     def __str__(self):
         # syntax = '\n'.join('{}: {}'.format(k, v)
         #                    for k, v in self.syntax.items())
