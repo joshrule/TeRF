@@ -91,6 +91,10 @@ def update(target_type, env, sub):
     return generalize(substitute([specialize(target_type)], sub)[0], fvs)
 
 
+def update2(target_type, sub):
+    return substitute([specialize(target_type)], sub)[0]
+
+
 def free_vars_in_env(env):
         return set(itertools.chain(*[free_vars(v) for v in env.values()]))
 

@@ -64,11 +64,34 @@ def typecheck(self, env, sub):
 def typecheck_full(self, env, sub):
     lhs_type_scheme, sub = tc.typecheck_full(self.lhs, env, sub)
     lhs_type = ty.specialize(lhs_type_scheme)
-    rhs_types = []
     rhs_types = [ty.specialize(tc.typecheck(rhs, env, sub.copy()))
                  for rhs in self.rhs]
     new_sub = u.unify({(lhs_type, rhs_type) for rhs_type in rhs_types})
     final_sub = u.compose(new_sub, sub)
     if final_sub is not None:
         return ty.update(lhs_type, env, final_sub), final_sub
+    raise ValueError('untypable: ' + str(self))
+
+
+def typecheck_subterm(self, env, sub, place):
+    if place[0] == 'lhs':
+        lhs_type_scheme, sub, subtype = tc.typecheck_subterm(
+            self.lhs, env, sub, place[1:])
+    else:
+        lhs_type_scheme, sub = tc.typecheck_full(self.lhs, env, sub)
+    lhs_type = ty.specialize(lhs_type_scheme)
+
+    rhs_types = []
+    for i, rhs in enumerate(self.rhs):
+        if place[0] == 'rhs' and place[1] == i:
+            rhs_type_scheme, _, subtype = tc.typecheck_subterm(
+                rhs, env, sub.copy(), place[2:])
+            rhs_types.append(ty.specialize(rhs_type_scheme))
+        else:
+            rhs_types.append(ty.specialize(tc.typecheck(rhs, env, sub.copy())))
+
+    new_sub = u.unify({(lhs_type, rhs_type) for rhs_type in rhs_types})
+    final_sub = u.compose(new_sub, sub)
+    if final_sub is not None:
+        return ty.update(lhs_type, env, final_sub), final_sub, subtype
     raise ValueError('untypable: ' + str(self))

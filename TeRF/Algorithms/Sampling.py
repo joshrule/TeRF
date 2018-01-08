@@ -170,14 +170,17 @@ def fill_template(template, env, sub, invent=False):
         subterm = ru.place(rule, place)
         if isinstance(subterm, Hole.Hole) and subterm not in temp_env:
             temp_env[subterm] = TVar.TVar()
-            temp_env.fvs.add(temp_env[subterm])
     t_type, sub = ru.typecheck_full(rule, temp_env, sub)
+    # print 't_type', t_type
     replacements = []
     for place in ru.places(rule):
         subterm = ru.place(rule, place)
         if isinstance(subterm, Hole.Hole):
             i_here = place[0] == 'lhs' and invent
             target_type, sub = tc.typecheck_full(subterm, temp_env, sub)
+            # print 'place', place
+            # print 'subterm', subterm
+            # print 'target_type', target_type
             term, env, sub = sample_term(target_type, env, sub, invent=i_here)
             replacements.append((place, term))
     for place, term in replacements:

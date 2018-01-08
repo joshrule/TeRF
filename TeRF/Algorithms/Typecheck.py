@@ -19,27 +19,89 @@ def typecheck(term, typesystem, sub):
 
 
 def typecheck_full(term, env, sub):
+    the_type, the_sub = typecheck_full_helper(term, env, sub)
+    # hard-coded variable substitution here saves time
+    fvs = {v
+           for x in ty.free_vars_in_env(env)
+           for v in ty.free_vars(the_sub.get(x, x))}
+    return ty.generalize(the_type, fvs), the_sub
+
+
+def typecheck_full_helper(term, env, sub):
     try:
         if term.head.arity == 0:
-            return ty.update(env[term.head], env, sub), sub
+            return ty.update2(env[term.head], sub), sub
     except AttributeError:
-        return ty.update(env[term.head], env, sub), sub
+        return ty.update2(env[term.head], sub), sub
 
-    head_type = ty.substitute([ty.specialize(env[term.head])], sub)[0]
+    head_type = ty.update2(env[term.head], sub)
     body_type, sub = typecheck_args(term.args, env, sub)
 
     try:
         sub = tu.compose(tu.unify({(head_type, body_type)}), sub)
     except TypeError:
         raise ValueError('untypable: ' + te.to_string(term))
-    return ty.update(ty.result_type(body_type), env, sub), sub
+    return ty.update2(ty.result_type(body_type), sub), sub
 
 
 def typecheck_args(args, env, sub):
     pre_types = []
     for a in args:
-        gen_type, sub = typecheck_full(a, env, sub)
-        pre_type = ty.substitute([ty.specialize(gen_type)], sub)[0]
+        pre_type, sub = typecheck_full_helper(a, env, sub)
         pre_types.append(pre_type)
     body_type = ty.multi_argument_function(pre_types, result='var')
     return body_type, sub
+
+
+def typecheck_subterm(term, env, sub, place):
+    fulltype, sub, subtype = typecheck_subterm_helper(term, env, sub, place)
+    fvs = {v
+           for x in ty.free_vars_in_env(env)
+           for v in ty.free_vars(sub.get(x, x))}
+    return ty.generalize(fulltype, fvs), sub, ty.generalize(subtype, fvs)
+
+
+def typecheck_subterm_helper(term, env, sub, target_place):
+    try:
+        if term.head.arity == 0:
+            the_type = ty.update2(env[term.head], sub)
+            if target_place == []:
+                return the_type, sub, the_type
+            raise ValueError('bad subterm')
+    except AttributeError:
+        the_type = ty.update2(env[term.head], sub)
+        if target_place == []:
+            return the_type, sub, the_type
+        raise ValueError('bad subterm')
+
+    head_type = ty.update2(env[term.head], sub)
+    # print 'term', term
+    # print 'head_type', head_type
+    body_type, sub, subtype = typecheck_subterm_args(
+        term.args, env, sub, target_place)
+    # print 'body_type', body_type
+    # print 'subtype', subtype
+
+    try:
+        sub = tu.compose(tu.unify({(head_type, body_type)}), sub)
+    except TypeError:
+        raise ValueError('untypable: ' + te.to_string(term))
+    the_type = ty.update2(ty.result_type(body_type), sub)
+    if target_place == []:
+        return the_type, sub, the_type
+    subtype = ty.update2(subtype, sub)
+    return the_type, sub, subtype
+
+
+def typecheck_subterm_args(args, env, sub, target_place):
+    pre_types = []
+    subtype = None
+    for i, a in enumerate(args):
+        if target_place == [] or i != target_place[0]:
+            pre_type, sub = typecheck_full_helper(a, env, sub)
+        else:
+            pre_type, sub, subtype = typecheck_subterm_helper(
+                a, env, sub, target_place[1:])
+        pre_types.append(pre_type)
+    body_type = ty.multi_argument_function(pre_types, result='var')
+    return body_type, sub, subtype
