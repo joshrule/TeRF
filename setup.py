@@ -85,7 +85,7 @@ setup(
     # for example:
     # $ pip install -e .[dev,test]
     extras_require={
-        'dev': ['joblib', 'pandas', 'matplotlib', 'dill']
+        'dev': ['joblib', 'pandas', 'matplotlib', 'dill', 'pytest']
             },
 
     # If your project only runs on certain Python versions
