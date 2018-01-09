@@ -8,10 +8,10 @@ import TeRF.Learning.AddExceptionProposer as aep
 
 
 class LOTProposer(MixtureProposer):
-    def __init__(self, data=None, **kwargs):
+    def __init__(self, data=None, templates=None, **kwargs):
         proposal_fns = [
-            (arp.propose_value,
-             arp.give_proposal_log_p),
+            (arp.propose_value_maker(templates),
+             arp.give_proposal_log_p_maker(templates)),
             (drp.propose_value,
              drp.give_proposal_log_p),
             (rrp.propose_value,

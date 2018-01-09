@@ -4,8 +4,7 @@ import TeRF.Algorithms.Unify as u
 
 
 class TRS(collections.MutableMapping):
-    def __init__(self, rule_types, rules=None):
-        self.rule_types = list(rule_types)
+    def __init__(self, rules=None):
         self._order = []
         self._rules = {}
         if rules is not None:
@@ -111,9 +110,8 @@ class TRS(collections.MutableMapping):
         self._order.insert(index, the_lhs)
 
     def __repr__(self):
-        string = 'TRS(rule_types={!r}, rules={!r})'
-        return string.format(self.rule_types, [self._rules[lhs]
-                                               for lhs in self._order])
+        string = 'TRS(rules={!r})'
+        return string.format([self._rules[lhs] for lhs in self._order])
 
     def __str__(self):
         return '\n'.join(str(rule) for rule in self)

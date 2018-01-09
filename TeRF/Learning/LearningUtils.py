@@ -211,8 +211,9 @@ def save_datum(datum, data_dir):
         dill.dump(datum, temp)
 
 
-def make_hypothesis(p_partial, p_rule, lot, data):
-    return LOTH.LOTHypothesis(value=lot,
+def make_hypothesis(templates, p_partial, p_rule, lot, data):
+    return LOTH.LOTHypothesis(templates=templates,
+                              value=lot,
                               data=data,
                               p_partial=p_partial,
                               p_rule=p_rule,
@@ -223,14 +224,20 @@ def make_hypothesis(p_partial, p_rule, lot, data):
 def make_data(e_g, g_g, start, data_dir, reqs):
     data = []
     candidates = load_data(data_dir)
+    sampled = []
     while reqs != []:
-        datum = candidates.pop() if candidates else sample_datum(e_g, g_g, start)
-        print 'datum', len(data), datum
+        if candidates != []:
+            datum = candidates.pop()
+            sampled.append(False)
+        else:
+            datum = sample_datum(e_g, g_g, start)
+            sampled.append(True)
+        print 'datum', len(data), sampled[-1], datum
         meet_reqs = [r(datum) for r in reqs]
         if any(meet_reqs):
             data.append(datum)
             reqs = [r for p, r in zip(meet_reqs, reqs) if not p]
-    return data
+    return data, sampled
 
 
 def sample_datum(e_g, g_g, start):

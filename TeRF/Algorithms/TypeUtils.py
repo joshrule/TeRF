@@ -87,8 +87,12 @@ def substitute(types, sub):
 
 def update(target_type, env, sub):
     # hard-coded variable substitution here saves time
-    fvs = {sub.get(x, x) for x in env.fvs}
+    fvs = {v for x in free_vars_in_env(env) for v in free_vars(sub.get(x, x))}
     return generalize(substitute([specialize(target_type)], sub)[0], fvs)
+
+
+def update2(target_type, sub):
+    return substitute([specialize(target_type)], sub)[0]
 
 
 def free_vars_in_env(env):

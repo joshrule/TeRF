@@ -3,11 +3,13 @@ import numpy as np
 import scipy.stats as stats
 import TeRF.Miscellaneous as misc
 import TeRF.Types.Application as App
+import TeRF.Types.Hole as Hole
 import TeRF.Types.Operator as Op
 import TeRF.Types.Rule as Rule
 import TeRF.Types.Variable as Var
 import TeRF.Types.TypeVariable as TVar
 import TeRF.Algorithms.Typecheck as tc
+import TeRF.Algorithms.RuleUtils as ru
 import TeRF.Algorithms.TypeUtils as ty
 import TeRF.Algorithms.TypeUnify as tu
 
@@ -20,9 +22,15 @@ def sample_term(target_type, env, sub=None, invent=False, max_d=5, d=0):
     sub = {} if sub is None else sub
     if d > max_d:
         raise SampleError('depth bound {} < {}'.format(max_d, d))
-    options = np.random.permutation(list(gen_options(target_type, env, sub,
-                                                     invent)))
-    for o in options:
+    apps, vs = gen_options(target_type, env, sub, invent)
+    # TODO: Total HACK!
+    app_ps = [.5/len(apps)]*len(apps) if len(apps) else []
+    v_ps = [.5/len(vs)]*len(vs) if len(vs) else []
+    ps = misc.normalize(app_ps + v_ps)
+    order = np.random.choice(len(ps), p=ps, replace=False, size=len(ps))
+    options = apps + vs
+    for idx in order:
+        o = options[idx]
         try:
             return try_option(*o, invent=invent, max_d=max_d, d=d)
         except SampleError:
@@ -48,12 +56,17 @@ def try_option(atom, body_types, env, sub, invent, max_d, d):
 
 
 def gen_options(target_type, env, sub, invent):
+    options = []
     for atom in env:
         option = check_option(atom, target_type, env, sub)
         if option is not None:
-            yield option
+            options.append(option)
     if invent:
-        yield invent_variable(target_type, env, sub)
+        options.append(invent_variable(target_type, env, sub))
+    apps, vs = [], []
+    for option in options:
+        apps.append(option) if hasattr(option[0], 'arity') else vs.append(option)
+    return apps, vs
 
 
 def invent_variable(target_type, env, sub):
@@ -91,22 +104,26 @@ def lp_term(term, target_type, env, sub=None, invent=False, max_d=5, d=0):
     if d > max_d:
         return -np.inf, env, sub
 
-    options = list(gen_options(target_type, env, sub, False))
+    apps, vs = gen_options(target_type, env, sub, False)
     if invent:
         if isinstance(term, Var.Var) and term not in env:
             env2 = copy.copy(env)
             env2[term] = target_type
-            options.append([term, [], env2, sub])
+            vs.append([term, [], env2, sub])
         else:
-            options.append([Var.Var('BOGUS'), [], env, sub])
+            vs.append([Var.Var('BOGUS'), [], env, sub])
+    options = apps + vs
     matches = [o for o in options if o[0] == term.head]
     if len(matches) > 1:
         raise ValueError('bad environment: {!r}'.format(env))
 
-    lp = misc.logNof(options, n=len(matches))
-
-    if lp == -np.inf:
-        return lp, env, sub
+    # TODO: Total HACK!
+    if len(matches) == 0:
+        return -np.inf, env, sub
+    elif hasattr(matches[0][0], 'args'):
+        lp = np.log(0.5)-np.log(len(vs))
+    else:
+        lp = np.log(0.5)-np.log(len(apps))
 
     atom, body_types, env, sub = matches[0]
 
@@ -152,10 +169,58 @@ def lp_rule(rule, target_type, env, sub=None, invent=False, max_d=5, d=0):
     return lp_lhs + lp_rhs
 
 
-def lp_trs(trs, env, p_rule, invent=False):
+def lp_trs(trs, env, p_rule, types, invent=False):
     p_n_rules = stats.geom.logpmf(len(trs.clauses)+1, p=p_rule)
     p_rules = 0
-    p_rules = sum(misc.logsumexp([lp_rule(rule, rt, env, invent=invent)
-                                  for rt in trs.rule_types])
+    p_rules = sum(misc.logsumexp([lp_rule(rule, t, env, invent=invent)
+                                  for t in types])
                   for rule in trs.clauses)
     return p_n_rules + p_rules
+
+
+def fill_template(template, env, sub, invent=False):
+    rule = copy.deepcopy(template)
+    temp_env = copy.deepcopy(env)
+    for place in ru.places(rule):
+        subterm = ru.place(rule, place)
+        if isinstance(subterm, Hole.Hole) and subterm not in temp_env:
+            temp_env[subterm] = TVar.TVar()
+    t_type, sub = ru.typecheck_full(rule, temp_env, sub)
+    # print 't_type', t_type
+    replacements = []
+    for place in ru.places(rule):
+        subterm = ru.place(rule, place)
+        if isinstance(subterm, Hole.Hole):
+            i_here = place[0] == 'lhs' and invent
+            target_type, sub = tc.typecheck_full(subterm, temp_env, sub)
+            # print 'place', place
+            # print 'subterm', subterm
+            # print 'target_type', target_type
+            term, env, sub = sample_term(target_type, env, sub, invent=i_here)
+            replacements.append((place, term))
+    for place, term in replacements:
+        rule = ru.replace(rule, place, term, True)
+    return rule
+
+
+def lp_template(rule, template, env, sub, invent=False):
+    temp_env = copy.deepcopy(env)
+    for place in ru.places(template):
+        subterm = ru.place(template, place)
+        if isinstance(subterm, Hole.Hole) and subterm not in temp_env:
+            temp_env[subterm] = TVar.TVar()
+    t_type, sub = ru.typecheck_full(template, temp_env, sub)
+    for place in ru.places(template):
+        subtemplate = ru.place(template, place)
+        try:
+            subrule = ru.place(rule, place)
+        except ValueError:
+            return -np.inf
+        lp = 0
+        if isinstance(subtemplate, Hole.Hole):
+            invent = place[0] == 'lhs'
+            target_type, sub = tc.typecheck_full(subtemplate, temp_env, sub)
+            lt, env, sub = lp_term(subrule, target_type, env, sub,
+                                   invent=invent)
+            lp += lt
+    return lp

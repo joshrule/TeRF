@@ -14,14 +14,11 @@ import TeRF.Types.Variable as Var
 
 @utils.propose_value_template
 def propose_value(value, **kwargs):
+    # print 'trying to regenerate'
     rule = utils.choose_a_rule(value.semantics)
 
     env = copy.copy(value.syntax)
     env.update({v: TVar.TVar() for v in ru.variables(rule) if v not in env})
-    sub = {}
-    full_type, sub = ru.typecheck_full(rule, env, sub)
-    print 'full_type', full_type
-
     places = list(np.random.permutation(ru.places(rule)))
 
     new_rule = copy.deepcopy(rule)
@@ -30,13 +27,18 @@ def propose_value(value, **kwargs):
             place = places.pop()
         except IndexError:
             raise P.ProposalFailedException('RegenerateRule: proposal failed')
+        # print 'place:', place
 
         term = ru.place(rule, place)
+        # print 'term:', term
         resampling_rhs = (place[0] == 'rhs')
 
-        new_sub = sub.copy()
-        subtype, new_sub = tc.typecheck_full(term, env, new_sub)
-        print 'subtype', subtype
+        fulltype, new_sub, raw_subtype = ru.typecheck_subterm(
+            rule, env, {}, place)
+        subtype = ty.substitute([raw_subtype], new_sub)[0]
+        # print 'fulltype:', fulltype
+        # print 'raw_subtype:', raw_subtype
+        # print 'subtype:', subtype
 
         if resampling_rhs:
             forbidden = {}
@@ -44,15 +46,17 @@ def propose_value(value, **kwargs):
             forbidden = ru.variables(rule) - vars_to_place(rule.lhs, place[1:])
         new_env = misc.edict({k: v for k, v in env.items()
                               if k not in forbidden})
-        new_env.fvs = ty.free_vars_in_env(new_env)
-        new_term, _, _ = s.sample_term(subtype, new_env, sub=new_sub,
-                                       invent=resampling_rhs)
-
         try:
-            new_rule = ru.replace(new_rule, place, new_term)
-        except ValueError:
+            new_term, _, _ = s.sample_term(subtype, new_env, sub=new_sub,
+                                           invent=resampling_rhs)
+            try:
+                new_rule = ru.replace(new_rule, place, new_term)
+            except ValueError:
+                pass
+        except s.SampleError:
             pass
 
+    print 'proposing', new_rule
     value.semantics.replace(rule, new_rule)
 
 
@@ -91,8 +95,7 @@ def p_resample(env, new, old, place):
                                                                place[1:])
         env3 = misc.edict({k: v for k, v in env2.items()
                            if k not in forbidden_vars})
-        env3.fvs = ty.free_vars_in_env(env3)
-        return s.lp_term(t_new, subtype, env3, invent=resampling_rhs)[0]
+        return s.lp_term(t_new, subtype, env3, invent=(not resampling_rhs))[0]
     return -np.inf
 
 

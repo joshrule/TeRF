@@ -7,7 +7,7 @@ import TeRF.Types.Term as Term
 
 
 class Rule(collections.MutableSet):
-    def __init__(self, lhs, rhs):
+    def __init__(self, lhs, rhs, template=False):
         if isinstance(lhs, App.App):
             self.lhs = lhs
             if isinstance(rhs, Term.Term):
@@ -17,7 +17,8 @@ class Rule(collections.MutableSet):
                 if not isinstance(case, Term.Term):
                     raise ValueError('Rule: non-term RHS: {!r}'.format(case))
                 try:
-                    if te.variables(self.lhs) >= te.variables(case):
+                    if ((te.variables(self.lhs) >= te.variables(case)) or
+                        template):
                         self.rhs.append(case)
                     else:
                         raise ValueError('Rule: RHS invents variables: '

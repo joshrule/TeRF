@@ -2,6 +2,7 @@ import copy
 import TeRF.Miscellaneous as misc
 import TeRF.Algorithms.TypeUtils as ty
 import TeRF.Types.Application as App
+import TeRF.Types.Hole as Hole
 import TeRF.Types.Operator as Op
 import TeRF.Types.Rule as Rule
 import TeRF.Types.TypeBinding as TBind
@@ -33,6 +34,10 @@ def j(x, y):
 
 def k(x, y):
     return App.App(DOT, [x, f(y)])
+
+
+def hole():
+    return Hole.Hole()
 
 
 # Operators ###################################################################
@@ -94,7 +99,6 @@ syntax = misc.edict({
     ID: TBind.TBind(vC, ty.function(vC, vC)),
     HEAD: TBind.TBind(vE, ty.function(List(vE), vE)),
     TAIL: TBind.TBind(vJ, ty.function(List(vJ), List(vJ)))})
-syntax.fvs = ty.free_vars_in_env(syntax)
 
 head_syntax = misc.edict({
     NIL: TBind.TBind(vC, List(vC)),
@@ -106,11 +110,9 @@ head_syntax = misc.edict({
                                      ty.function(ty.function(vA, vB),
                                                  ty.function(vA, vB)))),
     HEAD: TBind.TBind(vE, ty.function(List(vE), vE))})
-head_syntax.fvs = ty.free_vars_in_env(head_syntax)
 
 head_syntax_with_numbers = copy.copy(head_syntax)
 head_syntax_with_numbers.update({n: NAT for n in numbers})
-head_syntax_with_numbers.fvs = ty.free_vars_in_env(head_syntax_with_numbers)
 
 
 # TRS #########################################################################
@@ -128,8 +130,7 @@ tail_lhs_2 = h(TAIL, NIL)
 tail_rhs_2 = f(NIL)
 tail_rule_2 = Rule.Rule(tail_lhs_2, tail_rhs_2)
 
-semantics = TRS.TRS(rules={head_rule_1, tail_rule_1, tail_rule_2},
-                    rule_types=[NAT, List(NAT)])
+semantics = TRS.TRS(rules={head_rule_1, tail_rule_1, tail_rule_2})
 
 
 # LOT #########################################################################
@@ -164,3 +165,11 @@ head_datum_F = Rule.Rule(g(f(HEAD),
                                  g(g(f(CONS), f(THREE)),
                                    f(NIL)))))),
                          f(NIL))
+
+
+# Templates ###################################################################
+head_template = Rule.Rule(j(HEAD, hole()),
+                          hole(), True)
+
+tail_template = Rule.Rule(j(TAIL, hole()),
+                          hole(), True)
