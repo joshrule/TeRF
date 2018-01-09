@@ -51,6 +51,7 @@ DOT = Op.Op('.', 2)
 HEAD = Op.Op('head', 0)
 TAIL = Op.Op('tail', 0)
 ID = Op.Op('id', 0)
+small_numbers = [Op.Op(str(n), 0) for n in xrange(10)]
 numbers = [Op.Op(str(n), 0) for n in xrange(100)]
 
 
@@ -113,6 +114,15 @@ head_syntax = misc.edict({
 
 head_syntax_with_numbers = copy.copy(head_syntax)
 head_syntax_with_numbers.update({n: NAT for n in numbers})
+
+simple_syntax = {
+    NIL: List(NAT),
+    CONS: ty.function(NAT, ty.function(List(NAT), List(NAT))),
+    DOT: TBind.TBind(vA, TBind.TBind(vB,
+                                     ty.function(ty.function(vA, vB),
+                                                 ty.function(vA, vB)))),
+    HEAD: ty.function(List(NAT), NAT)}
+simple_syntax.update({n: NAT for n in small_numbers})
 
 
 # TRS #########################################################################

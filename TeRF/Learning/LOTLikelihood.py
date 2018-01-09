@@ -33,7 +33,7 @@ class LOTLikelihood(object):
             -inf <= x <= 0, log p(datum | self.value)
         """
         t = T.Trace(self.value.semantics, datum.lhs,
-                    p_observe=0.0, max_steps=100).run()
+                    p_observe=0.0, max_steps=90).run()
         ll = t.rewrites_to(datum.rhs0)
 
         partial_credit = self.p_partial + self.temperature
