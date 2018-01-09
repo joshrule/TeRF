@@ -22,9 +22,15 @@ def sample_term(target_type, env, sub=None, invent=False, max_d=5, d=0):
     sub = {} if sub is None else sub
     if d > max_d:
         raise SampleError('depth bound {} < {}'.format(max_d, d))
-    options = np.random.permutation(list(gen_options(target_type, env, sub,
-                                                     invent)))
-    for o in options:
+    apps, vs = gen_options(target_type, env, sub, invent)
+    # TODO: Total HACK!
+    app_ps = [.5/len(apps)]*len(apps) if len(apps) else []
+    v_ps = [.5/len(vs)]*len(vs) if len(vs) else []
+    ps = misc.normalize(app_ps + v_ps)
+    order = np.random.choice(len(ps), p=ps, replace=False, size=len(ps))
+    options = apps + vs
+    for idx in order:
+        o = options[idx]
         try:
             return try_option(*o, invent=invent, max_d=max_d, d=d)
         except SampleError:
@@ -50,12 +56,17 @@ def try_option(atom, body_types, env, sub, invent, max_d, d):
 
 
 def gen_options(target_type, env, sub, invent):
+    options = []
     for atom in env:
         option = check_option(atom, target_type, env, sub)
         if option is not None:
-            yield option
+            options.append(option)
     if invent:
-        yield invent_variable(target_type, env, sub)
+        options.append(invent_variable(target_type, env, sub))
+    apps, vs = [], []
+    for option in options:
+        apps.append(option) if hasattr(option[0], 'arity') else vs.append(option)
+    return apps, vs
 
 
 def invent_variable(target_type, env, sub):
@@ -93,22 +104,26 @@ def lp_term(term, target_type, env, sub=None, invent=False, max_d=5, d=0):
     if d > max_d:
         return -np.inf, env, sub
 
-    options = list(gen_options(target_type, env, sub, False))
+    apps, vs = gen_options(target_type, env, sub, False)
     if invent:
         if isinstance(term, Var.Var) and term not in env:
             env2 = copy.copy(env)
             env2[term] = target_type
-            options.append([term, [], env2, sub])
+            vs.append([term, [], env2, sub])
         else:
-            options.append([Var.Var('BOGUS'), [], env, sub])
+            vs.append([Var.Var('BOGUS'), [], env, sub])
+    options = apps + vs
     matches = [o for o in options if o[0] == term.head]
     if len(matches) > 1:
         raise ValueError('bad environment: {!r}'.format(env))
 
-    lp = misc.logNof(options, n=len(matches))
-
-    if lp == -np.inf:
-        return lp, env, sub
+    # TODO: Total HACK!
+    if len(matches) == 0:
+        return -np.inf, env, sub
+    elif hasattr(matches[0][0], 'args'):
+        lp = np.log(0.5)-np.log(len(vs))
+    else:
+        lp = np.log(0.5)-np.log(len(apps))
 
     atom, body_types, env, sub = matches[0]
 

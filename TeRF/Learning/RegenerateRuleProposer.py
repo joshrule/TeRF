@@ -46,13 +46,14 @@ def propose_value(value, **kwargs):
             forbidden = ru.variables(rule) - vars_to_place(rule.lhs, place[1:])
         new_env = misc.edict({k: v for k, v in env.items()
                               if k not in forbidden})
-        new_term, _, _ = s.sample_term(subtype, new_env, sub=new_sub,
-                                       invent=resampling_rhs)
-
-        # print 'new_term', new_term
         try:
-            new_rule = ru.replace(new_rule, place, new_term)
-        except ValueError:
+            new_term, _, _ = s.sample_term(subtype, new_env, sub=new_sub,
+                                           invent=resampling_rhs)
+            try:
+                new_rule = ru.replace(new_rule, place, new_term)
+            except ValueError:
+                pass
+        except s.SampleError:
             pass
 
     print 'proposing', new_rule
