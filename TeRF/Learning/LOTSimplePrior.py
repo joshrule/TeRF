@@ -25,7 +25,8 @@ class LOTSimplePrior(object):
             -inf <= x <= 0, ln p(self.value)
         """
         raw_prior = -self.value.size
-        return raw_prior / self.prior_temperature
+        temped_prior = raw_prior / (10*self.temperature+1)
+        return temped_prior / self.prior_temperature
 
 
 if __name__ == '__main__':
