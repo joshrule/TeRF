@@ -1,21 +1,32 @@
+import itertools as itools
 import LOTlib.Hypotheses.Proposers as P
 import numpy as np
 import TeRF.Learning.ProposerUtilities as utils
-import TeRF.Miscellaneous as misc
 
 
 @utils.propose_value_template
 def propose_value(value, **kwargs):
     try:
-        del value.semantics[np.random.choice(list(value.semantics.clauses))]
+        del value.semantics[np.random.choice(value.semantics.clauses)]
     except ValueError:
         raise P.ProposalFailedException('DeleteRule: Grammar has no rules')
 
 
 @utils.validate_syntax
 def give_proposal_log_p(old, new, **kwargs):
-    if utils.find_insertion(old.semantics, new.semantics) is not None:
-        return misc.logNof(list(old.semantics.clauses))
+    old_clauses = old.semantics.clauses
+    new_clauses = new.semantics.clauses
+
+    old_set = set(old_clauses)
+    new_set = set(new_clauses)
+    diff = old_set - new_set
+
+    if len(diff) == 1:
+        clause = diff.pop()
+        old_clauses.remove(clause)
+        if all(o.lhs == n.lhs
+               for o, n in itools.izip(old_clauses, new_clauses)):
+            return -np.log(len(new_clauses)+1)
     return -np.inf
 
 

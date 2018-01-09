@@ -1,3 +1,4 @@
+import itertools as itools
 import numpy as np
 import LOTlib.Hypotheses.Proposers as P
 import TeRF.Learning.ProposerUtilities as utils
@@ -14,10 +15,17 @@ def propose_value(value, **kwargs):
     value.semantics.move(old_idx, new_idx)
 
 
+# TODO: underestimates probability when moves are adjacent
 @utils.validate_syntax
 def give_proposal_log_p(old, new, **kwargs):
-    # TODO: fix the underestimation that occurs when moves are adjacent
-    if utils.there_was_a_move(old.semantics, new.semantics):
+    old_clauses = old.semantics.clauses
+    new_clauses = new.semantics.clauses
+    old_set = set(old_clauses)
+    new_set = set(new_clauses)
+
+    if old_set == new_set and \
+       not all(o.lhs == n.lhs
+               for o, n in itools.izip(old_clauses, new_clauses)):
         return misc.logNof([1]*len(old.semantics)) + \
             misc.logNof([1]*(len(old.semantics)-1))
     return -np.inf

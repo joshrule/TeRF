@@ -1,8 +1,8 @@
 import copy
+import itertools as itools
 import LOTlib.Hypotheses.Proposers as P
 import numpy as np
 import TeRF.Miscellaneous as misc
-import TeRF.Algorithms.RuleUtils as ru
 import TeRF.Learning.ProposerUtilities as utils
 
 
@@ -22,15 +22,19 @@ def propose_value_maker(data):
 def give_proposal_log_p_maker(data):
     @utils.validate_syntax
     def give_proposal_log_p(old, new, **kwargs):
-        rule = utils.find_insertion(new.semantics, old.semantics)
-        try:
-            ok = [(d, ru.alpha(d, rule) is not None)
-                  for d in data
-                  if d not in old.semantics]
-            ps = misc.renormalize([1./float(d.size) for d, _ in ok])
-            return misc.log(sum(p for p, (d, x) in zip(ps, ok) if x))
-        except (ValueError, TypeError, AttributeError):
-            return -np.inf
+        old_clauses = old.semantics.clauses
+        old_set = set(old_clauses)
+        new_set = set(new.semantics.clauses)
+        diff = new_set - old_set
+
+        if len(diff) == 1:
+            clause = diff.pop()
+            ok = [d for d in data if d not in old_clauses]
+            ps = [1./float(d.size) for d in ok]
+            xs = [d == clause for d in ok]
+            return (misc.log(sum(p for p, x in itools.izip(ps, xs) if x)) -
+                    misc.log(sum(ps)))
+        return -np.inf
     return give_proposal_log_p
 
 
