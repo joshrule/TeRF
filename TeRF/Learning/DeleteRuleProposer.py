@@ -11,25 +11,6 @@ def propose_value(value, **kwargs):
     except ValueError:
         raise P.ProposalFailedException('DeleteRule: Grammar has no rules')
 
-
-@utils.validate_syntax
-def give_proposal_log_p(old, new, **kwargs):
-    old_clauses = old.semantics.clauses
-    new_clauses = new.semantics.clauses
-
-    old_set = set(old_clauses)
-    new_set = set(new_clauses)
-    diff = old_set - new_set
-
-    if len(diff) == 1:
-        clause = diff.pop()
-        old_clauses.remove(clause)
-        if all(o.lhs == n.lhs
-               for o, n in itools.izip(old_clauses, new_clauses)):
-            return -np.log(len(new_clauses)+1)
-    return -np.inf
-
-
 @utils.validate_syntax
 def give_proposal_log_fb(old, new, **kwargs):
     old_clauses = old.semantics.clauses

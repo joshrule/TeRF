@@ -19,25 +19,6 @@ def propose_value_maker(data):
     return propose_value
 
 
-def give_proposal_log_p_maker(data):
-    @utils.validate_syntax
-    def give_proposal_log_p(old, new, **kwargs):
-        old_clauses = old.semantics.clauses
-        old_set = set(old_clauses)
-        new_set = set(new.semantics.clauses)
-        diff = new_set - old_set
-
-        if len(diff) == 1:
-            clause = diff.pop()
-            ok = [d for d in data if d not in old_clauses]
-            ps = [1./float(d.size) for d in ok]
-            xs = [d == clause for d in ok]
-            return (misc.log(sum(p for p, x in itools.izip(ps, xs) if x)) -
-                    misc.log(sum(ps)))
-        return -np.inf
-    return give_proposal_log_p
-
-
 def give_proposal_log_fb_maker(data):
     @utils.validate_syntax
     def give_proposal_log_fb(old, new, **kwargs):

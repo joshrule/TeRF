@@ -88,24 +88,6 @@ def p_resample(env, new, old, place):
 
 
 @utils.validate_syntax
-def give_proposal_log_p(old, new, **kwargs):
-    new_rule, old_rule = utils.find_difference(new.semantics, old.semantics)
-    try:
-        p_rule = misc.logNof(list(old.semantics.clauses))
-
-        places = ru.places(old_rule)
-
-        p_t = misc.logNof(places)
-
-        p_resamples = [p_t + p_resample(old.syntax, new_rule, old_rule, p)
-                       for p in places]
-
-        return p_rule + misc.logsumexp(p_resamples)
-    except AttributeError:
-        return -np.inf
-
-
-@utils.validate_syntax
 def give_proposal_log_fb(old, new, **kwargs):
     old_clauses = old.semantics.clauses
     new_clauses = new.semantics.clauses
