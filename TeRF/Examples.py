@@ -88,7 +88,7 @@ vJ = TVar.TVar()
 
 
 # TypeSystem ##################################################################
-syntax = misc.edict({
+syntax = {
     NIL: TBind.TBind(vC, List(vC)),
     ZERO: NAT,
     ONE: NAT,
@@ -103,9 +103,9 @@ syntax = misc.edict({
                                                  ty.function(vA, vB)))),
     ID: TBind.TBind(vC, ty.function(vC, vC)),
     HEAD: TBind.TBind(vE, ty.function(List(vE), vE)),
-    TAIL: TBind.TBind(vJ, ty.function(List(vJ), List(vJ)))})
+    TAIL: TBind.TBind(vJ, ty.function(List(vJ), List(vJ)))}
 
-head_syntax = misc.edict({
+head_syntax = {
     NIL: TBind.TBind(vC, List(vC)),
     CONS: TBind.TBind(vD,
                       ty.function(vD,
@@ -114,7 +114,7 @@ head_syntax = misc.edict({
     DOT: TBind.TBind(vA, TBind.TBind(vB,
                                      ty.function(ty.function(vA, vB),
                                                  ty.function(vA, vB)))),
-    HEAD: TBind.TBind(vE, ty.function(List(vE), vE))})
+    HEAD: TBind.TBind(vE, ty.function(List(vE), vE))}
 
 head_syntax_with_numbers = copy.copy(head_syntax)
 head_syntax_with_numbers.update({n: NAT for n in numbers})
