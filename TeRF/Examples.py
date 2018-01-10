@@ -55,6 +55,10 @@ small_numbers = [Op.Op(str(n), 0) for n in xrange(10)]
 numbers = [Op.Op(str(n), 0) for n in xrange(100)]
 
 
+CONS2 = Op.Op('cons', 2)
+HEAD1 = Op.Op('head', 1)
+
+
 # Variables ###################################################################
 X = Var.Var('x')
 Y = Var.Var('y')
@@ -124,6 +128,12 @@ simple_syntax = {
     HEAD: ty.function(List(NAT), NAT)}
 simple_syntax.update({n: NAT for n in small_numbers})
 
+simpler_syntax = {
+    NIL: List(NAT),
+    CONS2: ty.function(NAT, ty.function(List(NAT), List(NAT))),
+    HEAD1: ty.function(List(NAT), NAT)}
+simpler_syntax.update({n: NAT for n in small_numbers})
+
 
 # TRS #########################################################################
 
@@ -180,6 +190,9 @@ head_datum_F = Rule.Rule(g(f(HEAD),
 # Templates ###################################################################
 head_template = Rule.Rule(j(HEAD, hole()),
                           hole(), True)
+
+head1_template = Rule.Rule(App.App(HEAD1, [hole()]),
+                           hole(), True)
 
 tail_template = Rule.Rule(j(TAIL, hole()),
                           hole(), True)
