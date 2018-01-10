@@ -57,12 +57,13 @@ def try_option(atom, body_types, env, sub, invent, max_d, d):
 
 def gen_options(target_type, env, sub, invent):
     options = []
+    tt = ty.specialize(target_type)
     for atom in env:
-        option = check_option(atom, target_type, env, sub)
+        option = check_option(atom, tt, env, sub)
         if option is not None:
             options.append(option)
     if invent:
-        options.append(invent_variable(target_type, env, sub))
+        options.append(invent_variable(tt, env, sub))
     apps, vs = [], []
     for option in options:
         apps.append(option) if hasattr(option[0], 'arity') else vs.append(option)
@@ -77,26 +78,24 @@ def invent_variable(target_type, env, sub):
 
 
 def check_option(atom, target_type, env, sub):
-    if isinstance(atom, Var.Var):
-        result_type = ty.update(env[atom], env, sub)
-        body_types = []
-        constraints = set()
-
-    elif isinstance(atom, Op.Op):
-        head_type = ty.specialize(ty.update(env[atom], env, sub))
+    try:
         body_types = [TVar.TVar() for _ in xrange(atom.arity)]
+    except AttributeError:
+        body_types = []
+        result_type = ty.update2(env[atom], sub)
+        constraints = set()
+    else:
         result_type = TVar.TVar()
+        head_type = ty.update2(env[atom], sub)
         constraints = {(head_type,
                         ty.multi_argument_function(body_types,
                                                    result=result_type))}
 
-    spec_type = ty.specialize(target_type)
     try:
-        unification = tu.unify(constraints | {(result_type, spec_type)})
-        sub2 = tu.compose(unification, sub)
+        new_sub = tu.unify(constraints | {(result_type, target_type)})
+        return atom, body_types, env, tu.compose(new_sub, sub)
     except TypeError:
         return None
-    return atom, body_types, env, sub2
 
 
 def lp_term(term, target_type, env, sub=None, invent=False, max_d=5, d=0):
