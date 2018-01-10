@@ -45,7 +45,7 @@ def try_option(atom, body_types, env, sub, invent, max_d, d):
     constraints = set()
     for i, bt in enumerate(body_types):
         sub = tu.compose(tu.unify(constraints.copy()), sub)
-        subtype = ty.substitute([bt], sub)[0]
+        subtype = ty.substitute(bt, sub)
         d_i = (d+1)*(i == 0)
         subterm, env, sub = sample_term(subtype, env, sub, invent, max_d, d_i)
         subterms.append(subterm)
@@ -137,7 +137,7 @@ def lp_term(term, target_type, env, sub=None, invent=False, max_d=5, d=0):
             sub = tu.compose(tu.unify(constraints.copy()), sub)
         except TypeError:
             return -np.inf, env, sub
-        subtype = ty.substitute([body_type], sub)[0]
+        subtype = ty.substitute(body_type, sub)
         d_i = (d+1)*(i == 0)
         lp, env, sub = lp_term(subterm, subtype, env, sub, invent, max_d, d_i)
         lps.append(lp)

@@ -52,10 +52,4 @@ def compose(sub1, sub2):
 
 def substitute(cs, sub):
     """substitution for a set of pairs"""
-    try:
-        ss, ts = zip(*cs)
-        idx = len(cs)
-        results = ty.substitute(ss + ts, sub)
-        return set(zip(results[:idx], results[idx:]))
-    except ValueError:
-        return cs
+    return {(ty.substitute(s, sub), ty.substitute(t, sub)) for s, t in cs}

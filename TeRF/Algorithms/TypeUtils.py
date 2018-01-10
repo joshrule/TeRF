@@ -61,38 +61,32 @@ def specialize(target_type, env=None):
     raise TypeError('not a type: {!r}'.format(target_type))
 
 
-def substitute(types, sub):
-    ress = []
-    for t in types:
-        try:
-            if t.args == []:
-                ress.append(t)
-                continue
-            ress.append(TOp.TOp(t.head, substitute(t.args, sub)))
-            continue
-        except AttributeError:
-            pass
+def substitute(the_type, sub):
+    try:
+        if the_type.args == []:
+            return the_type
+        return TOp.TOp(the_type.head,
+                       [substitute(arg, sub) for arg in the_type.args])
+    except AttributeError:
+        pass
 
-        try:
-            new_sub = sub.copy()
-            new_sub.pop(t.variable, None)
-            ress.append(TBind.TBind(t.variable,
-                                    substitute([t.body], new_sub)[0]))
-            continue
-        except AttributeError:
-            ress.append(sub.get(t, t))
-            continue
-    return ress
+    try:
+        new_sub = sub.copy()
+        new_sub.pop(the_type.variable, None)
+        return TBind.TBind(the_type.variable,
+                           [substitute(b, new_sub) for b in the_type.body])
+    except AttributeError:
+        return sub.get(the_type, the_type)
 
 
 def update(target_type, env, sub):
     # hard-coded variable substitution here saves time
     fvs = {v for x in free_vars_in_env(env) for v in free_vars(sub.get(x, x))}
-    return generalize(substitute([specialize(target_type)], sub)[0], fvs)
+    return generalize(substitute(specialize(target_type), sub), fvs)
 
 
 def update2(target_type, sub):
-    return substitute([specialize(target_type)], sub)[0]
+    return substitute(specialize(target_type), sub)
 
 
 def free_vars_in_env(env):
@@ -114,7 +108,7 @@ def free_vars(type, bound=None):
 def alpha(t1, t2, sub=None):
     sub = {} if sub is None else sub
     if isinstance(t1, TVar.TVar) and isinstance(t2, TVar.TVar):
-        return sub if t2 == substitute([t1], sub)[0] else None
+        return sub if t2 == substitute(t1, sub) else None
     elif (isinstance(t1, TOp.TOp) and isinstance(t2, TOp.TOp) and
           t1.head == t2.head and len(t1.args) == len(t2.args)):
         for st1, st2 in zip(t1.args, t2.args):
