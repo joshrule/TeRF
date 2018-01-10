@@ -19,14 +19,53 @@ def propose_value_maker(templates):
 def give_proposal_log_p_maker(templates):
     @utils.validate_syntax
     def give_proposal_log_p(old, new, **kwargs):
-        rule = utils.find_insertion(new.semantics, old.semantics)
-        try:
-            return misc.logsumexp([s.lp_template(rule, t,
-                                                 old.syntax, {}, invent=True)
-                                   for t in templates])
-        except AttributeError:
-            return -np.inf
+        old_clauses = old.semantics.clauses
+        new_clauses = new.semantics.clauses
+        old_set = set(old_clauses)
+        new_set = set(new_clauses)
+        diff = new_set - old_set
+
+        if len(diff) == 1 and \
+           all(o.lhs == n.lhs for o, n in zip(old_clauses, new_clauses)):
+            rule = diff.pop()
+            return misc.logsumexp(
+                [misc.logNof(templates) +
+                 s.lp_template(rule, t, old.syntax, {}, invent=True)
+                 for t in templates])
+        return -np.inf
     return give_proposal_log_p
+
+
+def give_proposal_log_fb_maker(templates):
+    @utils.validate_syntax
+    def give_proposal_log_fb(old, new, **kwargs):
+        old_clauses = old.semantics.clauses
+        new_clauses = new.semantics.clauses
+        len_difference = len(old_clauses) - len(new_clauses)
+        if len_difference == 1:  # old bigger than new
+            old_set = set(old_clauses)
+            new_set = set(new_clauses)
+            diff = old_set - new_set
+            if len(diff) == 1:
+                clause = diff.pop()
+                b = misc.logsumexp(
+                    [misc.logNof(templates) +
+                     s.lp_template(clause, t, old.syntax, {}, invent=True)
+                     for t in templates])
+                return (-np.inf, b)
+        elif len_difference == -1:
+            old_set = set(old_clauses)
+            new_set = set(new_clauses)
+            diff = new_set - old_set
+            if len(diff) == 1:
+                clause = diff.pop()
+                f = misc.logsumexp(
+                    [misc.logNof(templates) +
+                     s.lp_template(clause, t, old.syntax, {}, invent=True)
+                     for t in templates])
+                return (f, -np.inf)
+        return (-np.inf, -np.inf)
+    return give_proposal_log_fb
 
 
 class AddRuleProposer(P.Proposer):

@@ -11,15 +11,15 @@ class LOTProposer(MixtureProposer):
     def __init__(self, data=None, templates=None, **kwargs):
         proposal_fns = [
             (arp.propose_value_maker(templates),
-             arp.give_proposal_log_p_maker(templates)),
+             arp.give_proposal_log_fb_maker(templates)),
             (drp.propose_value,
-             drp.give_proposal_log_p),
+             drp.give_proposal_log_fb),
             (rrp.propose_value,
-             rrp.give_proposal_log_p),
+             rrp.give_proposal_log_fb),
             (mrp.propose_value,
-             mrp.give_proposal_log_p),
+             mrp.give_proposal_log_fb),
             (aep.propose_value_maker(data),
-             aep.give_proposal_log_p_maker(data))
+             aep.give_proposal_log_fb_maker(data))
         ]
 
         weights = [1.0/len(proposal_fns)]*len(proposal_fns)

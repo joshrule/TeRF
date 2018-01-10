@@ -1,7 +1,6 @@
 import copy
 import os
 import LOTlib.Hypotheses.Proposers as P
-import TeRF.Miscellaneous as misc
 import numpy as np
 import TeRF.Types.Rule as R
 import inspect
@@ -46,11 +45,11 @@ def make_a_rule(lhs, rhs):
         raise P.ProposalFailedException('make_a_rule: bad rule')
 
 
-def validate_syntax(proposal_log_p):
+def validate_syntax(proposal_f):
     def wrapper(old, new, **kwargs):
         if old.syntax == new.syntax:
-            return proposal_log_p(old, new, **kwargs)
-        return misc.log(0)
+            return proposal_f(old, new, **kwargs)
+        return (-np.inf, -np.inf)
     return wrapper
 
 
@@ -62,35 +61,3 @@ def propose_value_template(propose_value):
         print '#', os.path.splitext(src_filename)[0]
         return new_value
     return wrapper
-
-
-def find_insertion(g1, g2):
-    """if g1 == (g2 + rule), return rule, else None"""
-    new_rules = {rule for rule in g1.clauses if rule not in g2}
-    if len(new_rules) == 1:
-        rule = new_rules.pop()
-        g1prime = copy.deepcopy(g1)
-        del g1prime[rule]
-        if g1prime == g2:
-            return rule
-
-
-def there_was_a_move(g1, g2):
-    g1_rules = {c for c in g1.clauses if c not in g2}
-    g2_rules = {c for c in g2.clauses if c not in g1}
-    if g1_rules == g2_rules == set():
-        new_order = [g2._order.index(key)
-                     for key in g1._order]
-        monotonic = [new_order[i] < new_order[i+1]
-                     for i in xrange(len(new_order)-1)]
-        if monotonic.count(False) == 1:
-            return True
-        return False
-
-
-def find_difference(g1, g2):
-    g1_rules = {rule for rule in g1.clauses if rule not in g2}
-    g2_rules = {rule for rule in g2.clauses if rule not in g1}
-    if len(g1_rules) == len(g2_rules) == 1:
-        return g1_rules.pop(), g2_rules.pop()
-    return (None, None)

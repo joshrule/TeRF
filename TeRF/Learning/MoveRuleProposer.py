@@ -31,6 +31,24 @@ def give_proposal_log_p(old, new, **kwargs):
     return -np.inf
 
 
+# TODO: underestimates probability when moves are adjacent
+@utils.validate_syntax
+def give_proposal_log_fb(old, new, **kwargs):
+    old_clauses = old.semantics.clauses
+    new_clauses = new.semantics.clauses
+    old_set = set(old_clauses)
+    new_set = set(new_clauses)
+
+    if old_set == new_set and \
+       not all(o.lhs == n.lhs
+               for o, n in itools.izip(old_clauses, new_clauses)):
+        f_or_b = misc.logNof([1]*len(old.semantics)) + \
+                 misc.logNof([1]*(len(old.semantics)-1))
+        return (f_or_b, f_or_b)
+    return (-np.inf, -np.inf)
+
+
+
 class MoveRuleProposer(P.Proposer):
     """
     Proposer for moving a Rule in a TRS (NON-ERGODIC FOR TRSs)
