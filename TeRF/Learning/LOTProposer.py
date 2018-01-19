@@ -25,7 +25,7 @@ class LOTProposer(MixtureProposer):
              rvp.give_proposal_log_fb)
         ]
 
-        weights = misc.renormalize([3, 2, 3, 1, 1, 2])
+        weights = misc.renormalize([3, 4, 3, 1, 1, 2])
         # weights = [1.0/len(proposal_fns)]*len(proposal_fns)
 
         super(LOTProposer, self).__init__(

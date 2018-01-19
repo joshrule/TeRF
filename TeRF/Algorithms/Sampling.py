@@ -208,8 +208,6 @@ def fill_template(template, env, sub, invent=False):
 
 def lp_template(rule, template, env, sub, invent=False):
     # make sure the rule is compatible with the template
-    if ru.unify(template, rule, kind='match') is None:
-        return -np.inf
     temp_env = env.copy()
     for subterm in ru.subterms(template):
         if isinstance(subterm, Hole.Hole) and subterm not in temp_env:
@@ -217,6 +215,8 @@ def lp_template(rule, template, env, sub, invent=False):
     t_type, sub2 = ru.typecheck_full(template, temp_env, sub)
     p_rule = lp_rule(rule, t_type, env, sub)
     sub = sub2
+    if ru.unify(template, rule, kind='match') is None:
+        return misc.logsumexp([-np.inf, misc.log(0.01)+p_rule])
     for place in ru.places(template):
         subtemplate = ru.place(template, place)
         try:
