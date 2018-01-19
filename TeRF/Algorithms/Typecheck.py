@@ -8,11 +8,9 @@ Much thanks to:
 """
 
 import TeRF.Algorithms.TypeUtils as ty
-import TeRF.Algorithms.TermUtils as te
 import TeRF.Algorithms.TypeUnify as tu
 
 
-@te.term_decorator
 def typecheck(term, typesystem, sub):
     the_type, the_sub = typecheck_full(term, typesystem, sub)
     return the_type
@@ -39,8 +37,18 @@ def typecheck_full_helper(term, env, sub):
 
     try:
         sub = tu.compose(tu.unify({(head_type, body_type)}), sub)
-    except TypeError:
-        raise ValueError('untypable: ' + te.to_string(term))
+    except TypeError as err:
+        print 'term', term
+        print 'error', err
+        print 'head_type', head_type
+        print 'body_type', body_type
+        print 'env'
+        for k, v in env.items():
+            print '   ', k, ':', v
+        print 'sub'
+        for k, v in sub.items():
+            print '   ', k, ':', v
+        raise ValueError('untypable: ' + str(term))
     return ty.update2(ty.result_type(body_type), sub), sub
 
 
@@ -49,7 +57,7 @@ def typecheck_args(args, env, sub):
     for a in args:
         pre_type, sub = typecheck_full_helper(a, env, sub)
         pre_types.append(pre_type)
-    body_type = ty.multi_argument_function(pre_types, result='var')
+    body_type = ty.multi_argument_function(pre_types)
     return body_type, sub
 
 
@@ -85,7 +93,12 @@ def typecheck_subterm_helper(term, env, sub, target_place):
     try:
         sub = tu.compose(tu.unify({(head_type, body_type)}), sub)
     except TypeError:
-        raise ValueError('untypable: ' + te.to_string(term))
+        print 'head_type', head_type
+        print 'body_type', body_type
+        print 'sub'
+        for k, v in sub.items():
+            print '   ', k, ':', v
+        raise ValueError('untypable: ' + repr(term))
     the_type = ty.update2(ty.result_type(body_type), sub)
     if target_place == []:
         return the_type, sub, the_type
@@ -103,5 +116,5 @@ def typecheck_subterm_args(args, env, sub, target_place):
             pre_type, sub, subtype = typecheck_subterm_helper(
                 a, env, sub, target_place[1:])
         pre_types.append(pre_type)
-    body_type = ty.multi_argument_function(pre_types, result='var')
+    body_type = ty.multi_argument_function(pre_types)
     return body_type, sub, subtype

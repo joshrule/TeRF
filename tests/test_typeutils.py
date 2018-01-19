@@ -19,15 +19,9 @@ def atoms():
     return x, y, Bool, Nat
 
 
-def test_multi_argument_function_last(atoms):
-    x, y, b, n = atoms
-    assert ty.multi_argument_function([x, y, b, n], 'last') == \
-        TOp.TOp('->', [x, TOp.TOp('->', [y, TOp.TOp('->', [b, n])])])
-
-
 def test_multi_argument_function_var(atoms):
     x, y, b, n = atoms
-    result = ty.multi_argument_function([x, y, b, n], 'var')
+    result = ty.multi_argument_function([x, y, b, n])
     r = ty.result_type(result)
     assert isinstance(r, TVar.TVar) and r != x != y and \
         result == TOp.TOp('->',
@@ -155,31 +149,31 @@ def test_generalize_xxy(atoms):
 
 def test_specialize_x(atoms):
     x, y, b, n = atoms
-    assert ty.specialize(x) == x
+    assert ty.specialize_top(x) == x
 
 
 def test_specialize_b(atoms):
     x, y, b, n = atoms
-    assert ty.specialize(b) == b
+    assert ty.specialize_top(b) == b
 
 
 def test_specialize_xx(atoms):
     x, y, b, n = atoms
     t1 = TOp.TOp('->', [x, x])
-    assert ty.specialize(t1) == t1
+    assert ty.specialize_top(t1) == t1
 
 
 def test_specialize_xx2(atoms):
     x, y, b, n = atoms
     t1 = TBind.TBind(x, x)
-    result = ty.specialize(t1)
+    result = ty.specialize_top(t1)
     assert isinstance(result, TVar.TVar) and result != x != y
 
 
 def test_specialize_xxy(atoms):
     x, y, b, n = atoms
     t1 = TBind.TBind(x, TOp.TOp('->', [x, y]))
-    result = ty.specialize(t1)
+    result = ty.specialize_top(t1)
     assert isinstance(result, TOp.TOp) and \
         ty.is_function(result) and \
         (result.args[0] != x != y) and \
@@ -189,7 +183,7 @@ def test_specialize_xxy(atoms):
 def test_specialize_xxb(atoms):
     x, y, b, n = atoms
     t1 = TBind.TBind(x, TOp.TOp('->', [x, b]))
-    result = ty.specialize(t1)
+    result = ty.specialize_top(t1)
     assert isinstance(result, TOp.TOp) and \
         ty.is_function(result) and \
         (result.args[0] != x != y) and \
@@ -198,33 +192,32 @@ def test_specialize_xxb(atoms):
 
 def test_substitute_x_b(atoms):
     x, y, b, n = atoms
-    assert ty.substitute([x], {x: b})[0] == b
+    assert ty.substitute(x, {x: b}) == b
 
 
 def test_substitute_xx_b(atoms):
     x, y, b, n = atoms
     t1 = TOp.TOp('->', [x, x])
     t2 = TOp.TOp('->', [b, b])
-    assert ty.substitute([t1], {x: b})[0] == t2
+    assert ty.substitute(t1, {x: b}) == t2
 
 
 def test_substitute_xxx_b(atoms):
     x, y, b, n = atoms
     t = TBind.TBind(x, TOp.TOp('->', [x, x]))
-    assert ty.substitute([t], {x: b})[0] == t
+    assert ty.substitute(t, {x: b}) == t
 
 
 def test_substitute_xxy_b(atoms):
     x, y, b, n = atoms
     t1 = TBind.TBind(x, TOp.TOp('->', [x, y]))
     t2 = TBind.TBind(x, TOp.TOp('->', [x, b]))
-    assert ty.substitute([t1], {y: b})[0] == t2
+    assert ty.substitute(t1, {y: b}) == t2
 
 
 def test_update_x(atoms):
     x, y, b, n = atoms
-    env = misc.edict()
-    env.fvs = ty.free_vars_in_env(env)
+    env = {}
     t1 = ty.update(x, env, {})
     assert isinstance(t1, TBind.TBind) and \
         t1.variable == x and t1.body == x
@@ -232,8 +225,7 @@ def test_update_x(atoms):
 
 def test_update_x__xy(atoms):
     x, y, b, n = atoms
-    env = misc.edict()
-    env.fvs = ty.free_vars_in_env(env)
+    env = {}
     t1 = ty.update(x, env, {x: y})
     assert isinstance(t1, TBind.TBind) and \
         t1.variable == y and t1.body == y
@@ -242,18 +234,16 @@ def test_update_x__xy(atoms):
 def test_update_x_zx_xy(atoms):
     x, y, b, n = atoms
     z = Var.Var('z')
-    env = misc.edict({z: x})
-    env.fvs = ty.free_vars_in_env(env)
+    env = {z: x}
     sub = {x: y}
     t1 = ty.update(x, env, sub)
-    assert t1 == ty.substitute([x], sub)[0]
+    assert t1 == ty.substitute(x, sub)
 
 
 def test_update_b_zx_xy(atoms):
     x, y, b, n = atoms
     z = Var.Var('z')
-    env = misc.edict({z: b})
-    env.fvs = ty.free_vars_in_env(env)
+    env = {z: b}
     t1 = ty.update(b, env, {x: y})
     assert t1 == b
 

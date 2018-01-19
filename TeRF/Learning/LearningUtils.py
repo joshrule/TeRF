@@ -221,9 +221,9 @@ def make_hypothesis(templates, p_partial, p_rule, lot, data):
                               likelihood_temperature=1.)
 
 
-def make_data(e_g, g_g, start, data_dir, reqs):
+def make_data(e_g, g_g, start, reqs, data_dir=None):
     data = []
-    candidates = load_data(data_dir)
+    candidates = [] if data_dir is None else load_data(data_dir)
     sampled = []
     while reqs != []:
         if candidates != []:
@@ -236,7 +236,8 @@ def make_data(e_g, g_g, start, data_dir, reqs):
         meet_reqs = [r(datum) for r in reqs]
         if any(meet_reqs):
             data.append(datum)
-            reqs = [r for p, r in zip(meet_reqs, reqs) if not p]
+            i = meet_reqs.index(True)
+            del reqs[i]
     return data, sampled
 
 
@@ -250,7 +251,7 @@ def sample_datum(e_g, g_g, start):
         except IndexError:
             pass
 
-        rhs = T.Trace(e_g, lhs, max_steps=100, type='one',
+        rhs = T.Trace(e_g, lhs, max_steps=20, type='one',
                       strategy='eager').rewrite(states=['normal'], trace=False)
 
         try:

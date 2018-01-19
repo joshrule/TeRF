@@ -4,16 +4,10 @@ import TeRF.Types.TypeOperator as TOp
 import TeRF.Types.TypeBinding as TBind
 
 
-def multi_argument_function(arg_types, result='var'):
-    arg_types = arg_types[:]
-    if result == 'last':
-        f_type = arg_types.pop()
-    elif result == 'var':
-        f_type = TVar.TVar()
-    else:
-        f_type = result
-    while len(arg_types) > 0:
-        f_type = function(arg_types.pop(), f_type)
+def multi_argument_function(arg_types, result=None):
+    f_type = TVar.TVar() if result is None else result
+    for arg in reversed(arg_types):
+        f_type = TOp.TOp('->', [arg, f_type])
     return f_type
 
 
@@ -44,21 +38,27 @@ def generalize(target_type, bound=None):
     return the_type
 
 
-def specialize(target_type, env=None):
-    env = {} if env is None else env
-    if isinstance(target_type, TVar.TVar):
-        try:
-            return env[target_type]
-        except KeyError:
-            return target_type
-    if isinstance(target_type, TOp.TOp):
-        return TOp.TOp(target_type.head, [specialize(arg, env)
-                                          for arg in target_type.args])
+def specialize_top(target_type, env=None):
+    if env is None:
+        env = {}
     if isinstance(target_type, TBind.TBind):
+        return specialize(target_type, env)
+    return target_type
+
+
+def specialize(target_type, env=None):
+    try:  # TBind
         if target_type.variable not in env:
             env[target_type.variable] = TVar.TVar()
         return specialize(target_type.body, env)
-    raise TypeError('not a type: {!r}'.format(target_type))
+    except AttributeError:
+        pass
+
+    try:  # TOp
+        return TOp.TOp(target_type.head,
+                       [specialize(arg, env) for arg in target_type.args])
+    except AttributeError:
+        return env.get(target_type, target_type)
 
 
 def substitute(the_type, sub):
@@ -71,10 +71,10 @@ def substitute(the_type, sub):
         pass
 
     try:
-        new_sub = sub.copy()
-        new_sub.pop(the_type.variable, None)
-        return TBind.TBind(the_type.variable,
-                           [substitute(b, new_sub) for b in the_type.body])
+        var = the_type.variable
+        sub2 = sub.copy()
+        sub2.pop(var, None)
+        return TBind.TBind(var, substitute(the_type.body, sub2))
     except AttributeError:
         return sub.get(the_type, the_type)
 
@@ -82,11 +82,11 @@ def substitute(the_type, sub):
 def update(target_type, env, sub):
     # hard-coded variable substitution here saves time
     fvs = {v for x in free_vars_in_env(env) for v in free_vars(sub.get(x, x))}
-    return generalize(substitute(specialize(target_type), sub), fvs)
+    return generalize(substitute(specialize_top(target_type), sub), fvs)
 
 
 def update2(target_type, sub):
-    return substitute(specialize(target_type), sub)
+    return substitute(specialize_top(target_type), sub)
 
 
 def free_vars_in_env(env):

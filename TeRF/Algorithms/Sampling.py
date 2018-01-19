@@ -4,12 +4,12 @@ import scipy.stats as stats
 import TeRF.Miscellaneous as misc
 import TeRF.Types.Application as App
 import TeRF.Types.Hole as Hole
-import TeRF.Types.Operator as Op
 import TeRF.Types.Rule as Rule
 import TeRF.Types.Variable as Var
 import TeRF.Types.TypeVariable as TVar
 import TeRF.Algorithms.Typecheck as tc
 import TeRF.Algorithms.RuleUtils as ru
+import TeRF.Algorithms.TermUtils as te
 import TeRF.Algorithms.TypeUtils as ty
 import TeRF.Algorithms.TypeUnify as tu
 
@@ -49,7 +49,7 @@ def try_option(atom, body_types, env, sub, invent, max_d, d):
         d_i = (d+1)*(i == 0)
         subterm, env, sub = sample_term(subtype, env, sub, invent, max_d, d_i)
         subterms.append(subterm)
-        final_type = ty.specialize(tc.typecheck(subterm, env, sub))
+        final_type = ty.specialize_top(tc.typecheck(subterm, env, sub))
         constraints.add((subtype, final_type))
     sub = tu.compose(tu.unify(constraints.copy()), sub)
     return App.App(atom, subterms), env, sub
@@ -57,7 +57,7 @@ def try_option(atom, body_types, env, sub, invent, max_d, d):
 
 def gen_options(target_type, env, sub, invent):
     options = []
-    tt = ty.specialize(target_type)
+    tt = ty.specialize_top(target_type)
     for atom in env:
         option = check_option(atom, tt, env, sub)
         if option is not None:
@@ -88,8 +88,7 @@ def check_option(atom, target_type, env, sub):
         result_type = TVar.TVar()
         head_type = ty.update2(env[atom], sub)
         constraints = {(head_type,
-                        ty.multi_argument_function(body_types,
-                                                   result=result_type))}
+                        ty.multi_argument_function(body_types, result_type))}
 
     try:
         new_sub = tu.unify(constraints | {(result_type, target_type)})
@@ -99,8 +98,11 @@ def check_option(atom, target_type, env, sub):
 
 
 def lp_term(term, target_type, env, sub=None, invent=False, max_d=5, d=0):
+    # print 'lp_term'
+    # print '  term', term
+    # print '  target_type', target_type
     sub = {} if sub is None else sub
-    if d > max_d:
+    if d > max_d or any(a not in env and not invent for a in te.atoms(term)):
         return -np.inf, env, sub
 
     apps, vs = gen_options(target_type, env, sub, False)
@@ -108,6 +110,7 @@ def lp_term(term, target_type, env, sub=None, invent=False, max_d=5, d=0):
         if isinstance(term, Var.Var) and term not in env:
             env2 = copy.copy(env)
             env2[term] = target_type
+            # print 'adding', term, 'as', target_type
             vs.append([term, [], env2, sub])
         else:
             vs.append([Var.Var('BOGUS'), [], env, sub])
@@ -119,11 +122,12 @@ def lp_term(term, target_type, env, sub=None, invent=False, max_d=5, d=0):
     # TODO: Total HACK!
     if len(matches) == 0:
         return -np.inf, env, sub
-    elif hasattr(matches[0][0], 'args'):
-        lp = np.log(0.5)-np.log(len(vs))
-    else:
+    elif hasattr(matches[0][0], 'arity'):
         lp = np.log(0.5)-np.log(len(apps))
+    else:
+        lp = np.log(0.5)-np.log(len(vs))
 
+    # print 'match', matches[0]
     atom, body_types, env, sub = matches[0]
 
     if isinstance(atom, Var.Var):
@@ -140,7 +144,7 @@ def lp_term(term, target_type, env, sub=None, invent=False, max_d=5, d=0):
         d_i = (d+1)*(i == 0)
         lp, env, sub = lp_term(subterm, subtype, env, sub, invent, max_d, d_i)
         lps.append(lp)
-        final_type = ty.specialize(tc.typecheck(subterm, env, sub))
+        final_type = ty.specialize_top(tc.typecheck(subterm, env, sub))
         constraints.add((subtype, final_type))
     try:
         sub = tu.compose(tu.unify(constraints.copy()), sub)
@@ -184,17 +188,17 @@ def fill_template(template, env, sub, invent=False):
         subterm = ru.place(rule, place)
         if isinstance(subterm, Hole.Hole) and subterm not in temp_env:
             temp_env[subterm] = TVar.TVar()
+    # flip a biased coin and just use the type if the flip fails
+    if np.random.random() > 0.99:
+        t_type, sub = ru.typecheck_full(template, temp_env, sub)
+        return sample_rule(t_type, env, sub, invent=invent)
     t_type, sub = ru.typecheck_full(rule, temp_env, sub)
-    # print 't_type', t_type
     replacements = []
     for place in ru.places(rule):
         subterm = ru.place(rule, place)
         if isinstance(subterm, Hole.Hole):
             i_here = place[0] == 'lhs' and invent
             target_type, sub = tc.typecheck_full(subterm, temp_env, sub)
-            # print 'place', place
-            # print 'subterm', subterm
-            # print 'target_type', target_type
             term, env, sub = sample_term(target_type, env, sub, invent=i_here)
             replacements.append((place, term))
     for place, term in replacements:
@@ -203,18 +207,22 @@ def fill_template(template, env, sub, invent=False):
 
 
 def lp_template(rule, template, env, sub, invent=False):
-    temp_env = copy.deepcopy(env)
-    for place in ru.places(template):
-        subterm = ru.place(template, place)
+    # make sure the rule is compatible with the template
+    if ru.unify(template, rule, kind='match') is None:
+        return -np.inf
+    temp_env = env.copy()
+    for subterm in ru.subterms(template):
         if isinstance(subterm, Hole.Hole) and subterm not in temp_env:
             temp_env[subterm] = TVar.TVar()
-    t_type, sub = ru.typecheck_full(template, temp_env, sub)
+    t_type, sub2 = ru.typecheck_full(template, temp_env, sub)
+    p_rule = lp_rule(rule, t_type, env, sub)
+    sub = sub2
     for place in ru.places(template):
         subtemplate = ru.place(template, place)
         try:
             subrule = ru.place(rule, place)
         except ValueError:
-            return -np.inf
+            return misc.logsumexp([-np.inf, misc.log(0.01)+p_rule])
         lp = 0
         if isinstance(subtemplate, Hole.Hole):
             invent = place[0] == 'lhs'
@@ -222,4 +230,4 @@ def lp_template(rule, template, env, sub, invent=False):
             lt, env, sub = lp_term(subrule, target_type, env, sub,
                                    invent=invent)
             lp += lt
-    return lp
+    return misc.logsumexp([misc.log(0.99)+lp, misc.log(0.01)+p_rule])

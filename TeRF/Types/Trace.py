@@ -6,6 +6,7 @@ import numpy.random as random
 import TeRF.Miscellaneous as M
 import TeRF.Algorithms.Rewrite as r
 import TeRF.Algorithms.Unify as u
+import TeRF.Algorithms.TermUtils as te
 
 
 class TraceComplete(Exception):

@@ -42,8 +42,9 @@ def propose_value(value, **kwargs):
     except s.SampleError:
         raise P.ProposalFailedException('RegenerateRule: proposal failed')
 
-    if ru.alpha(rule, new_rule) is None:
-        print 'proposing', new_rule
+    alpha = ru.alpha(rule, new_rule)
+    if alpha is None and new_rule not in value.semantics:
+        print '# proposing', new_rule
         value.semantics.replace(rule, new_rule)
     else:
         raise P.ProposalFailedException('RegenerateRule: proposal failed')
@@ -104,7 +105,10 @@ def give_proposal_log_fb(old, new, **kwargs):
             # p = choosing rule + choosing place + sampling subterm
             o_clause = o_diff.pop()
             n_clause = n_diff.pop()
-            place = new._regeneration_place
+            try:
+                place = new._regeneration_place
+            except AttributeError:
+                return (-np.inf, -np.inf)
             o_places = ru.places(o_clause)
             n_places = ru.places(n_clause)
             p_rule = -misc.log(len_old)

@@ -22,16 +22,20 @@ def give_proposal_log_fb_maker(templates):
         old_clauses = old.semantics.clauses
         new_clauses = new.semantics.clauses
         len_difference = len(old_clauses) - len(new_clauses)
+        # print 'len_difference', len_difference
         if len_difference == 1:  # old bigger than new
             old_set = set(old_clauses)
             new_set = set(new_clauses)
             diff = old_set - new_set
+            # print 'len(diff)', len(diff)
             if len(diff) == 1:
                 clause = diff.pop()
-                b = misc.logsumexp(
-                    [misc.logNof(templates) +
-                     s.lp_template(clause, t, old.syntax, {}, invent=True)
-                     for t in templates])
+                xs = [misc.logNof(templates) +
+                      s.lp_template(clause, t, old.syntax, {}, invent=True)
+                      for t in templates]
+                # print 'xs', xs
+                b = misc.logsumexp(xs)
+                # print 'b', b
                 return (-np.inf, b)
         elif len_difference == -1:
             old_set = set(old_clauses)

@@ -32,5 +32,6 @@ class LOTHypothesis(p.LOTSimplePrior, L.LOTLikelihood, P.LOTProposer,
     def __init__(self, templates=None, temperature=0.0, **kwargs):
         self.templates = templates
         self.temperature = temperature
+        self.real_temperature = 1e-4
         self.__dict__.update(kwargs)
         super(LOTHypothesis, self).__init__(templates=templates, **kwargs)

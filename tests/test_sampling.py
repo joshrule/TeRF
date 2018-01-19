@@ -84,7 +84,7 @@ def typesystem(makers, operators, variables):
         def __init__(self, alpha_type, beta_type):
             super(Pair, self).__init__('PAIR', [alpha_type, beta_type])
 
-    env = misc.edict({
+    env = {
         o['NIL']: TBind.TBind(vC, List(vC)),
         o['ZERO']: NAT,
         o['ONE']: NAT,
@@ -111,8 +111,7 @@ def typesystem(makers, operators, variables):
         o['HEAD']: TBind.TBind(vE, ty.function(List(vE), vE)),
         variables['X']: vH,
         variables['Y']: vI,
-        variables['Z']: vH})
-    env.fvs = ty.free_vars_in_env(env)
+        variables['Z']: vH}
     return env
 
 

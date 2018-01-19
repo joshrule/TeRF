@@ -3,6 +3,7 @@ import TeRF.Algorithms.TypeUtils as ty
 import TeRF.Algorithms.Typecheck as tc
 import TeRF.Algorithms.Substitute as s
 import TeRF.Algorithms.TypeUnify as u
+import TeRF.Algorithms.Unify as uni
 import TeRF.Types.Rule as Rule
 
 
@@ -28,6 +29,14 @@ def place(rule, place):
     return te.subterm(rule.rhs[place[1]], place[2:])
 
 
+def subterms(rule):
+    for subterm in te.subterms(rule.lhs):
+        yield subterm
+    for rhs in rule.rhs:
+        for subterm in te.subterms(rhs):
+            yield subterm
+
+
 def replace(rule, place, term, template=False):
     if place[0] == 'lhs':
         return Rule.Rule(te.replace(rule.lhs, place[1:], term), rule.rhs[:],
@@ -37,8 +46,9 @@ def replace(rule, place, term, template=False):
 
 
 def unify(r1, r2, kind='unification'):
-    return u.unify({(r1.lhs, r2.lhs)} |
-                   {(rhs1, rhs2) for rhs1, rhs2 in zip(r1.rhs, r2.rhs)})
+    return uni.unify({(r1.lhs, r2.lhs)} | \
+                     {(rhs1, rhs2) for rhs1, rhs2 in zip(r1.rhs, r2.rhs)},
+                     kind=kind)
 
 
 def alpha(r1, r2):
@@ -63,8 +73,8 @@ def typecheck(self, env, sub):
 
 def typecheck_full(self, env, sub):
     lhs_type_scheme, sub = tc.typecheck_full(self.lhs, env, sub)
-    lhs_type = ty.specialize(lhs_type_scheme)
-    rhs_types = [ty.specialize(tc.typecheck(rhs, env, sub.copy()))
+    lhs_type = ty.specialize_top(lhs_type_scheme)
+    rhs_types = [ty.specialize_top(tc.typecheck(rhs, env, sub.copy()))
                  for rhs in self.rhs]
     new_sub = u.unify({(lhs_type, rhs_type) for rhs_type in rhs_types})
     final_sub = u.compose(new_sub, sub)
@@ -79,16 +89,17 @@ def typecheck_subterm(self, env, sub, place):
             self.lhs, env, sub, place[1:])
     else:
         lhs_type_scheme, sub = tc.typecheck_full(self.lhs, env, sub)
-    lhs_type = ty.specialize(lhs_type_scheme)
+    lhs_type = ty.specialize_top(lhs_type_scheme)
 
     rhs_types = []
     for i, rhs in enumerate(self.rhs):
         if place[0] == 'rhs' and place[1] == i:
             rhs_type_scheme, _, subtype = tc.typecheck_subterm(
                 rhs, env, sub.copy(), place[2:])
-            rhs_types.append(ty.specialize(rhs_type_scheme))
+            rhs_types.append(ty.specialize_top(rhs_type_scheme))
         else:
-            rhs_types.append(ty.specialize(tc.typecheck(rhs, env, sub.copy())))
+            rhs_types.append(ty.specialize_top(tc.typecheck(rhs, env,
+                                                            sub.copy())))
 
     new_sub = u.unify({(lhs_type, rhs_type) for rhs_type in rhs_types})
     final_sub = u.compose(new_sub, sub)

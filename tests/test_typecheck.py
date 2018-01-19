@@ -84,7 +84,7 @@ def typesystem(makers, operators, variables):
         def __init__(self, alpha_type, beta_type):
             super(Pair, self).__init__('PAIR', [alpha_type, beta_type])
 
-    env = misc.edict({
+    env = {
         o['NIL']: TBind.TBind(vC, List(vC)),
         o['ZERO']: NAT,
         o['ONE']: NAT,
@@ -111,8 +111,7 @@ def typesystem(makers, operators, variables):
         o['HEAD']: TBind.TBind(vE, ty.function(List(vE), vE)),
         variables['X']: vH,
         variables['Y']: vI,
-        variables['Z']: vH})
-    env.fvs = ty.free_vars_in_env(env)
+        variables['Z']: vH}
     return env
 
 
@@ -168,7 +167,7 @@ def test_typecheck_6(makers, operators, variables, typesystem):
     term = j(o['CONS'], v['X'])
     sub = {}
     result, sub = tc.typecheck_full(term, typesystem, sub)
-    x = ty.substitute([typesystem[v['X']]], sub)[0]
+    x = ty.substitute(typesystem[v['X']], sub)
     expected = TOp.TOp('->', [TOp.TOp('LIST', [x]),
                               TOp.TOp('LIST', [x])])
     print 'result', result
@@ -232,7 +231,7 @@ def test_typecheck_12(makers, operators, variables, typesystem):
     term = k(j(o['CONS'], v['X']), o['NIL'])
     sub = {}
     result, sub = tc.typecheck_full(term, typesystem, sub)
-    x = ty.substitute([typesystem[v['X']]], sub)[0]
+    x = ty.substitute(typesystem[v['X']], sub)
     expected = TOp.TOp('LIST', [x])
     assert ty.alpha(result, expected) is not None
 
@@ -266,7 +265,7 @@ def test_typecheck_15(makers, operators, variables, typesystem):
     term = g(j(o['CONS'], v['X']), v['Y'])
     sub = {}
     result, sub = tc.typecheck_full(term, typesystem, sub)
-    x = ty.substitute([typesystem[v['X']]], sub)[0]
+    x = ty.substitute(typesystem[v['X']], sub)
     expected = TOp.TOp('LIST', [x])
     print 'result', result
     print 'expected', expected

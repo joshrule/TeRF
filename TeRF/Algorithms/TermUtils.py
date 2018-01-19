@@ -97,10 +97,12 @@ def rename_variables(term):
 
 def to_string(term, verbose=0):
     def list_terms(xs):
-        try:
-            return [xs.args[0].args[1]] + list_terms(xs.args[1])
-        except IndexError:
+        if xs.head.name == 'nil' and xs.head.arity == 0:
             return []
+        elif xs.head.name == '.':
+            return [xs.args[0].args[1]] + list_terms(xs.args[1])
+        elif xs.head.name == 'cons' and xs.head.arity == 2:
+            return [xs.args[0]] + list_terms(xs.args[1])
 
     def print_list():
         items = [to_string(t, verbose) for t in list_terms(term)]
@@ -149,7 +151,10 @@ def is_list(term):
                 term.args[0].args[0].head.arity == 0 and
                 is_list(term.args[1])) or \
                (term.head.name == 'nil' and
-                term.head.arity == 0)
+                term.head.arity == 0) or \
+               (term.head.name == 'cons' and
+                term.head.arity == 2 and
+                is_list(term.args[1]))
     except AttributeError:
         return False
 
@@ -157,10 +162,27 @@ def is_list(term):
 def is_number(term):
     """assumes we're using S/1 to encode numbers"""
     try:
-        return (term.head.name == 'S' and
+        return (term.head.name == 's' and
                 term.head.arity == 1 and
                 is_number(term.args[0])) or \
                (term.head.name == '0' and
                 term.head.arity == 0)
     except AttributeError:
         return False
+
+
+def same_structure(t1, t2, env):
+    if isinstance(t1, A.App) and isinstance(t2, A.App) and t1.head == t2.head:
+        for (b1, b2) in zip(t1.args, t2.args):
+            env = same_structure(b1, b2, env)
+            if env is None:
+                break
+        return env
+    if isinstance(t1, V.Var) and isinstance(t2, V.Var):
+        try:
+            if env[t1] == t2:
+                return env
+            return None
+        except KeyError:
+            env[t1] = t2
+            return env

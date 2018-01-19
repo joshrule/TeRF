@@ -5,11 +5,10 @@ import numpy as np
 from numpy.random import choice
 from random import sample
 import re
-import scipy.misc
 
 
 def normalize(log_ps):
-    sum_ps = scipy.misc.logsumexp(log_ps)
+    sum_ps = logsumexp(log_ps)
     return [np.exp(p-sum_ps) for p in log_ps]
 
 
@@ -119,21 +118,39 @@ class ExtensibleObject(object):
     pass
 
 
-def logsumexp(xs):
-    return scipy.misc.logsumexp(xs)
+def logsumexp(v):
+    """
+    stable numerical computation of log(sum(exp(v))), taken from LOTlib
+    """
+
+    if len(v) == 0:
+        return -np.inf
+    else:
+        m = max(v)
+        if m == np.inf:  # needed!
+            return np.inf
+        elif m == -np.inf:
+            return -np.inf
+        else:
+            return m + log(sum([np.exp(x - m) for x in v]))
 
 
 def iter2ListStr(xs, empty='[]', l='[', r=']', sep=', '):
     return empty if len(xs) == 0 else l + sep.join(str(x) for x in xs) + r
 
 
-def attrmem(name):
+def attrmem(names):
     """stolen from LOTlib"""
     def wrap1(f):
         def wrap2(self, *args, **kwargs):
-            v = f(self, *args, **kwargs)
-            setattr(self, name, v)
-            return v
+            vs = f(self, *args, **kwargs)
+            try:
+                for name, v in izip(names, vs):
+                    setattr(self, name, v)
+                return vs
+            except TypeError:
+                setattr(self, names, vs)
+                return vs
         return wrap2
     return wrap1
 

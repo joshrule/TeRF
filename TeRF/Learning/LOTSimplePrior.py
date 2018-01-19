@@ -3,7 +3,7 @@ import LOTlib.Miscellaneous as misc
 
 
 class LOTSimplePrior(object):
-    @misc.attrmem('prior')
+    @misc.attrmem(['prior', 'real_prior'])
     def compute_prior(self):
         """
         the log prior of the hypothesis' semantic grammar.
@@ -25,8 +25,11 @@ class LOTSimplePrior(object):
             -inf <= x <= 0, ln p(self.value)
         """
         raw_prior = -self.value.size
-        temped_prior = raw_prior / (10*self.temperature+1)
-        return temped_prior / self.prior_temperature
+        prior = (raw_prior / (10*self.temperature + 1)) / \
+            self.prior_temperature
+        real_prior = (raw_prior / (10*self.real_temperature + 1)) / \
+            self.prior_temperature
+        return prior, real_prior
 
 
 if __name__ == '__main__':

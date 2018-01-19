@@ -37,12 +37,15 @@ class LOTLikelihood(object):
         ll = t.rewrites_to(datum.rhs0)
 
         partial_credit = self.p_partial + self.temperature
+        real_pc = self.p_partial + self.real_temperature
 
         if ll == -np.inf:
             result = misc.log(partial_credit)
+            real_result = misc.log(real_pc)
         else:
             result = misc.log(1.-partial_credit) + ll
-        return result
+            real_result = misc.log(1.-real_pc) + ll
+        return (result, real_result)
 
 
 if __name__ == '__main__':
