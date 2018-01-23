@@ -18,19 +18,23 @@ class SampleError(Exception):
     pass
 
 
-def sample_term(target_type, env, sub=None, invent=False, max_d=5, d=0):
+def sample_term(target_type, env, sub=None, invent=False, max_d=4, d=0):
     sub = {} if sub is None else sub
     if d > max_d:
         raise SampleError('depth bound {} < {}'.format(max_d, d))
-    apps, vs = gen_options(target_type, env, sub, invent)
+    cons, apps, vs = gen_options(target_type, env, sub, invent)
     # TODO: Total HACK!
-    app_ps = [.5/len(apps)]*len(apps) if len(apps) else []
+    con_ps = [.25/len(cons)]*len(cons) if len(cons) else []
+    app_ps = [.25/len(apps)]*len(apps) if len(apps) else []
     v_ps = [.5/len(vs)]*len(vs) if len(vs) else []
-    ps = misc.normalize(app_ps + v_ps)
-    order = np.random.choice(len(ps), p=ps, replace=False, size=len(ps))
-    options = apps + vs
-    for idx in order:
-        o = options[idx]
+    ps = con_ps + app_ps + v_ps
+    options = cons + apps + vs
+
+    while options:
+        ps = misc.renormalize(ps)
+        idx = np.random.choice(len(options), p=ps)
+        o = options.pop(idx)
+        del ps[idx]
         try:
             return try_option(*o, invent=invent, max_d=max_d, d=d)
         except SampleError:
@@ -64,10 +68,16 @@ def gen_options(target_type, env, sub, invent):
             options.append(option)
     if invent:
         options.append(invent_variable(tt, env, sub))
-    apps, vs = [], []
+    cons, apps, vs = [], [], []
     for option in options:
-        apps.append(option) if hasattr(option[0], 'arity') else vs.append(option)
-    return apps, vs
+        try:
+            if option[0].arity > 0:
+                apps.append(option)
+            else:
+                cons.append(option)
+        except AttributeError:
+            vs.append(option)
+    return cons, apps, vs
 
 
 def invent_variable(target_type, env, sub):
@@ -97,15 +107,17 @@ def check_option(atom, target_type, env, sub):
         return None
 
 
-def lp_term(term, target_type, env, sub=None, invent=False, max_d=5, d=0):
+def lp_term(term, target_type, env, sub=None, invent=False, max_d=4, d=0):
     # print 'lp_term'
     # print '  term', term
     # print '  target_type', target_type
     sub = {} if sub is None else sub
-    if d > max_d or any(a not in env and not invent for a in te.atoms(term)):
+    # if d > max_d or any(a not in env and not invent for a in te.atoms(term)):
+    if any(a not in env and not invent for a in te.atoms(term)):
+        # print '   failed out', d > max_d, [a not in env for a in te.atoms(term)], not invent
         return -np.inf, env, sub
 
-    apps, vs = gen_options(target_type, env, sub, False)
+    cons, apps, vs = gen_options(target_type, env, sub, False)
     if invent:
         if isinstance(term, Var.Var) and term not in env:
             env2 = copy.copy(env)
@@ -114,16 +126,20 @@ def lp_term(term, target_type, env, sub=None, invent=False, max_d=5, d=0):
             vs.append([term, [], env2, sub])
         else:
             vs.append([Var.Var('BOGUS'), [], env, sub])
-    options = apps + vs
+    options = cons + apps + vs
     matches = [o for o in options if o[0] == term.head]
     if len(matches) > 1:
         raise ValueError('bad environment: {!r}'.format(env))
 
     # TODO: Total HACK!
     if len(matches) == 0:
+        # print '   no matches'
         return -np.inf, env, sub
     elif hasattr(matches[0][0], 'arity'):
-        lp = np.log(0.5)-np.log(len(apps))
+        if matches[0][0].arity > 0:
+            lp = np.log(0.4)-np.log(len(apps))
+        else:
+            lp = np.log(0.1)-np.log(len(cons))
     else:
         lp = np.log(0.5)-np.log(len(vs))
 
@@ -131,6 +147,7 @@ def lp_term(term, target_type, env, sub=None, invent=False, max_d=5, d=0):
     atom, body_types, env, sub = matches[0]
 
     if isinstance(atom, Var.Var):
+        # print '   variable', lp
         return lp, env, sub
 
     lps = [lp]
@@ -139,21 +156,27 @@ def lp_term(term, target_type, env, sub=None, invent=False, max_d=5, d=0):
         try:
             sub = tu.compose(tu.unify(constraints.copy()), sub)
         except TypeError:
+            # print '   type error!'
             return -np.inf, env, sub
         subtype = ty.substitute(body_type, sub)
         d_i = (d+1)*(i == 0)
         lp, env, sub = lp_term(subterm, subtype, env, sub, invent, max_d, d_i)
         lps.append(lp)
+        # print 'env'
+        # for k, v in env.items():
+        #     print '   ', k, ':', v
         final_type = ty.specialize_top(tc.typecheck(subterm, env, sub))
         constraints.add((subtype, final_type))
     try:
         sub = tu.compose(tu.unify(constraints.copy()), sub)
     except TypeError:
+        # print '   type error 2'
         return -np.inf, env, sub
+    # print '   application', lps
     return sum(lps), env, sub
 
 
-def sample_rule(target_type, env, sub=None, invent=False, max_d=5, d=0):
+def sample_rule(target_type, env, sub=None, invent=False, max_d=4, d=0):
     sub = {} if sub is None else sub
     lhs = None
     while not isinstance(lhs, App.App):
@@ -164,7 +187,7 @@ def sample_rule(target_type, env, sub=None, invent=False, max_d=5, d=0):
     return Rule.Rule(lhs, rhs)
 
 
-def lp_rule(rule, target_type, env, sub=None, invent=False, max_d=5, d=0):
+def lp_rule(rule, target_type, env, sub=None, invent=False, max_d=4, d=0):
     sub = {} if sub is None else sub
     lp_lhs, env, sub = lp_term(rule.lhs, target_type, env, sub, invent,
                                max_d, d)
@@ -183,7 +206,7 @@ def lp_trs(trs, env, p_rule, types, invent=False):
 
 def fill_template(template, env, sub, invent=False):
     rule = copy.deepcopy(template)
-    temp_env = copy.deepcopy(env)
+    temp_env = env.copy()
     for place in ru.places(rule):
         subterm = ru.place(rule, place)
         if isinstance(subterm, Hole.Hole) and subterm not in temp_env:
@@ -197,7 +220,7 @@ def fill_template(template, env, sub, invent=False):
     for place in ru.places(rule):
         subterm = ru.place(rule, place)
         if isinstance(subterm, Hole.Hole):
-            i_here = place[0] == 'lhs' and invent
+            i_here = (place[0] == 'lhs') and invent
             target_type, sub = tc.typecheck_full(subterm, temp_env, sub)
             term, env, sub = sample_term(target_type, env, sub, invent=i_here)
             replacements.append((place, term))
@@ -213,21 +236,28 @@ def lp_template(rule, template, env, sub, invent=False):
         if isinstance(subterm, Hole.Hole) and subterm not in temp_env:
             temp_env[subterm] = TVar.TVar()
     t_type, sub2 = ru.typecheck_full(template, temp_env, sub)
-    p_rule = lp_rule(rule, t_type, env, sub)
+    p_rule = lp_rule(rule, t_type, env, sub, invent=invent)
+    # print 'p_rule', p_rule
     sub = sub2
     if ru.unify(template, rule, kind='match') is None:
-        return misc.logsumexp([-np.inf, misc.log(0.01)+p_rule])
+        # print 'no match for', template, '!=', rule
+        return misc.log(0.01) + p_rule
+    lp = 0
     for place in ru.places(template):
         subtemplate = ru.place(template, place)
         try:
             subrule = ru.place(rule, place)
         except ValueError:
-            return misc.logsumexp([-np.inf, misc.log(0.01)+p_rule])
-        lp = 0
+            return misc.log(0.01) + p_rule
         if isinstance(subtemplate, Hole.Hole):
             invent = place[0] == 'lhs'
             target_type, sub = tc.typecheck_full(subtemplate, temp_env, sub)
+            # print 'lp_template invent', invent
+            # print 'lp_template term', subrule
+            # print 'lp_template place', place
             lt, env, sub = lp_term(subrule, target_type, env, sub,
                                    invent=invent)
             lp += lt
-    return misc.logsumexp([misc.log(0.99)+lp, misc.log(0.01)+p_rule])
+    retval = misc.logsumexp([misc.log(0.99)+lp, misc.log(0.01)+p_rule])
+    # print 'retval', retval
+    return retval
