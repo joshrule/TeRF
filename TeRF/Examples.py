@@ -167,8 +167,9 @@ length1_syntax = {
     NIL: List(NAT),
     CONS2: ty.function(NAT, ty.function(List(NAT), List(NAT))),
     LENGTH1: ty.function(List(NAT), NAT),
+    ZERO: NAT,
     SUCC1: ty.function(NAT, NAT)}
-length1_syntax.update({n: NAT for n in small_numbers})
+# length1_syntax.update({n: NAT for n in small_numbers})
 
 
 # TRS #########################################################################
