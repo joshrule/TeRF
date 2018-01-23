@@ -53,4 +53,4 @@ class DeleteRuleProposer(P.Proposer):
 
 
 if __name__ == "__main__":
-    utils.test_a_proposer(propose_value, give_proposal_log_p)
+    utils.test_a_proposer(propose_value, give_proposal_log_fb)

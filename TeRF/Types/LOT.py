@@ -27,10 +27,7 @@ class LOT(object):
         return self != other
 
     def __str__(self):
-        # syntax = '\n'.join('{}: {}'.format(k, v)
-        #                    for k, v in self.syntax.items())
-        syntax = 'some typesystem'
-        return '\n\n'.join([syntax, str(self.semantics)])
+        return '\n' + str(self.semantics)
 
     @property
     def size(self):

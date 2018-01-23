@@ -13,6 +13,7 @@ def propose_value_maker(templates):
         if rule in value.semantics:
             raise P.ProposalFailedException('AddRule: rule already exists')
         value.semantics.add(rule)
+        print 'proposing:', rule
     return propose_value
 
 
@@ -30,12 +31,10 @@ def give_proposal_log_fb_maker(templates):
             # print 'len(diff)', len(diff)
             if len(diff) == 1:
                 clause = diff.pop()
-                xs = [misc.logNof(templates) +
-                      s.lp_template(clause, t, old.syntax, {}, invent=True)
-                      for t in templates]
-                # print 'xs', xs
-                b = misc.logsumexp(xs)
-                # print 'b', b
+                b = misc.logsumexp([
+                    misc.logNof(templates) +
+                    s.lp_template(clause, t, old.syntax, {}, invent=True)
+                    for t in templates])
                 return (-np.inf, b)
         elif len_difference == -1:
             old_set = set(old_clauses)
@@ -43,10 +42,10 @@ def give_proposal_log_fb_maker(templates):
             diff = new_set - old_set
             if len(diff) == 1:
                 clause = diff.pop()
-                f = misc.logsumexp(
-                    [misc.logNof(templates) +
-                     s.lp_template(clause, t, old.syntax, {}, invent=True)
-                     for t in templates])
+                f = misc.logsumexp([
+                    misc.logNof(templates) +
+                    s.lp_template(clause, t, old.syntax, {}, invent=True)
+                    for t in templates])
                 return (f, -np.inf)
         return (-np.inf, -np.inf)
     return give_proposal_log_fb
@@ -60,7 +59,7 @@ class AddRuleProposer(P.Proposer):
     """
     def __init__(self, templates=None, **kwargs):
         self.propose_value = propose_value_maker(templates)
-        self.give_proposal_log_p = give_proposal_log_p_maker(templates)
+        self.give_proposal_log_fb = give_proposal_log_fb_maker(templates)
         super(AddRuleProposer, self).__init__(**kwargs)
 
 

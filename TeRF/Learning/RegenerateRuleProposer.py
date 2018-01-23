@@ -68,7 +68,7 @@ def p_resample(env, new, old, place):
     except ValueError:
         return -np.inf
     if t_old != t_new:
-        env2 = copy.copy(env)
+        env2 = env.copy()
         env2.update({v: TVar.TVar() for v in ru.variables(old)
                      if v not in env2})
 
@@ -129,9 +129,9 @@ class RegenerateRuleProposer(P.Proposer):
     """
     def __init__(self, **kwargs):
         self.propose_value = propose_value
-        self.give_proposal_log_p = give_proposal_log_p
+        self.give_proposal_log_fb = give_proposal_log_fb
         super(RegenerateRuleProposer, self).__init__(**kwargs)
 
 
 if __name__ == "__main__":
-    utils.test_a_proposer(propose_value, give_proposal_log_p)
+    utils.test_a_proposer(propose_value, give_proposal_log_fb)
