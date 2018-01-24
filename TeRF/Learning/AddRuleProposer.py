@@ -2,7 +2,6 @@ import LOTlib.Hypotheses.Proposers as P
 import numpy as np
 import TeRF.Learning.ProposerUtilities as utils
 import TeRF.Algorithms.Sampling as s
-import TeRF.Miscellaneous as misc
 
 
 def propose_value_maker(templates):
@@ -22,31 +21,14 @@ def give_proposal_log_fb_maker(templates):
     def give_proposal_log_fb(old, new, **kwargs):
         old_clauses = old.semantics.clauses
         new_clauses = new.semantics.clauses
-        len_difference = len(old_clauses) - len(new_clauses)
-        # print 'len_difference', len_difference
-        if len_difference == 1:  # old bigger than new
-            old_set = set(old_clauses)
-            new_set = set(new_clauses)
-            diff = old_set - new_set
-            # print 'len(diff)', len(diff)
-            if len(diff) == 1:
-                clause = diff.pop()
-                b = misc.logsumexp([
-                    misc.logNof(templates) +
-                    s.lp_template(clause, t, old.syntax, {}, invent=True)
-                    for t in templates])
-                return (-np.inf, b)
-        elif len_difference == -1:
-            old_set = set(old_clauses)
-            new_set = set(new_clauses)
-            diff = new_set - old_set
-            if len(diff) == 1:
-                clause = diff.pop()
-                f = misc.logsumexp([
-                    misc.logNof(templates) +
-                    s.lp_template(clause, t, old.syntax, {}, invent=True)
-                    for t in templates])
-                return (f, -np.inf)
+        old_set = set(old_clauses)
+        new_set = set(new_clauses)
+        on_diff = old_set - new_set
+        if len(on_diff) == 1:
+            return (-np.inf, 0.0)
+        no_diff = new_set - old_set
+        if len(no_diff) == 1:
+            return (0.0, -np.inf)
         return (-np.inf, -np.inf)
     return give_proposal_log_fb
 

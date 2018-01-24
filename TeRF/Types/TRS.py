@@ -108,7 +108,7 @@ class TRS(collections.MutableMapping):
             the_lhs = value.lhs
         else:
             if self.deterministic:
-                self._rules[value.lhs] = value
+                self._rules[the_lhs] = value
             else:
                 self[the_lhs].add(value)
             self._order.remove(the_lhs)

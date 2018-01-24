@@ -28,7 +28,8 @@ def give_proposal_log_fb(old, new, **kwargs):
             if set(o_lhs) == set(n_lhs) and \
                [o for o in o_lhs if o != clause.lhs] == \
                [n for n in n_lhs if n != clause.lhs]:
-                return (-np.log(len(new_clauses)+1)*15, -np.inf)
+                # return (-np.log(len(new_clauses)+1)*10, -np.inf)
+                return (0.0, -np.inf)
         except ValueError:  # backward delete
             new_clauses.remove(clause)
             o_lhs = [o.lhs for o in old_clauses]
@@ -36,7 +37,8 @@ def give_proposal_log_fb(old, new, **kwargs):
             if set(o_lhs) == set(n_lhs) and \
                [o for o in o_lhs if o != clause.lhs] == \
                [n for n in n_lhs if n != clause.lhs]:
-                return (-np.inf, -np.log(len(new_clauses)+1))
+                # return (-np.inf, -np.log(len(new_clauses)+1))
+                return (-np.inf, 0.0)
     return (-np.inf, -np.inf)
 
 
