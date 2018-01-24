@@ -116,6 +116,9 @@ class Trace(object):
             state = hq.heappop(self.unobserved)
         except IndexError:
             raise TraceComplete('Trace.step: no further steps can be taken')
+        else:
+            if len(state.term) > 500:
+                return
 
         # in case we care about the number of steps taken
         self.steps += 1
