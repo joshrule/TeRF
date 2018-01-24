@@ -60,6 +60,8 @@ CONST1 = Op.Op('const', 1)
 COUNT2 = Op.Op('count', 2)
 SUCC1 = Op.Op('s', 1)
 LENGTH1 = Op.Op('length', 1)
+LAST1 = Op.Op('last', 1)
+CAT2 = Op.Op('cat', 2)
 
 
 # Variables ###################################################################
@@ -171,9 +173,22 @@ length1_syntax = {
     SUCC1: ty.function(NAT, NAT)}
 # length1_syntax.update({n: NAT for n in small_numbers})
 
+last1_syntax = {
+    NIL: List(NAT),
+    CONS2: ty.function(NAT, ty.function(List(NAT), List(NAT))),
+    LAST1: ty.function(List(NAT), NAT),
+    ZERO: NAT,
+    SUCC1: ty.function(NAT, NAT)}
+# length1_syntax.update({n: NAT for n in small_numbers})
+
+cat2_syntax = {
+    NIL: List(NAT),
+    CONS2: ty.function(NAT, ty.function(List(NAT), List(NAT))),
+    CAT2: ty.function(List(NAT), ty.function(List(NAT), NAT)),
+    ZERO: NAT,
+    SUCC1: ty.function(NAT, NAT)}
 
 # TRS #########################################################################
-
 
 head_lhs_1 = j(HEAD, g(j(CONS, X), Y))
 head_rhs_1 = X
@@ -265,5 +280,43 @@ length1_templates = [Rule.Rule(App.App(LENGTH1, [hole()]),
                      Rule.Rule(App.App(LENGTH1, [App.App(CONS2,
                                                          [hole(), hole()])]),
                                hole(), True)]
+
+last1_templates = [Rule.Rule(App.App(LAST1, [hole()]),
+                             hole(), True),
+                   Rule.Rule(App.App(LAST1, [f(NIL)]),
+                             hole(), True),
+                   Rule.Rule(App.App(LAST1, [App.App(CONS2,
+                                                       [hole(), hole()])]),
+                             hole(), True)]
+
+cat2_templates = [
+    Rule.Rule(App.App(CAT2, [hole(), hole()]),
+              hole(),
+              True),
+    Rule.Rule(App.App(CAT2, [hole(), f(NIL)]),
+              hole(),
+              True),
+    Rule.Rule(App.App(CAT2, [hole(), App.App(CONS2, [hole(), hole()])]),
+              hole(),
+              True),
+    Rule.Rule(App.App(CAT2, [f(NIL), hole()]),
+              hole(),
+              True),
+    Rule.Rule(App.App(CAT2, [f(NIL), f(NIL)]),
+              hole(),
+              True),
+    Rule.Rule(App.App(CAT2, [f(NIL), App.App(CONS2, [hole(), hole()])]),
+              hole(),
+              True),
+    Rule.Rule(App.App(CAT2, [App.App(CONS2, [hole(), hole()]), hole()]),
+              hole(),
+              True),
+    Rule.Rule(App.App(CAT2, [App.App(CONS2, [hole(), hole()]), f(NIL)]),
+              hole(),
+              True),
+    Rule.Rule(App.App(CAT2, [App.App(CONS2, [hole(), hole()]),
+                             App.App(CONS2, [hole(), hole()])]),
+              hole(),
+              True)]
 
 # headtail_templates = [head1_template, tail1_template]
