@@ -1,12 +1,14 @@
 import collections
 import copy
+import numpy as np
 import TeRF.Algorithms.TermUtils as te
 
 
 class TRS(collections.MutableMapping):
-    def __init__(self, rules=None):
+    def __init__(self, rules=None, deterministic=False):
         self._order = []
         self._rules = {}
+        self.deterministic = deterministic
         if rules is not None:
             self.update(rules)
 
@@ -105,7 +107,10 @@ class TRS(collections.MutableMapping):
             self._rules[value.lhs] = value
             the_lhs = value.lhs
         else:
-            self[the_lhs].add(value)
+            if self.deterministic:
+                self._rules[value.lhs] = value
+            else:
+                self[the_lhs].add(value)
             self._order.remove(the_lhs)
         self._order.insert(index, the_lhs)
 
@@ -147,10 +152,7 @@ class TRS(collections.MutableMapping):
         return self
 
     def add(self, rule, idx=0):
-        try:
-            self[rule.lhs].add(rule)
-        except KeyError:
-            self[idx] = rule
+        self[idx] = rule
 
     def update(self, rules):
         for rule in rules:
@@ -158,3 +160,10 @@ class TRS(collections.MutableMapping):
 
     def index(self, value):
         return self._order.index(value)
+
+    def make_deterministic(self):
+        self.deterministic = True
+        for rule in self:
+            if len(rule) > 1:
+                self._rules[rule.lhs] = np.random.choice(list(iter(rule)))
+        return self

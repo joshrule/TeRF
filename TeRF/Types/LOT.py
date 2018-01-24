@@ -13,7 +13,7 @@ class LOT(object):
         - enforce any type constraints on the arguments?
         """
         self.syntax = typesystem
-        self.semantics = trs
+        self.semantics = trs.make_deterministic()
 
     def __repr__(self):
         return 'LOT(typesystem={!r}, trs={!r})'.format(self.syntax,
