@@ -1,6 +1,7 @@
 import LOTlib.Hypotheses.Proposers as P
 import numpy as np
 import TeRF.Learning.ProposerUtilities as utils
+import TeRF.Algorithms.TRSUtils as trsu
 import TeRF.Algorithms.Sampling as s
 
 
@@ -8,7 +9,8 @@ def propose_value_maker(templates):
     @utils.propose_value_template
     def propose_value(value, **kwargs):
         template = np.random.choice(templates)
-        rule = s.fill_template(template, value.syntax, {}, invent=True)
+        sub = trsu.typecheck_full(value.semantics, value.syntax, {})
+        rule = s.fill_template(template, value.syntax, sub, invent=True)
         if rule in value.semantics:
             raise P.ProposalFailedException('AddRule: rule already exists')
         value.semantics.add(rule)

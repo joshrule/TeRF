@@ -63,6 +63,13 @@ LENGTH1 = Op.Op('length', 1)
 LAST1 = Op.Op('last', 1)
 CAT2 = Op.Op('cat', 2)
 
+P11 = Op.Op('p11', 1)
+P12 = Op.Op('p12', 1)
+P13 = Op.Op('p13', 1)
+P21 = Op.Op('p21', 2)
+P22 = Op.Op('p22', 2)
+P23 = Op.Op('p23', 2)
+
 
 # Variables ###################################################################
 X = Var.Var('x')

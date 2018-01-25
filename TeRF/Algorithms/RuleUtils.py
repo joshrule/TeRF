@@ -46,7 +46,7 @@ def replace(rule, place, term, template=False):
 
 
 def unify(r1, r2, kind='unification'):
-    return uni.unify({(r1.lhs, r2.lhs)} | \
+    return uni.unify({(r1.lhs, r2.lhs)} |
                      {(rhs1, rhs2) for rhs1, rhs2 in zip(r1.rhs, r2.rhs)},
                      kind=kind)
 
@@ -77,10 +77,11 @@ def typecheck_full(self, env, sub):
     rhs_types = [ty.specialize_top(tc.typecheck(rhs, env, sub.copy()))
                  for rhs in self.rhs]
     new_sub = u.unify({(lhs_type, rhs_type) for rhs_type in rhs_types})
-    final_sub = u.compose(new_sub, sub)
-    if final_sub is not None:
-        return ty.update(lhs_type, env, final_sub), final_sub
-    raise ValueError('untypable: ' + str(self))
+    try:
+        final_sub = u.compose(new_sub, sub)
+    except TypeError:
+        raise ValueError('untypable: ' + str(self))
+    return ty.update(lhs_type, env, final_sub), final_sub
 
 
 def typecheck_subterm(self, env, sub, place):
