@@ -1,5 +1,6 @@
 import numpy as np
 import TeRF.Miscellaneous as misc
+import TeRF.Types.TRS as TRS
 import TeRF.Types.Trace as T
 
 
@@ -32,13 +33,27 @@ class LOTLikelihood(object):
         float
             -inf <= x <= 0, log p(datum | self.value)
         """
-        t = T.Trace(self.value.semantics, datum.lhs,
+        # combine the background knowledge and hypothesis
+        combined_trs = TRS.TRS()
+        try:
+            for clause in reversed(self.background.clauses):
+                combined_trs.add(clause)
+        except AttributeError:
+            combined_trs = self.value.semantics
+        else:
+            for clause in reversed(self.value.semantics.clauses):
+                combined_trs.add(clause)
+
+        # run the trace and collect the ll
+        t = T.Trace(combined_trs, datum.lhs,
                     p_observe=0.0, max_steps=20).run()
         ll = t.rewrites_to(datum.rhs0)
 
+        # assign partial credit
         partial_credit = self.p_partial + self.temperature
         real_pc = self.p_partial + self.real_temperature
 
+        # report the results
         if ll == -np.inf:
             result = misc.log(partial_credit)
             real_result = misc.log(real_pc)

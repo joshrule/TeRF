@@ -18,6 +18,8 @@ class LOTHypothesis(p.LOTSimplePrior, L.LOTLikelihood, P.LOTProposer,
         rule templates to be used during sampling
     temperature: float
         the temperature of the hypothesis itself
+    background: TeRF.Types.TRS
+        assumed and unrevisable background knowledge
     data: list of TeRF.Types.Rule
         a list of rules to explain
     p_partial: float (0-1)
@@ -29,9 +31,11 @@ class LOTHypothesis(p.LOTSimplePrior, L.LOTLikelihood, P.LOTProposer,
     weights: list of floats
         the weights of the mixture components
     """
-    def __init__(self, templates=None, temperature=0.0, **kwargs):
+    def __init__(self, templates=None, temperature=0.0, background=None,
+                 **kwargs):
         self.templates = templates
         self.temperature = temperature
         self.real_temperature = 1e-4
+        self.background = background
         self.__dict__.update(kwargs)
         super(LOTHypothesis, self).__init__(templates=templates, **kwargs)

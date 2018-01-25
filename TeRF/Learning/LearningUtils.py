@@ -211,9 +211,10 @@ def save_datum(datum, data_dir):
         dill.dump(datum, temp)
 
 
-def make_hypothesis(templates, p_partial, p_rule, lot, data):
+def make_hypothesis(templates, p_partial, p_rule, lot, data, bg=None):
     return LOTH.LOTHypothesis(templates=templates,
                               value=lot,
+                              background=bg,
                               data=data,
                               p_partial=p_partial,
                               p_rule=p_rule,
