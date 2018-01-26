@@ -24,7 +24,10 @@ class LOTSimplePrior(object):
         float
             -inf <= x <= 0, ln p(self.value)
         """
-        raw_prior = -self.value.size
+        try:
+            raw_prior = -(self.value.size + self.background.size)
+        except AttributeError:
+            raw_prior = -self.value.size
         prior = (raw_prior / (10*self.temperature + 1)) / \
             self.prior_temperature
         real_prior = (raw_prior / (10*self.real_temperature + 1)) / \

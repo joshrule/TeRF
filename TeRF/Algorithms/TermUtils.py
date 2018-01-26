@@ -184,5 +184,7 @@ def same_structure(t1, t2, env):
                 return env
             return None
         except KeyError:
-            env[t1] = t2
-            return env
+            if t2 not in env.values():
+                env[t1] = t2
+                return env
+            return None

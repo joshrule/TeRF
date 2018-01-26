@@ -74,11 +74,27 @@ def typecheck(self, env, sub):
 def typecheck_full(self, env, sub):
     lhs_type_scheme, sub = tc.typecheck_full(self.lhs, env, sub)
     lhs_type = ty.specialize_top(lhs_type_scheme)
-    rhs_types = [ty.specialize_top(tc.typecheck(rhs, env, sub.copy()))
-                 for rhs in self.rhs]
+    rhs_types = []
+    for rhs in self.rhs:
+        rhs_type, sub = tc.typecheck_full(rhs, env, sub)
+        rhs_types.append(ty.specialize_top(rhs_type))
     new_sub = u.unify({(lhs_type, rhs_type) for rhs_type in rhs_types})
+    # print 'lhs_type', lhs_type
+    # print 'rhs_types', rhs_types
+    # print 'old_sub'
+    # for k, v in sub.items():
+    #     print '   ', k, ':', v
+    # print 'new_sub'
+    # if new_sub is not None:
+    #     for k, v in new_sub.items():
+    #         print '   ', k, ':', v
+    # else:
+    #     print '   None'
     try:
         final_sub = u.compose(new_sub, sub)
+        # print 'ru.final_sub'
+        # for k, v in final_sub.items():
+        #     print '   ', k, ':', v
     except TypeError:
         raise ValueError('untypable: ' + str(self))
     return ty.update(lhs_type, env, final_sub), final_sub

@@ -10,11 +10,17 @@ def propose_value_maker(templates):
     def propose_value(value, **kwargs):
         template = np.random.choice(templates)
         sub = trsu.typecheck_full(value.semantics, value.syntax, {})
+        # print 'trsu sub'
+        # for k, v in sub.items():
+        #     print '   ', k, ':', v
+        # print 'trsu env'
+        # for k, v in value.syntax.items():
+        #     print '   ', k, ':', v
         rule = s.fill_template(template, value.syntax, sub, invent=True)
         if rule in value.semantics:
             raise P.ProposalFailedException('AddRule: rule already exists')
         value.semantics.add(rule)
-        print 'proposing:', rule
+        # print '# proposing:', rule
     return propose_value
 
 

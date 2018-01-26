@@ -8,6 +8,7 @@ Much thanks to:
 """
 
 import TeRF.Algorithms.TypeUtils as ty
+import TeRF.Algorithms.TermUtils as te
 import TeRF.Algorithms.TypeUnify as tu
 
 
@@ -26,28 +27,60 @@ def typecheck_full(term, env, sub):
 
 
 def typecheck_full_helper(term, env, sub):
+    # print 'term', te.to_string(term)
     try:
         if term.head.arity == 0:
             return ty.update2(env[term.head], sub), sub
     except AttributeError:
         return ty.update2(env[term.head], sub), sub
 
-    head_type = ty.update2(env[term.head], sub)
+    # print 'pre_sub'
+    # for k, v in sub.items():
+    #     print '   ', k, ':', v
     body_type, sub = typecheck_args(term.args, env, sub)
+    head_type = ty.update2(env[term.head], sub)
+    # print 'head_type', head_type
+    # print 'body_type', body_type
+    # print 'env'
+    # for k, v in env.items():
+    #     print '   ', k, ':', v
+    # print 'sub'
+    # for k, v in sub.items():
+    #     print '   ', k, ':', v
 
     try:
-        sub = tu.compose(tu.unify({(head_type, body_type)}), sub)
+        blah_sub = tu.unify({(head_type, body_type)})
+
+        # print 'blah_sub'
+        # if blah_sub is not None:
+        #     for k, v in blah_sub.items():
+        #         print '   ', k, ':', v
+        # else:
+        #     print '   None'
+        #
+        # print 'existing_sub'
+        # for k, v in sub.items():
+        #     print '   ', k, ':', v
+
+        sub = tu.compose(blah_sub, sub)
+
+        # print 'final_sub'
+        # if sub is not None:
+        #     for k, v in sub.items():
+        #         print '   ', k, ':', v
+        # else:
+        #     print '   None'
     except TypeError as err:
-        print 'term', term
-        print 'error', err
-        print 'head_type', head_type
-        print 'body_type', body_type
-        print 'env'
-        for k, v in env.items():
-            print '   ', k, ':', v
-        print 'sub'
-        for k, v in sub.items():
-            print '   ', k, ':', v
+        # print 'term', term
+        print 'caught TypeError:', err
+        # print 'head_type', head_type
+        # print 'body_type', body_type
+        # print 'env'
+        # for k, v in env.items():
+        #     print '   ', k, ':', v
+        # print 'sub'
+        # for k, v in sub.items():
+        #     print '   ', k, ':', v
         raise ValueError('untypable: ' + str(term))
     return ty.update2(ty.result_type(body_type), sub), sub
 
@@ -93,11 +126,11 @@ def typecheck_subterm_helper(term, env, sub, target_place):
     try:
         sub = tu.compose(tu.unify({(head_type, body_type)}), sub)
     except TypeError:
-        print 'head_type', head_type
-        print 'body_type', body_type
-        print 'sub'
-        for k, v in sub.items():
-            print '   ', k, ':', v
+        # print 'head_type', head_type
+        # print 'body_type', body_type
+        # print 'sub'
+        # for k, v in sub.items():
+        #     print '   ', k, ':', v
         raise ValueError('untypable: ' + repr(term))
     the_type = ty.update2(ty.result_type(body_type), sub)
     if target_place == []:

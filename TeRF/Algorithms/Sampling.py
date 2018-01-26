@@ -221,8 +221,8 @@ def fill_template(template, env, sub, invent=False):
         subterm = ru.place(rule, place)
         if isinstance(subterm, Hole.Hole):
             i_here = (place[0] == 'lhs') and invent
-            target_type, sub = tc.typecheck_full(subterm, temp_env, sub)
-            term, env, sub = sample_term(target_type, env, sub, invent=i_here)
+            _, sub, t_type = ru.typecheck_subterm(rule, temp_env, sub, place)
+            term, env, sub = sample_term(t_type, env, sub, invent=i_here)
             replacements.append((place, term))
     for place, term in replacements:
         rule = ru.replace(rule, place, term, True)
