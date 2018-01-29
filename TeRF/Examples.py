@@ -58,10 +58,13 @@ HEAD1 = Op.Op('head', 1)
 TAIL1 = Op.Op('tail', 1)
 CONST1 = Op.Op('const', 1)
 COUNT2 = Op.Op('count', 2)
+COUNT31 = Op.Op('count-3', 1)
 SUCC1 = Op.Op('s', 1)
 LENGTH1 = Op.Op('length', 1)
 LAST1 = Op.Op('last', 1)
 CAT2 = Op.Op('cat', 2)
+CHIT1 = Op.Op('chit', 1)
+UNTIL2 = Op.Op('until', 2)
 
 P11 = Op.Op('p11', 1)
 P12 = Op.Op('p12', 1)
@@ -165,12 +168,20 @@ const1_syntax = {
     CONST1: ty.function(List(NAT), NAT)}
 const1_syntax.update({n: NAT for n in small_numbers})
 
-count1_syntax = {
+count2_syntax = {
     NIL: List(NAT),
     CONS2: ty.function(NAT, ty.function(List(NAT), List(NAT))),
     COUNT2: ty.function(NAT, ty.function(List(NAT), NAT)),
     SUCC1: ty.function(NAT, NAT)}
-count1_syntax.update({n: NAT for n in small_numbers})
+count2_syntax.update({n: NAT for n in small_numbers})
+
+count31_syntax = {
+    NIL: List(NAT),
+    CONS2: ty.function(NAT, ty.function(List(NAT), List(NAT))),
+    COUNT2: ty.function(NAT, ty.function(List(NAT), NAT)),
+    COUNT31: ty.function(List(NAT), NAT),
+    SUCC1: ty.function(NAT, NAT)}
+count31_syntax.update({n: NAT for n in small_numbers})
 
 length1_syntax = {
     NIL: List(NAT),
@@ -194,6 +205,33 @@ cat2_syntax = {
     CAT2: ty.function(List(NAT), ty.function(List(NAT), NAT)),
     ZERO: NAT,
     SUCC1: ty.function(NAT, NAT)}
+
+chit1_syntax = {
+    NIL: List(NAT),
+    CONS2: ty.function(NAT, ty.function(List(NAT), List(NAT))),
+    CHIT1: ty.function(List(NAT), NAT),
+    SUCC1: ty.function(NAT, NAT),
+    COUNT2: ty.function(NAT, ty.function(List(NAT), NAT)),
+    HEAD1: ty.function(List(NAT), NAT),
+    TAIL1: ty.function(List(NAT), List(NAT)),
+    P11: ty.function(vA, vB),
+    P12: ty.function(vC, vD),
+    P21: ty.function(vE, ty.function(vF, vG))
+}
+chit1_syntax.update({n: NAT for n in small_numbers})
+
+bad_chit1_syntax = {
+    NIL: List(NAT),
+    CONS2: ty.function(NAT, ty.function(List(NAT), List(NAT))),
+    CHIT1: ty.function(List(NAT), NAT),
+    SUCC1: ty.function(NAT, NAT),
+    UNTIL2: ty.function(NAT, ty.function(List(NAT), NAT)),
+    LENGTH1: ty.function(List(NAT), NAT),
+    LAST1: ty.function(List(NAT), NAT),
+    P11: ty.function(vA, vB),
+    P12: ty.function(vC, vD),
+    P21: ty.function(vE, ty.function(vF, vG))}
+bad_chit1_syntax.update({n: NAT for n in small_numbers})
 
 # TRS #########################################################################
 
@@ -277,9 +315,6 @@ const1_templates = [Rule.Rule(App.App(CONST1, [hole()]),
                                                        [hole(), hole()])]),
                               hole(), True)]
 
-count2_template = Rule.Rule(App.App(COUNT2, [hole(), hole()]),
-                            hole(), True)
-
 length1_templates = [Rule.Rule(App.App(LENGTH1, [hole()]),
                                hole(), True),
                      Rule.Rule(App.App(LENGTH1, [f(NIL)]),
@@ -295,6 +330,23 @@ last1_templates = [Rule.Rule(App.App(LAST1, [hole()]),
                    Rule.Rule(App.App(LAST1, [App.App(CONS2,
                                                        [hole(), hole()])]),
                              hole(), True)]
+
+
+chit1_templates = [Rule.Rule(App.App(CHIT1, [hole()]),
+                             hole(), True),
+                   Rule.Rule(App.App(CHIT1, [f(NIL)]),
+                             hole(), True),
+                   Rule.Rule(App.App(CHIT1, [App.App(CONS2,
+                                                     [hole(), hole()])]),
+                             hole(), True)]
+
+bad_chit1_templates = [Rule.Rule(App.App(CHIT1, [hole()]),
+                                 hole(), True),
+                       Rule.Rule(App.App(CHIT1, [f(NIL)]),
+                                 hole(), True),
+                       Rule.Rule(App.App(CHIT1, [App.App(CONS2,
+                                                         [hole(), hole()])]),
+                                 hole(), True)]
 
 cat2_templates = [
     Rule.Rule(App.App(CAT2, [hole(), hole()]),
@@ -326,4 +378,40 @@ cat2_templates = [
               hole(),
               True)]
 
-# headtail_templates = [head1_template, tail1_template]
+count2_templates = [
+    Rule.Rule(App.App(COUNT2, [hole(), hole()]),
+              hole(),
+              True),
+    Rule.Rule(App.App(COUNT2, [hole(), f(NIL)]),
+              hole(),
+              True),
+    Rule.Rule(App.App(COUNT2, [hole(), App.App(CONS2, [hole(), hole()])]),
+              hole(),
+              True),
+    Rule.Rule(App.App(COUNT2, [f(ZERO), hole()]),
+              hole(),
+              True),
+    Rule.Rule(App.App(COUNT2, [f(ZERO), f(NIL)]),
+              hole(),
+              True),
+    Rule.Rule(App.App(COUNT2, [f(ZERO), App.App(CONS2, [hole(), hole()])]),
+              hole(),
+              True),
+    Rule.Rule(App.App(COUNT2, [App.App(SUCC1, [hole()]), hole()]),
+              hole(),
+              True),
+    Rule.Rule(App.App(COUNT2, [App.App(SUCC1, [hole()]), f(NIL)]),
+              hole(),
+              True),
+    Rule.Rule(App.App(COUNT2, [App.App(SUCC1, [hole()]),
+                               App.App(CONS2, [hole(), hole()])]),
+              hole(),
+              True)]
+
+count31_templates = [Rule.Rule(App.App(COUNT31, [hole()]),
+                               hole(), True),
+                     Rule.Rule(App.App(COUNT31, [f(NIL)]),
+                               hole(), True),
+                     Rule.Rule(App.App(COUNT31, [App.App(CONS2,
+                                                         [hole(), hole()])]),
+                               hole(), True)]
