@@ -49,6 +49,7 @@ DOT = Op.Op('.', 2)
 HEAD = Op.Op('head', 0)
 TAIL = Op.Op('tail', 0)
 ID = Op.Op('id', 0)
+very_small_numbers = [Op.Op(str(n), 0) for n in xrange(3)]
 small_numbers = [Op.Op(str(n), 0) for n in xrange(10)]
 numbers = [Op.Op(str(n), 0) for n in xrange(100)]
 
@@ -64,6 +65,7 @@ COUNT31 = Op.Op('count3', 1)
 CUMSUM1 = Op.Op('cumsum', 1)
 DEDUPLICATE1 = Op.Op('deduplicate', 1)
 EVEN1 = Op.Op('even', 1)
+FILTER_EVEN1 = Op.Op('filter_even', 1)
 GREATER2 = Op.Op('greater', 2)
 HEAD1 = Op.Op('head', 1)
 IF3 = Op.Op('if', 3)
@@ -136,8 +138,10 @@ syntax = {
 
 bg_syntax = {
     NIL: List(NAT),
+    COUNT2: ty.function(NAT, ty.function(List(NAT), NAT)),
     CONS2: ty.function(NAT, ty.function(List(NAT), List(NAT))),
     SUCC1: ty.function(NAT, NAT),
+    ZERO: NAT,
     SUMPRIM1: ty.function(List(NAT), NAT),
     ADD2: ty.function(NAT, ty.function(List(NAT), List(NAT))),
     INSERT2: ty.function(NAT, ty.function(List(NAT), List(NAT))),
@@ -148,7 +152,7 @@ bg_syntax = {
                                                               List(NAT)))),
     NTH2: ty.function(NAT, ty.function(List(NAT), NAT))
     }
-bg_syntax.update({n: NAT for n in small_numbers})
+bg_syntax.update({n: NAT for n in very_small_numbers})
 
 e1_const1_syntax = bg_syntax.copy()
 e1_const1_syntax.update({CONST1: ty.function(List(NAT), NAT)})
@@ -175,6 +179,10 @@ e1_deduplicate1_syntax.update(
 e1_cumsum1_syntax = bg_syntax.copy()
 e1_cumsum1_syntax.update({CUMSUM1: ty.function(List(NAT), List(NAT))})
 
+e1_filter_even1_syntax = bg_syntax.copy()
+e1_filter_even1_syntax.update(
+    {FILTER_EVEN1: ty.function(List(NAT), List(NAT))})
+
 e1_index_in_head1_syntax = bg_syntax.copy()
 e1_index_in_head1_syntax.update({IIH1: ty.function(List(NAT), NAT)})
 
@@ -184,6 +192,35 @@ e1_compare_head_and_sum_of_tail1_syntax.update(
 
 e1_count31_syntax = bg_syntax.copy()
 e1_count31_syntax.update({COUNT31: ty.function(List(NAT), NAT)})
+
+e2_head1_syntax = bg_syntax.copy()
+e2_head1_syntax.update({HEAD1: ty.function(List(NAT), NAT)})
+
+e2_tail1_syntax = bg_syntax.copy()
+e2_tail1_syntax.update({TAIL1: ty.function(List(NAT), List(NAT))})
+
+e2_count31_syntax = bg_syntax.copy()
+e2_count31_syntax.update({COUNT31: ty.function(List(NAT), NAT)})
+
+e2_good_chit1_syntax = bg_syntax.copy()
+e2_good_chit1_syntax.update({
+    CHIT1: ty.function(List(NAT), NAT),
+    COUNT31: ty.function(List(NAT), NAT),
+    HEAD1: ty.function(List(NAT), NAT),
+    TAIL1: ty.function(List(NAT), List(NAT)),
+    P11: ty.function(vA, vB),
+    P12: ty.function(vC, vD),
+    P21: ty.function(vE, ty.function(vF, vG))})
+
+e2_bad_chit1_syntax = bg_syntax.copy()
+e2_bad_chit1_syntax.update({
+    CHIT1: ty.function(List(NAT), NAT),
+    UNTIL2: ty.function(NAT, ty.function(List(NAT), NAT)),
+    LENGTH1: ty.function(List(NAT), NAT),
+    LAST1: ty.function(List(NAT), NAT),
+    P11: ty.function(vA, vB),
+    P12: ty.function(vC, vD),
+    P21: ty.function(vE, ty.function(vF, vG))})
 
 head1_syntax = {
     NIL: List(NAT),
@@ -520,6 +557,16 @@ e1_deduplicate1_templates = [Rule.Rule(App.App(DEDUPLICATE1, [hole()]),
                                                          hole()])]),
                                        hole(), True)]
 
+e1_cumsum1_templates = [Rule.Rule(App.App(CUMSUM1, [hole()]),
+                                  hole(), True),
+                        Rule.Rule(App.App(CUMSUM1, [f(NIL)]),
+                                  hole(), True),
+                        Rule.Rule(App.App(CUMSUM1,
+                                          [App.App(CONS2,
+                                                   [hole(),
+                                                    hole()])]),
+                                  hole(), True)]
+
 e1_index_in_head1_templates = [
     Rule.Rule(App.App(IIH1, [hole()]),
               hole(), True),
@@ -542,11 +589,47 @@ e1_compare_head_and_sum_of_tail1_templates = [
 
 
 e1_count31_templates = [
-    Rule.Rule(App.App(CHASOT1, [hole()]),
+    Rule.Rule(App.App(COUNT31, [hole()]),
               hole(), True),
-    Rule.Rule(App.App(CHASOT1, [f(NIL)]),
+    Rule.Rule(App.App(COUNT31, [f(NIL)]),
               hole(), True),
-    Rule.Rule(App.App(CHASOT1, [App.App(CONS2,
+    Rule.Rule(App.App(COUNT31, [App.App(CONS2,
                                         [hole(),
                                          hole()])]),
+              hole(), True)]
+
+
+e2_head1_templates = [
+    Rule.Rule(App.App(HEAD1, [hole()]),
+              hole(), True),
+    Rule.Rule(App.App(HEAD1, [f(NIL)]),
+              hole(), True),
+    Rule.Rule(App.App(HEAD1, [App.App(CONS2,
+                                      [hole(), hole()])]),
+              hole(), True)]
+
+e2_tail1_templates = [
+    Rule.Rule(App.App(TAIL1, [hole()]),
+              hole(), True),
+    Rule.Rule(App.App(TAIL1, [f(NIL)]),
+              hole(), True),
+    Rule.Rule(App.App(TAIL1, [App.App(CONS2,
+                                      [hole(), hole()])]),
+              hole(), True)]
+
+e2_count31_templates = [
+    Rule.Rule(App.App(COUNT31, [hole()]),
+              hole(), True),
+    Rule.Rule(App.App(COUNT31, [f(NIL)]),
+              hole(), True),
+    Rule.Rule(App.App(COUNT31, [App.App(CONS2,
+                                        [hole(), hole()])]),
+              hole(), True)]
+
+e2_good_chit1_templates = [
+    Rule.Rule(App.App(CHIT1, [hole()]),
+              hole(), True)]
+
+e2_bad_chit1_templates = [
+    Rule.Rule(App.App(CHIT1, [hole()]),
               hole(), True)]
