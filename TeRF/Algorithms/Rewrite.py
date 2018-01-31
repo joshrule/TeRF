@@ -31,5 +31,8 @@ def single_rewrite(term, trs, number='one', strategy='eager'):
         return (rewrite_head(term, trs, number) or
                 rewrite_args(term, trs, number, strategy='normal'))
     if strategy in ['eager', 'li', 'leftmost-innermost']:
+        if term.head.name == 'if' and term.head.arity == 3:
+            return (rewrite_head(term, trs, number) or
+                    rewrite_args(term, trs, number, strategy='eager'))
         return (rewrite_args(term, trs, number, strategy='eager') or
                 rewrite_head(term, trs, number))
