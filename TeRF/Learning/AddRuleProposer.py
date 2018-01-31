@@ -25,10 +25,12 @@ def give_proposal_log_fb_maker(templates):
         old_set = set(old_clauses)
         new_set = set(new_clauses)
         on_diff = old_set - new_set
-        if len(on_diff) == 1:
-            return (-np.inf, 0.0)
         no_diff = new_set - old_set
-        if len(no_diff) == 1:
+        if len(on_diff) == 1 and len(no_diff) == 1:
+            return (0.0, 0.0)
+        if len(on_diff) == 1 and len(no_diff) == 0:
+            return (-np.inf, 0.0)
+        if len(no_diff) == 1 and len(on_diff) == 0:
             return (0.0, -np.inf)
         return (-np.inf, -np.inf)
     return give_proposal_log_fb
