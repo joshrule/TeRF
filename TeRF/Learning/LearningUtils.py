@@ -252,7 +252,7 @@ def sample_datum(e_g, g_g, start):
         except IndexError:
             pass
 
-        rhs = T.Trace(e_g, lhs, max_steps=20, type='one',
+        rhs = T.Trace(e_g, lhs, max_steps=50, type='one',
                       strategy='eager').rewrite(states=['normal'], trace=False)
 
         try:

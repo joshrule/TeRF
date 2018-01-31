@@ -46,7 +46,7 @@ class LOTLikelihood(object):
 
         # run the trace and collect the ll
         t = T.Trace(combined_trs, datum.lhs,
-                    p_observe=0.0, max_steps=20).run()
+                    p_observe=0.0, max_steps=50).run()
         ll = t.rewrites_to(datum.rhs0)
 
         # assign partial credit
