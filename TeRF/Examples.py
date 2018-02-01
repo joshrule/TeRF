@@ -567,6 +567,14 @@ e1_cumsum1_templates = [Rule.Rule(App.App(CUMSUM1, [hole()]),
                                                     hole()])]),
                                   hole(), True)]
 
+e1_filter_even1_templates = [
+    Rule.Rule(App.App(FILTER_EVEN1, [hole()]),
+              hole(), True),
+    Rule.Rule(App.App(FILTER_EVEN1, [f(NIL)]),
+              hole(), True),
+    Rule.Rule(App.App(FILTER_EVEN1, [App.App(CONS2, [hole(), hole()])]),
+              hole(), True)]
+
 e1_index_in_head1_templates = [
     Rule.Rule(App.App(IIH1, [hole()]),
               hole(), True),
